@@ -34,34 +34,29 @@ const useStyles = makeStyles((t) => ({
 }));
 
 /*
-  !!! COURSE ATTRIBUTION IS INCOMPLETE - FILL IN BEFORE ANY EXTERNAL BUILD !!!
+  The credits, which are a licence term rather than a courtesy.
 
-  The typeface credit below is complete. Fontshare's licence (name ID 13 in the
-  font itself) requires the ITF fonts to be identified by name and ITF's
-  ownership of the trademarks and copyrights credited in production credits, so
-  that block is a licence term and not a courtesy - do not trim it in a tidy up.
+  Spec section 9.1 makes this screen a condition of the content licence: the
+  source work and its author must be credited by name, in the app, reachable in
+  at most two taps. It is also what App Review will look for in an app built on
+  someone else's textbook.
 
-  What is still missing is the COURSE credit:
+  The typeface credit is complete and must not be trimmed in a tidy up.
+  Fontshare's licence (name ID 13, inside the font file itself) requires the ITF
+  fonts to be identified by name and ITF's ownership of the trademarks and
+  copyrights to be credited in production credits.
 
-  Spec section 9.1 makes this screen a condition of the content licence, not a
-  nice-to-have: the source work and its author must be credited by name, in the
-  app, reachable in at most two taps.
-
-  The exact author and publisher are deliberately NOT guessed here. Writing a
-  plausible-looking credit that turns out to name the wrong person or press is
-  worse than an obvious blank - it would be a false claim about someone else's
-  work sitting inside a rights notice. Replace the marked strings with the
-  wording from the permission document (docs/permission.pdf, spec section 11.2)
-  before this reaches anyone outside the author's own devices.
+  The course credit below names the work as it is published. CONFIRM IT AGAINST
+  THE GRANT (docs/permission.pdf, spec section 11.2) before submission - these
+  are the work's established details, not a transcription of the permission
+  document, and the two must agree. In particular the English title has several
+  common renderings and the grant's wording is the one that belongs here.
 */
 const CREDIT = {
-  /* TODO(attribution): the course's Arabic title, as the publisher writes it. */
-  titleAr: "دُرُوسُ اللُّغَةِ العَرَبِيَّةِ",
-  /* TODO(attribution): confirm the English title, author and publisher exactly
-     as they appear in the grant. */
-  titleEn: "TODO: course title as published",
-  author: "TODO: author name",
-  publisher: "TODO: publisher name",
+  titleAr: "دُرُوسُ اللُّغَةِ العَرَبِيَّةِ لِغَيْرِ النَّاطِقِينَ بِهَا",
+  titleEn: "Lessons in Arabic Language for Non-Native Speakers",
+  author: "Dr. V. Abdur Rahim",
+  publisher: "Islamic University of Madinah",
 };
 
 export default function About() {

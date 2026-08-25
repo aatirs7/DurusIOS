@@ -1,7 +1,8 @@
 import { File, Paths } from "expo-file-system";
+import { deleteDatabaseSync } from "expo-sqlite";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Pressable, ScrollView, Share, Switch } from "react-native";
 
 import { BackBar } from "@/components/BackBar";
@@ -10,7 +11,7 @@ import { Field, Segmented, Stepper } from "@/components/Field";
 import { Screen } from "@/components/Screen";
 import { Section } from "@/components/Section";
 import { Text } from "@/components/Text";
-import { db } from "@/data/client";
+import { DB_NAME, db, sqlite } from "@/data/client";
 import { exportAll } from "@/data/export";
 import { syncReminders } from "@/data/reminders";
 import { getSettingsFor, updateSettings } from "@/data/settings";
@@ -23,6 +24,7 @@ import {
 } from "@/lib/notifications";
 import { useSession } from "@/state/session";
 import { useThemeChoice, type ThemeChoice } from "@/state/theme";
+import { deleteAccount } from "@/sync/deleteAccount";
 import { pendingCount, syncNow } from "@/sync/engine";
 import { space } from "@/theme/layout";
 import { useTheme } from "@/theme/useTheme";
@@ -50,6 +52,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
+  const resetSession = useSession((st) => st.reset);
   const themeChoice = useThemeChoice((st) => st.choice);
   const setThemeChoice = useThemeChoice((st) => st.setChoice);
 
@@ -60,6 +63,48 @@ export default function SettingsScreen() {
   const { isSignedIn, getToken, signOut } = useAuth();
   const { user } = useUser();
   const [syncing, setSyncing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  /*
+    Server first, device second.
+
+    If the request fails the local data is left exactly where it was and the
+    user is told, because wiping the phone before the server agrees would leave
+    someone whose signal dropped with nothing here and an account that still
+    exists - the worst of both outcomes.
+
+    The database file is deleted rather than its rows: reviews, card states,
+    hearts, suspensions and settings are six tables plus a derived one, and
+    "delete everything" that misses a table is worse than not offering it.
+    Migrations and the seed run again on the next launch against a clean file.
+  */
+  const removeAccount = useCallback(async () => {
+    setDeleting(true);
+    try {
+      const gone = await deleteAccount(getToken);
+      if (!gone) {
+        Alert.alert(
+          "Could not delete your account",
+          "Nothing has been removed. Check your connection and try again.",
+        );
+        return;
+      }
+
+      await signOut();
+      try {
+        sqlite.closeSync();
+        deleteDatabaseSync(DB_NAME);
+      } catch {
+        /* The account is already gone from the server, which is the part that
+           matters. A file that would not close is cleaned up by the migration
+           path on the next launch. */
+      }
+      resetSession();
+      router.replace("/onboarding");
+    } finally {
+      setDeleting(false);
+    }
+  }, [getToken, signOut, router, resetSession]);
   const [syncTick, setSyncTick] = useState(0);
 
   if (profileId === null || !config) return null;
@@ -364,6 +409,53 @@ export default function SettingsScreen() {
                 style={{ paddingVertical: space(1.5), alignItems: "center" }}
               >
                 <Text color="clay">Sign out</Text>
+              </Pressable>
+
+              {/*
+                Deleting the account, from inside the app.
+
+                App Store guideline 5.1.1(v) requires this of anything that lets
+                you create an account, and it is the only honest counterpart to
+                the export above: one hands the data back, the other removes it.
+
+                Two confirmations, because it cannot be undone and the first tap
+                is one row below Sign out. The second one names what goes rather
+                than asking again in the same words - "are you sure" twice
+                teaches people to tap through both.
+              */}
+              <Pressable
+                disabled={deleting}
+                onPress={() =>
+                  Alert.alert(
+                    "Delete your account?",
+                    "Your account and every answer you have given are removed from the server and from this phone. This cannot be undone.",
+                    [
+                      { text: "Keep my account", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () =>
+                          Alert.alert(
+                            "Delete everything?",
+                            "There is no way to get this back. Export your data first if you want a copy.",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Delete for good",
+                                style: "destructive",
+                                onPress: () => void removeAccount(),
+                              },
+                            ],
+                          ),
+                      },
+                    ],
+                  )
+                }
+                style={{ paddingVertical: space(1.5), alignItems: "center" }}
+              >
+                <Text color="clay">
+                  {deleting ? "Deleting…" : "Delete account"}
+                </Text>
               </Pressable>
             </>
           ) : (

@@ -25,6 +25,14 @@ type SessionState = Hydratable & {
   */
   onboardedAt: number | null;
   completeOnboarding: () => void;
+  /*
+    Back to a first launch, for account deletion and nothing else.
+
+    Deleting the database file is not enough on its own: onboardedAt lives in
+    AsyncStorage, so without this the next launch would decide onboarding had
+    already been done and send a profile-less app straight to Today.
+  */
+  reset: () => void;
 };
 
 export const useSession = create<SessionState>()(
@@ -36,6 +44,7 @@ export const useSession = create<SessionState>()(
       setActiveProfile: (id) => set({ activeProfileId: id }),
       onboardedAt: null,
       completeOnboarding: () => set({ onboardedAt: Date.now() }),
+      reset: () => set({ onboardedAt: null, activeProfileId: null }),
     }),
     {
       name: KEYS.session,
