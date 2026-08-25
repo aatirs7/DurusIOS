@@ -120,13 +120,13 @@ arabic,madinah,madeenah,vocabulary,spaced,repetition,flashcards,quran,nahw,srs,r
 
 | Field | Value |
 |---|---|
-| Support URL | **YOU** — needs a page. `https://durus.space/support` does not exist yet; see below. |
+| Support URL | `https://durus.space/support` — live, publicly reachable, verified 200 signed out. |
 | Marketing URL | `https://durus.space` |
 | Privacy Policy URL | `https://durus.space/privacy` — live, publicly reachable, verified 200 signed out. |
 
-**Support URL is required and there is nothing at that path.** The cheapest
-honest option is a short page with what the app is, how to delete an account,
-and an email address. Say the word and it goes up alongside the privacy policy.
+**YOU** — both pages print `hello@durus.space`. That mailbox has to exist and
+be read, because it is the address App Review will use if they have a question
+and the one a user reaches for to delete an account they cannot sign in to.
 
 ## Category
 
