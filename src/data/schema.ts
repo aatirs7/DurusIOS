@@ -30,7 +30,7 @@ import {
 /* Bumped by hand whenever either schema changes. schema-lockstep.test.ts
    asserts this matches the Postgres side, so a change to one file that forgets
    the other fails here rather than as a 400 from the API three weeks later. */
-export const SCHEMA_REVISION = 1;
+export const SCHEMA_REVISION = 2;
 
 /*
   Two direction enums, kept separate for the reason the web schema gives:
@@ -273,6 +273,16 @@ export const settings = sqliteTable("settings", {
   profileId: integer("profile_id")
     .primaryKey()
     .references(() => profiles.id, { onDelete: "cascade" }),
+  /*
+    Which book of the series. One today, three eventually - the lesson numbering
+    restarts per book, so this has to sit beside currentLesson rather than being
+    folded into it.
+
+    Local only for now: the server's settings table has no column for it, and
+    syncing a field the other side cannot store would silently drop it. See
+    LOCAL_ONLY in src/sync/engine.ts.
+  */
+  currentBook: integer("current_book").notNull().default(1),
   currentLesson: integer("current_lesson").notNull().default(1),
   newPerDay: integer("new_per_day").notNull().default(12),
   maxReviews: integer("max_reviews").notNull().default(120),

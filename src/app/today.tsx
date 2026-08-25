@@ -44,7 +44,12 @@ const useStyles = makeStyles((t) => ({
   grid: { flexDirection: "row", flexWrap: "wrap", width: "100%" },
   gridItem: { width: "50%" },
 
-  foot: { marginTop: "auto", alignItems: "center", gap: space(2.5), width: "100%" },
+  /*
+    Flows directly under the links rather than being pushed to the bottom edge.
+    marginTop:auto drove the ticks and Stats/Settings onto the home indicator
+    and left a hole in the middle; the web leaves its slack BELOW this cluster.
+  */
+  foot: { alignItems: "center", gap: space(2.5), width: "100%" },
   ticks: { flexDirection: "row", justifyContent: "center", gap: TICK.gap },
   tick: { width: TICK.width, height: TICK.height, borderRadius: 999 },
   footLinks: { flexDirection: "row", justifyContent: "center", gap: space(3) },
@@ -156,7 +161,8 @@ export default function Today() {
             ] as const
           ).map(([label, href]) => (
             <View key={href} style={s.gridItem}>
-              <Button label={label} variant="text" align="left" onPress={() => router.push(href)} />
+              {/* Centred within its column, the way the web sets it. */}
+              <Button label={label} variant="text" onPress={() => router.push(href)} />
             </View>
           ))}
         </View>

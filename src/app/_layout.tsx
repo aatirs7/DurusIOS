@@ -9,11 +9,12 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
-import { useEffect, useMemo } from "react";
-import { AppState, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AppState, Appearance, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { Button } from "@/components/Button";
 import { ClerkGate } from "@/components/ClerkGate";
 import { Screen } from "@/components/Screen";
@@ -23,6 +24,7 @@ import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
 import { syncReminders } from "@/data/reminders";
 import { useSession } from "@/state/session";
+import { useThemeChoice } from "@/state/theme";
 import { tokenCache } from "@/lib/tokenCache";
 import { space } from "@/theme/layout";
 import { useTheme } from "@/theme/useTheme";
@@ -43,6 +45,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 */
 export default function RootLayout() {
   const theme = useTheme();
+  const choice = useThemeChoice((s) => s.choice);
   const migration = useDurusMigrations();
 
   const hydrated = useSession((s) => s._hydrated);
@@ -79,7 +82,28 @@ export default function RootLayout() {
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(theme.colors.paper).catch(() => {});
-  }, [theme]);
+
+    /*
+      Push the resolved theme into the OS's idea of this app's appearance.
+
+      The native splash is drawn before any JavaScript runs, so it cannot read
+      the stored theme choice - it only knows what iOS thinks the app's
+      appearance is. Setting that here means the splash on the NEXT launch
+      matches the theme last toggled, instead of following the system while the
+      app itself follows the toggle.
+
+      Passing null hands control back to the system, which is what "System"
+      in Settings should mean.
+    */
+    if (choice === "system") {
+      /* null is the documented way to hand appearance back to the system.
+         React Native's ColorSchemeName type omits it, so the cast is about a
+         narrow type rather than an unsafe call. */
+      Appearance.setColorScheme(null as unknown as "light");
+    } else {
+      Appearance.setColorScheme(choice);
+    }
+  }, [theme, choice]);
 
   /*
     The rolling notification window is rebuilt on every foreground, and after
@@ -108,6 +132,14 @@ export default function RootLayout() {
         : null;
 
   const ready = !!boot?.ok && hydrated && (fontsLoaded || !!fontError);
+
+  /*
+    The overlay outlives the native splash. It is dismissed by its own fade
+    finishing, not by a timer here, so the two never disagree about when the
+    hand-off is over.
+  */
+  const [introDone, setIntroDone] = useState(false);
+  const endIntro = useCallback(() => setIntroDone(true), []);
 
   useEffect(() => {
     if (ready || failure) SplashScreen.hideAsync().catch(() => {});
@@ -177,6 +209,10 @@ export default function RootLayout() {
             <Stack.Screen name="cases" options={{ animation: "none" }} />
             <Stack.Screen name="cards" options={{ animation: "none" }} />
           </Stack>
+          {/* A sibling ABOVE the Stack, so the app is already mounted
+              underneath and the fade reveals a finished screen rather than an
+              empty frame. */}
+          {introDone ? null : <AnimatedSplash onDone={endIntro} />}
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ClerkProvider>

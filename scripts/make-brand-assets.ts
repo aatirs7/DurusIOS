@@ -56,12 +56,24 @@ function iconSvg(size: number, ground: string, mark: string): string {
 </svg>`;
 }
 
-/* The splash mark sits on a flat background supplied by expo-splash-screen, so
-   the art itself is transparent and only the word is drawn. */
-function splashMarkSvg(size: number, mark: string): string {
-  const fontSize = Math.round(size * 0.62);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <text x="50%" y="${Math.round(size * 0.5 + fontSize * 0.1)}" text-anchor="middle"
+/*
+  The splash mark. Transparent art on a flat background supplied by
+  expo-splash-screen, so only the word is drawn.
+
+  A WIDE canvas, not a square. دروس is roughly 2.2x as wide as its point size,
+  so a square canvas with a font size chosen to look right vertically runs the
+  word off both edges - which is exactly how the first build shipped, showing
+  "روس" with the dal clipped away. Sizing from the width and letting the height
+  follow is what keeps the whole word on the canvas.
+*/
+const SPLASH_W = 720;
+const SPLASH_H = 360;
+
+function splashMarkSvg(mark: string): string {
+  /* Widest safe size: the word occupies ~85% of the canvas width. */
+  const fontSize = Math.round((SPLASH_W * 0.82) / 2.2);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SPLASH_W}" height="${SPLASH_H}" viewBox="0 0 ${SPLASH_W} ${SPLASH_H}">
+  <text x="50%" y="${Math.round(SPLASH_H * 0.5 + fontSize * 0.30)}" text-anchor="middle"
         direction="rtl" font-family="Amiri" font-size="${fontSize}"
         fill="${mark}">${WORD}</text>
 </svg>`;
@@ -88,6 +100,6 @@ write("icon.png", render(iconSvg(1024, PAPER_LIGHT, LAPIS_LIGHT), 1024));
 write("icon-dark.png", render(iconSvg(1024, PAPER_DARK, LAPIS_DARK), 1024));
 write("icon-tinted.png", render(iconSvg(1024, "#000000", "#FFFFFF"), 1024));
 
-/* imageWidth is 120 in app.json; render at 3x so it stays crisp. */
-write("splash.png", render(splashMarkSvg(360, LAPIS_LIGHT), 360));
-write("splash-dark.png", render(splashMarkSvg(360, LAPIS_DARK), 360));
+/* app.json sets imageWidth 200; render at 3.6x so it stays crisp. */
+write("splash.png", render(splashMarkSvg(LAPIS_LIGHT), SPLASH_W));
+write("splash-dark.png", render(splashMarkSvg(LAPIS_DARK), SPLASH_W));

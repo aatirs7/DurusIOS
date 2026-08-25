@@ -3,64 +3,65 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
-import { ExitDrill } from "@/components/ExitDrill";
-import { HelpButton } from "@/components/Help";
 import { Text } from "@/components/Text";
 import type { Question } from "@/data/queue";
-import { assembledCorrectly, type Tile } from "@/engine/letters";
 import { checkAnswer } from "@/engine/answer";
+import { assembledCorrectly, type Tile } from "@/engine/letters";
 import { feedbackFor, gradeFor, modeLabel } from "@/engine/modes";
 import { haptics } from "@/lib/haptics";
-import { BAND_HEIGHT, RADIUS, space } from "@/theme/layout";
+import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles((t) => ({
   root: { flex: 1 },
-  header: {
-    height: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: space(1),
-  },
-  headerMid: { flexDirection: "row", alignItems: "center", gap: space(1) },
-  headerSide: { minWidth: 44 },
-  /*
-    The card face sits on its own above the answers rather than being centred
-    with them as one block. Giving the face a fixed share of the height keeps
-    the options in the same place from card to card - when the whole stack is
-    centred, a two line phrase shunts every option down and the row you were
-    about to tap moves under your thumb.
-  */
-  face: { minHeight: 160, justifyContent: "center", alignItems: "center", width: "100%" },
-  prompt: { flex: 1, justifyContent: "center", width: "100%", gap: space(3) },
-  english: { textAlign: "center" },
 
-  options: { gap: space(1.5), width: "100%" },
-  option: {
+  /* The card column, centred vertically. The verdict is overlaid rather than
+     placed in this flow, so the answers never jump when a result appears. */
+  column: { flex: 1, justifyContent: "center", gap: space(3) },
+
+  prompt: { alignItems: "center", gap: space(0.5) },
+  /*
+    Always rendered, even before the answer, at zero opacity. Reserving the line
+    is what stops the four options shifting down the moment a card is answered -
+    a moving target under a thumb already on its way.
+  */
+  translit: { fontStyle: "italic", textAlign: "center", fontSize: 18 },
+
+  notes: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1) },
+  note: {
     borderWidth: 1,
     borderColor: t.colors.rule,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: space(1.5),
+    paddingVertical: 2,
+  },
+
+  options: { gap: space(1.5) },
+  option: {
     backgroundColor: t.colors.surface,
     borderRadius: RADIUS.button,
-    paddingVertical: space(2),
+    borderWidth: 1,
+    borderColor: t.colors.rule,
     paddingHorizontal: space(2.5),
-    minHeight: 56,
-    width: "100%",
+    paddingVertical: space(2),
+    alignItems: "center",
     justifyContent: "center",
   },
-  optionRight: { borderColor: t.colors.verdigris, backgroundColor: t.colors.lapisWash },
+  optionRight: { borderColor: t.colors.verdigris },
   optionWrong: { borderColor: t.colors.clay },
+  optionText: { textAlign: "center" },
 
   input: {
     borderWidth: 1,
     borderColor: t.colors.rule,
     backgroundColor: t.colors.surface,
     borderRadius: RADIUS.button,
-    paddingVertical: space(1.5),
-    paddingHorizontal: space(2),
+    paddingVertical: space(2),
+    paddingHorizontal: space(2.5),
     color: t.colors.ink,
     fontSize: 18,
-    minHeight: 52,
+    textAlign: "center",
+    minHeight: 56,
   },
 
   tiles: { flexDirection: "row-reverse", flexWrap: "wrap", gap: space(1), justifyContent: "center" },
@@ -84,41 +85,43 @@ const useStyles = makeStyles((t) => ({
   },
 
   /*
-    Reserved height rather than an absolutely positioned overlay. The web
-    version learned this the hard way: floating the band over the content put it
-    on top of the input on small devices, so an answer could end up underneath
-    the thing telling you about it.
+    The verdict sits over everything, pinned to the bottom, and the whole screen
+    becomes the tap target that advances. Overlaid rather than in the flow so
+    the card above does not move when it appears.
   */
-  band: { height: BAND_HEIGHT, justifyContent: "center", gap: space(1) },
-  bandRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  scrim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 },
+  verdict: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: space(2),
+    alignItems: "center",
+    gap: space(1),
+    zIndex: 11,
+  },
+  pill: {
+    borderWidth: 1,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: space(2),
+    paddingVertical: space(0.75),
+  },
 }));
 
 type Result = {
   correct: boolean;
   close: boolean;
   grade: ReturnType<typeof gradeFor>;
-  feedback: string;
-  /* What the answer actually was, shown only when they got it wrong. */
-  answer: string;
+  message: string;
 };
 
 export type ReviewSessionProps = {
   questions: Question[];
   onAnswer: (q: Question, grade: ReturnType<typeof gradeFor>, msToAnswer: number) => void;
-  onUndo: (q: Question) => void;
   onDone: () => void;
-  onHelp: () => void;
   showHarakat: boolean;
 };
 
-export function ReviewSession({
-  questions,
-  onAnswer,
-  onUndo,
-  onDone,
-  onHelp,
-  showHarakat,
-}: ReviewSessionProps) {
+export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: ReviewSessionProps) {
   const s = useStyles();
   const theme = useTheme();
 
@@ -126,64 +129,49 @@ export function ReviewSession({
   const [index, setIndex] = useState(0);
   const [typed, setTyped] = useState("");
   const [built, setBuilt] = useState<Tile[]>([]);
+  const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [answered, setAnswered] = useState(0);
 
-  /*
-    Time to answer runs from the card appearing, not from the first keystroke.
-    A ref rather than state, so reading it never causes a render and the value
-    cannot be one frame stale.
-  */
+  /* Time to answer runs from the card appearing, not from the first keystroke.
+     A ref, so reading it never renders and cannot be a frame stale. */
   const shownAt = useRef(Date.now());
 
   const question = queue[index];
 
   const remainingTiles = useMemo(() => {
     if (!question || question.mode !== "assemble") return [];
-    const usedIds = new Set(built.map((t) => t.id));
-    return question.tiles.filter((t) => !usedIds.has(t.id));
+    const used = new Set(built.map((t) => t.id));
+    return question.tiles.filter((t) => !used.has(t.id));
   }, [question, built]);
 
-  const advance = useCallback(
-    (pushBack: boolean) => {
-      /*
-        Clearing the result and advancing in the SAME commit, so the previous
-        answer never flashes on top of the next card.
-      */
-      setQueue((q) => (pushBack && question ? [...q, question] : q));
-      setIndex((i) => i + 1);
-      setResult(null);
-      setTyped("");
-      setBuilt([]);
-      shownAt.current = Date.now();
-    },
-    [question],
-  );
+  const advance = useCallback(() => {
+    if (!result || !question) return;
+    /* Clearing the result and advancing in the SAME commit, so the previous
+       answer never flashes on top of the next card. */
+    setQueue((q) => (result.grade === "again" ? [...q, question] : q));
+    setIndex((i) => i + 1);
+    setResult(null);
+    setPicked(null);
+    setTyped("");
+    setBuilt([]);
+    shownAt.current = Date.now();
+  }, [result, question]);
 
   const settle = useCallback(
     (correct: boolean, close: boolean) => {
-      if (!question) return;
+      if (!question || result) return;
       const msToAnswer = Date.now() - shownAt.current;
       const outcome = { correct, close, msToAnswer, mode: question.mode };
       const grade = gradeFor(outcome);
-
       onAnswer(question, grade, msToAnswer);
       setAnswered((n) => n + 1);
-      setResult({
-        correct,
-        close,
-        grade,
-        feedback: feedbackFor(outcome, grade),
-        answer: question.direction === "production" ? question.arabic : question.english,
-      });
+      setResult({ correct, close, grade, message: feedbackFor(outcome, grade) });
     },
-    [question, onAnswer],
+    [question, result, onAnswer],
   );
 
   if (!question) {
-    /* Spec section 7.5: Success fires once, at the end of a session, never per
-       card. Calling it during render would repeat it, so it is fired by the
-       button that got here. */
     return (
       <View style={[s.root, { justifyContent: "center", gap: space(2) }]}>
         <Text variant="pageTitle">Done.</Text>
@@ -193,68 +181,96 @@ export function ReviewSession({
     );
   }
 
-  const dismissed = result !== null;
+  const done = result !== null;
+  const tone = result?.correct ? theme.colors.verdigris : theme.colors.clay;
 
   return (
     <View style={s.root}>
-      <View style={s.header}>
-        {/* An empty box the same width as the exit control, so the mode label
-            stays optically centred rather than being pushed left by it. */}
-        <View style={s.headerSide} />
-        <View style={s.headerMid}>
-          {/* Shown above the card, so the rung you are on is never a surprise. */}
-          <Text variant="eyebrow" color="inkSoft">
-            {modeLabel(question.mode, question.direction)}
-          </Text>
-          <HelpButton onPress={onHelp} />
-        </View>
-        <View style={[s.headerSide, { alignItems: "flex-end" }]}>
-          <ExitDrill />
-        </View>
-      </View>
-
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!done}
       >
-        <View style={s.prompt}>
-          <View style={s.face}>
+        <View style={s.column}>
+          {/* Which rung this card is on, so the format is never a surprise. */}
+          <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
+            {modeLabel(question.mode, question.direction)}
+          </Text>
+
+          <View style={s.prompt}>
+            {/* Recognition shows the Arabic and nothing else, because anything
+                else on screen is something the eye can cheat with. */}
             {question.direction === "recognition" ? (
               <Arabic variant="card" showHarakat={showHarakat}>
                 {question.arabic}
               </Arabic>
             ) : (
-              <Text variant="pageTitle" style={s.english}>
+              <Text variant="pageTitle" style={{ textAlign: "center" }}>
                 {question.english}
               </Text>
             )}
+
+            <Text
+              color="inkFaint"
+              style={[s.translit, { opacity: done && question.transliteration ? 1 : 0 }]}
+            >
+              {question.transliteration ?? " "}
+            </Text>
           </View>
+
+          {/*
+            Gender and plural belong under the word they describe, not down
+            beside the verdict where wide pills read as buttons. Shown only on a
+            correct answer: on a wrong one, the word itself is what to read.
+          */}
+          {result?.correct && (question.gender || question.plural) ? (
+            <View style={s.notes}>
+              {question.gender ? (
+                <View style={s.note}>
+                  <Text variant="label" color="inkSoft">
+                    {question.gender === "m" ? "masculine" : "feminine"}
+                  </Text>
+                </View>
+              ) : null}
+              {question.plural ? (
+                <View style={s.note}>
+                  <Arabic variant="inline" showHarakat={showHarakat}>
+                    {question.plural}
+                  </Arabic>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
 
           {question.mode === "choice" ? (
             <View style={s.options}>
               {question.options.map((o) => {
-                const isRight = o.english === question.english;
-                const show = dismissed;
+                const isAnswer = o.english === question.english;
+                const isPicked = o.english === picked;
                 return (
                   <Pressable
                     key={`${o.arabic}|${o.english}`}
-                    disabled={dismissed}
+                    disabled={done}
                     onPress={() => {
                       haptics.select();
-                      settle(isRight, false);
+                      setPicked(o.english);
+                      settle(isAnswer, false);
                     }}
                     style={[
                       s.option,
-                      show && isRight && s.optionRight,
-                      show && !isRight && result?.correct === false && s.optionWrong,
+                      /* Once answered the right one is marked whether or not it
+                         was chosen. Seeing only your own mistake teaches
+                         nothing. */
+                      done && isAnswer && s.optionRight,
+                      done && !isAnswer && isPicked && s.optionWrong,
                     ]}
                   >
-                    {question.direction === "recognition" ? (
-                      <Text>{o.english}</Text>
-                    ) : (
-                      <Arabic variant="inline" showHarakat={showHarakat}>
+                    {question.direction === "production" ? (
+                      <Arabic variant="tile" showHarakat={showHarakat}>
                         {o.arabic}
                       </Arabic>
+                    ) : (
+                      <Text style={s.optionText}>{o.english}</Text>
                     )}
                   </Pressable>
                 );
@@ -266,21 +282,19 @@ export function ReviewSession({
             <TextInput
               value={typed}
               onChangeText={setTyped}
-              editable={!dismissed}
+              editable={!done}
               placeholder="the meaning"
               placeholderTextColor={theme.colors.inkFaint}
               style={s.input}
-              /*
-                Autocorrect turning "masjid" into "mastic" and marking it wrong
-                is the single most annoying possible bug in this app.
-              */
+              /* Autocorrect turning "masjid" into "mastic" and marking it wrong
+                 is the single most annoying possible bug in this app. */
               autoCorrect={false}
               autoCapitalize="none"
               spellCheck={false}
               autoComplete="off"
               returnKeyType="done"
               onSubmitEditing={() => {
-                if (dismissed || typed.trim() === "") return;
+                if (done || typed.trim() === "") return;
                 const m = checkAnswer(typed, question.english);
                 settle(m.kind !== "wrong", m.kind === "close");
               }}
@@ -293,9 +307,8 @@ export function ReviewSession({
                 {built.map((t, i) => (
                   <Pressable
                     key={`${t.id}-${i}`}
-                    disabled={dismissed}
+                    disabled={done}
                     onPress={() => {
-                      /* Tapping a placed tile returns it. */
                       haptics.select();
                       setBuilt((b) => b.filter((_, j) => j !== i));
                     }}
@@ -311,16 +324,13 @@ export function ReviewSession({
                 {remainingTiles.map((t) => (
                   <Pressable
                     key={t.id}
-                    disabled={dismissed}
+                    disabled={done}
                     onPress={() => {
                       haptics.select();
                       const next = [...built, t];
                       setBuilt(next);
-                      /*
-                        Compared by text rather than by tile order, because a
-                        word with a repeated letter has more than one correct
-                        arrangement.
-                      */
+                      /* Compared by text, not tile order: a word with a
+                         repeated letter has more than one correct arrangement. */
                       if (next.length === question.tiles.length) {
                         settle(assembledCorrectly(next, question.arabic), false);
                       }
@@ -338,49 +348,45 @@ export function ReviewSession({
         </View>
       </ScrollView>
 
-      <View style={s.band}>
-        {result ? (
-          <>
-            <View style={s.bandRow}>
-              {/* Never praise, never a streak. "Right.", "Right, but slow.",
-                  "Not that one." */}
-              <Text color={result.correct ? "verdigris" : "clay"}>{result.feedback}</Text>
-              <Pressable
-                onPress={() => {
-                  onUndo(question);
-                  setResult(null);
-                  shownAt.current = Date.now();
-                }}
-              >
-                <Text variant="label" color="inkFaint">
-                  Undo
-                </Text>
-              </Pressable>
-            </View>
+      {done ? (
+        <>
+          {/* The whole screen advances. No Next button competing with four
+              answers for the same thumb. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Next card"
+            style={s.scrim}
+            onPress={advance}
+          />
 
+          <View style={s.verdict} pointerEvents="none">
+            {/*
+              On a wrong answer, the side that was being asked for. The other
+              side is the prompt, still on screen, so repeating it would say
+              nothing. Above the verdict, because it is the part worth reading.
+            */}
             {!result.correct ? (
               question.direction === "production" ? (
-                <Arabic variant="inline" showHarakat={showHarakat}>
-                  {result.answer}
+                <Arabic variant="title" showHarakat={showHarakat}>
+                  {question.arabic}
                 </Arabic>
               ) : (
-                <Text color="inkSoft">{result.answer}</Text>
+                <Text style={{ fontSize: 20 }}>{question.english}</Text>
               )
             ) : null}
 
-            {/*
-              The band stays up until dismissed. No timer: the moment right
-              after getting a word wrong is the moment you are actually reading
-              it, and how long that takes is not something the app can know.
-            */}
-            <Button
-              label="Next"
-              variant="quiet"
-              onPress={() => advance(result.grade === "again")}
-            />
-          </>
-        ) : null}
-      </View>
+            {/* A badge in its own colour, rather than a line of small text that
+                has to compete with four answer buttons. */}
+            <View style={[s.pill, { borderColor: tone }]}>
+              <Text style={{ fontSize: 18, color: tone }}>{result.message}</Text>
+            </View>
+
+            <Text variant="label" color="inkFaint">
+              Tap anywhere to continue
+            </Text>
+          </View>
+        </>
+      ) : null}
     </View>
   );
 }

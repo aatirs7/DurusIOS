@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "expo": {
+      "command": "npx",
+      "args": ["-y", "expo-mcp@latest"],
+      "env": {}
+    },
+    "agent-device": {
+      "command": "agent-device",
+      "args": ["mcp"],
+      "env": {
+        "PATH": "C:\\Users\\aatir\\android-platform-tools\\platform-tools;${PATH}"
+      }
+    }
+  }
+}

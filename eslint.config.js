@@ -117,17 +117,6 @@ module.exports = defineConfig([
           ],
         },
       ],
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "CallExpression[callee.name='withSpring']",
-          message: 'Spec section 7.4: motion is limited to four animations. No spring physics.',
-        },
-        {
-          selector: "MemberExpression[object.name='Animated'][property.name='spring']",
-          message: 'Spec section 7.4: motion is limited to four animations. No spring physics.',
-        },
-      ],
     },
   },
 
@@ -187,17 +176,43 @@ module.exports = defineConfig([
   },
 
   {
-    /**
-     * The expo-sqlite driver is synchronous. db.transaction expects a sync
-     * callback and returns T, not Promise<T>, so an async callback returns a
-     * promise the wrapper commits before it resolves: a silently half-applied
-     * write with no error anywhere.
-     */
-    files: ['src/**/*.ts'],
+    /*
+      EVERY no-restricted-syntax selector lives in this one block, and that is
+      not tidiness.
+
+      Flat config REPLACES a rule's options when a later block sets the same
+      rule over overlapping files - it does not merge them. This file previously
+      declared no-restricted-syntax three times over src/**, so only the last
+      one ran and the section 7.1 hex guard was silently dead for weeks. A
+      literal colour anywhere in src/ passed lint cleanly.
+
+      If you add a selector, add it here. Do not add a second block.
+    */
+    files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
+          /* Spec section 7.1: the only hex values in the project live in
+             src/theme/tokens.ts. tokens.ts and the Google mark carry explicit
+             file-level disables with their reasons. */
+          selector: 'Literal[value=/^#[0-9a-fA-F]{3,8}$/]',
+          message:
+            'Spec section 7.1: no literal colours outside src/theme/tokens.ts. Add a token instead.',
+        },
+        {
+          selector: "CallExpression[callee.name='withSpring']",
+          message: 'Spec section 7.4: motion is limited to four animations. No spring physics.',
+        },
+        {
+          selector: "MemberExpression[object.name='Animated'][property.name='spring']",
+          message: 'Spec section 7.4: motion is limited to four animations. No spring physics.',
+        },
+        {
+          /* The expo-sqlite driver is sync mode. db.transaction expects a sync
+             callback and returns T, not Promise<T>, so an async callback
+             returns a promise the wrapper commits before it resolves: a
+             silently half-applied write with no error anywhere. */
           selector:
             "CallExpression[callee.property.name='transaction'] > :matches(ArrowFunctionExpression[async=true], FunctionExpression[async=true])",
           message:

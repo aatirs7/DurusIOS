@@ -133,6 +133,17 @@ export function clearActiveAccount(db: Db) {
   db.update(account).set({ isActive: false }).run();
 }
 
+/*
+  The name from onboarding. Display only - nothing resolves by it, and it is
+  overwritten by the Clerk name if an account is added later, because that one
+  the user maintains somewhere they can see it.
+*/
+export function setProfileName(db: Db, profileId: number, name: string) {
+  const trimmed = name.trim();
+  if (trimmed === "") return;
+  db.update(profiles).set({ name: trimmed }).where(eq(profiles.id, profileId)).run();
+}
+
 export function activeAccount(db: Db) {
   return db.select().from(account).where(eq(account.isActive, true)).get() ?? null;
 }

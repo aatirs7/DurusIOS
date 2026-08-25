@@ -14,10 +14,12 @@ type Slide = { title: string; body: string };
 /*
   How the ladder gets explained.
 
-  Spec section 1.1 point 1 - the user never grades themselves - only works if
-  they understand the app is grading them. Nobody reads a manual, so this opens
-  itself the first time each drill is entered and never again, and the "?" in
-  the corner is there for the second time.
+  Spec section 1.1 point 1 only works if the user understands that answering IS
+  the whole interaction. The copy states that positively and never mentions the
+  alternative: describing a feature the app does not have, in order to say it
+  does not have it, plants the idea it was ever on the table. Nobody reads a
+  manual, so this opens itself the first time each drill is entered and never
+  again, and the "?" in the corner is there for the second time.
 
   Held at one size across slides so the sheet does not resize under a thumb
   mid-read.
@@ -27,8 +29,8 @@ const SLIDES: Record<HelpTopic, { heading: string; slides: Slide[] }> = {
     heading: "Review",
     slides: [
       {
-        title: "You are not asked to rate yourself.",
-        body: "There is no Again / Hard / Good / Easy row. Whether you were right comes from your answer, and how well you knew it comes from how long you took.",
+        title: "Just answer. Durus works out the rest.",
+        body: "Whether you were right comes from your answer, and how well you knew it comes from how long you took. There is nothing to set afterwards.",
       },
       {
         title: "The question gets harder as the word gets easier.",

@@ -29,7 +29,10 @@ const useStyles = makeStyles((t) => ({
     borderWidth: 1,
     borderColor: t.colors.rule,
   },
-  text: { paddingHorizontal: 0, paddingVertical: 6 },
+  /* Same vertical padding as the other variants (web py-3.5), so a column of
+     text links has the same rhythm as the web's. Cramping this is what made the
+     Today grid read as two tight rows. */
+  text: { paddingHorizontal: 0, paddingVertical: 14 },
   pressed: { opacity: 0.75 },
   disabled: { opacity: 0.4 },
 }));

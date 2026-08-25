@@ -1,0 +1,121 @@
+import { useEffect, useMemo } from "react";
+import { View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+
+import { Arabic } from "@/components/Arabic";
+import { space } from "@/theme/layout";
+import { makeStyles, useTheme } from "@/theme/useTheme";
+
+/*
+  Words from the book, set very faint and scattered behind the flow.
+
+  Fixed positions rather than random ones: a field that reshuffles on every
+  render is movement the eye keeps chasing, and these have to sit behind text
+  that must stay readable. Unvowelled, because at this opacity harakat turn into
+  noise rather than reading.
+*/
+const FIELD: { word: string; top: string; left: string; size: number }[] = [
+  { word: "بيت", top: "8%", left: "6%", size: 34 },
+  { word: "مسجد", top: "14%", left: "62%", size: 40 },
+  { word: "طالب", top: "30%", left: "72%", size: 32 },
+  { word: "مفتاح", top: "4%", left: "34%", size: 28 },
+  { word: "قلم", top: "62%", left: "8%", size: 30 },
+  { word: "نجم", top: "74%", left: "68%", size: 34 },
+  { word: "كتاب", top: "46%", left: "2%", size: 26 },
+  { word: "باب", top: "88%", left: "40%", size: 30 },
+];
+
+const useStyles = makeStyles((t) => ({
+  field: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  word: { position: "absolute" },
+
+  header: { alignItems: "center", gap: space(1.5), paddingBottom: space(1) },
+  track: { flexDirection: "row", gap: space(0.75), width: "100%" },
+  segment: { flex: 1, height: 4, borderRadius: 999, backgroundColor: t.colors.rule, overflow: "hidden" },
+  fill: { height: 4, borderRadius: 999, backgroundColor: t.colors.lapis },
+}));
+
+function Segment({ filled }: { filled: boolean }) {
+  const s = useStyles();
+  const progress = useSharedValue(filled ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withTiming(filled ? 1 : 0, {
+      duration: 260,
+      easing: Easing.bezier(0.2, 0, 0.1, 1),
+    });
+  }, [filled, progress]);
+
+  /*
+    The fill grows rather than appearing, so stepping forward reads as progress
+    rather than as a light switching on.
+
+    Width is built inside the worklet as a percentage string. A withTiming call
+    cannot be concatenated into one - it returns an animation object, not a
+    number - so the timing drives a shared value and the style reads it.
+  */
+  const style = useAnimatedStyle(() => ({
+    width: `${progress.value * 100}%`,
+  }));
+
+  return (
+    <View style={s.segment}>
+      <Animated.View style={[s.fill, style]} />
+    </View>
+  );
+}
+
+export function WordField() {
+  const s = useStyles();
+  const theme = useTheme();
+  const words = useMemo(() => FIELD, []);
+
+  return (
+    <View style={s.field} pointerEvents="none">
+      {words.map((w, i) => (
+        <Arabic
+          key={`${w.word}-${i}`}
+          variant="inline"
+          showHarakat={false}
+          style={[
+            s.word,
+            {
+              top: w.top as unknown as number,
+              left: w.left as unknown as number,
+              fontSize: w.size,
+              lineHeight: Math.round(w.size * 1.6),
+              /* Faint enough to be texture rather than content. Any stronger
+                 and it competes with the question being asked. */
+              opacity: theme.dark ? 0.06 : 0.05,
+            },
+          ]}
+        >
+          {w.word}
+        </Arabic>
+      ))}
+    </View>
+  );
+}
+
+/* The wordmark and the step indicator, identical on every step so the frame
+   holds still while its contents change. */
+export function OnboardingChrome({ step, total }: { step: number; total: number }) {
+  const s = useStyles();
+  return (
+    <View style={s.header}>
+      <Arabic variant="title" color="lapis" showHarakat={false}>
+        دروس
+      </Arabic>
+      <View style={s.track}>
+        {Array.from({ length: total }, (_, i) => (
+          <Segment key={i} filled={i <= step} />
+        ))}
+      </View>
+    </View>
+  );
+}

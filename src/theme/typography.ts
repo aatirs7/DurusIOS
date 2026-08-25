@@ -98,8 +98,8 @@ export const textStyles = Object.fromEntries(
 export const arabicStyles = {
   card: {
     fontFamily: FONTS.arabicRegular,
-    fontSize: 40,
-    lineHeight: Math.round(40 * 1.9),
+    fontSize: 64,
+    lineHeight: Math.round(64 * 1.8),
   } satisfies TextStyle,
   title: {
     fontFamily: FONTS.arabicRegular,
@@ -114,7 +114,7 @@ export const arabicStyles = {
   tile: {
     fontFamily: FONTS.arabicRegular,
     fontSize: 28,
-    lineHeight: Math.round(28 * 1.6),
+    lineHeight: Math.round(28 * 1.8),
   } satisfies TextStyle,
 } as const;
 

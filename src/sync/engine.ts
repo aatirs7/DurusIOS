@@ -217,7 +217,17 @@ function toSetRow(r: {
   haptics and reduceMotion are properties of this handset, not of the account -
   syncing them would turn a preference into a surprise on the other device.
 */
-const LOCAL_ONLY = new Set(["profileId", "dirty", "hapticsEnabled", "reduceMotion", "fieldUpdatedAt"]);
+const LOCAL_ONLY = new Set([
+  "profileId",
+  "dirty",
+  "hapticsEnabled",
+  "reduceMotion",
+  "fieldUpdatedAt",
+  /* The server's settings table has no column for this yet. Sending it would be
+     silently dropped, which is worse than not sending it, because the field
+     would look synced. */
+  "currentBook",
+]);
 
 function stripLocal(config: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};

@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-syntax -- this IS the palette file; spec
+   section 7.1 puts every hex value here and nowhere else. */
 /*
   The only hex values in this project live in this file.
 
