@@ -48,8 +48,78 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   nothing is written until there is an account to attach it to, so quitting
   halfway starts again rather than dropping someone into a half configured app.
 */
-const STEPS = ["intro", "book", "lesson", "reminders", "name", "signin", "done"] as const;
-type Step = (typeof STEPS)[number];
+/*
+  Two kinds of learner, and they are not the same product.
+
+  Someone in a class does not choose what to study next: the syllabus does, and
+  the app's job is to stay exactly level with it - which lesson the class is on,
+  and nothing beyond it. Someone teaching themselves has the opposite problem.
+  Nobody is telling them where to be, so what they need is a place to start and
+  a pace to go at, and the app moves when they say so.
+
+  Asking one question at the top and branching is cheaper than trying to write
+  copy that is true for both. "Which lesson is your class on?" is meaningless to
+  a self-teacher, and "how fast do you want to go?" is not a self-teacher's
+  question when a teacher is already answering it.
+*/
+type LearnerPath = "class" | "self";
+
+const CLASS_STEPS = [
+  "intro",
+  "path",
+  "book",
+  "lesson",
+  "reminders",
+  "name",
+  "signin",
+  "done",
+] as const;
+
+const SELF_STEPS = [
+  "intro",
+  "path",
+  "book",
+  "start",
+  "pace",
+  "reminders",
+  "name",
+  "signin",
+  "done",
+] as const;
+
+type Step = (typeof CLASS_STEPS)[number] | (typeof SELF_STEPS)[number];
+
+/* Until the question is answered both lists agree, so the progress track does
+   not jump when it is. */
+function stepsFor(path: LearnerPath | null): readonly Step[] {
+  return path === "self" ? SELF_STEPS : CLASS_STEPS;
+}
+
+const PATHS: { value: LearnerPath; label: string; hint: string }[] = [
+  {
+    value: "class",
+    label: "I am taking a class",
+    hint: "Keep level with the lesson your teacher is on",
+  },
+  {
+    value: "self",
+    label: "I am learning on my own",
+    hint: "Start at the beginning and go at your own pace",
+  },
+];
+
+/*
+  How many new words a day, offered as three plain choices rather than a number.
+
+  A self-teacher has to answer this and has no way to judge it in the abstract,
+  so it is framed as an amount of time rather than a count - the count is what
+  it writes, but "ten words" tells you nothing about your evening.
+*/
+const PACES: { label: string; hint: string; newPerDay: number }[] = [
+  { label: "Steady", hint: "5 new words a day", newPerDay: 5 },
+  { label: "Normal", hint: "10 new words a day", newPerDay: 10 },
+  { label: "Quick", hint: "20 new words a day", newPerDay: 20 },
+];
 
 /*
   Three books eventually. Only the first has content, and the other two say so
@@ -107,6 +177,9 @@ const useStyles = makeStyles((t) => ({
   bookOn: { borderColor: t.colors.lapis, backgroundColor: t.colors.lapisWash },
   bookOff: { opacity: 0.55 },
   bookLabel: { fontSize: 20, textAlign: "center" },
+  /* A card that carries a line of explanation under its title. */
+  cardStack: { alignItems: "center", gap: space(0.5) },
+  cardHint: { textAlign: "center" },
   bookMark: {
     position: "absolute",
     right: space(2.5),
@@ -181,6 +254,46 @@ const useStyles = makeStyles((t) => ({
   dot: { width: 5, height: 5, borderRadius: 999, backgroundColor: t.colors.lapis },
 }));
 
+/*
+  A selectable card with a title and a line under it.
+
+  The same shape as the book cards, because these are the same kind of
+  question - one of a short list, chosen once - and giving each its own
+  treatment would make three consecutive screens look like three different
+  apps.
+*/
+function ChoiceCard({
+  label,
+  hint,
+  selected,
+  onPress,
+  styles,
+  tick,
+}: {
+  label: string;
+  hint: string;
+  selected: boolean;
+  onPress: () => void;
+  styles: ReturnType<typeof useStyles>;
+  tick: React.ReactNode;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.book, selected && styles.bookOn]}>
+      <View style={styles.cardStack}>
+        <Text variant="pageTitle" style={styles.bookLabel}>
+          {label}
+        </Text>
+        <Text variant="label" color="inkSoft" style={styles.cardHint}>
+          {hint}
+        </Text>
+      </View>
+      <View style={styles.bookMark} pointerEvents="none">
+        {selected ? tick : null}
+      </View>
+    </Pressable>
+  );
+}
+
 function hourLabel(h: number): string {
   const suffix = h < 12 ? "AM" : "PM";
   const twelve = h % 12 === 0 ? 12 : h % 12;
@@ -196,13 +309,31 @@ export default function Onboarding() {
   const { isSignedIn } = useAuth();
 
   const [step, setStep] = useState<Step>("intro");
+  const [path, setPath] = useState<LearnerPath | null>(null);
+  const [pace, setPace] = useState(10);
   const [name, setName] = useState("");
   const [book, setBook] = useState(1);
   const [lesson, setLesson] = useState(1);
   const [morning, setMorning] = useState(true);
   const [evening, setEvening] = useState(false);
 
-  const index = STEPS.indexOf(step);
+  const steps = stepsFor(path);
+  const index = steps.indexOf(step);
+
+  /* One tick mark, shared by every card on every step. */
+  const tick = (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Circle cx={12} cy={12} r={11} fill={theme.colors.lapis} />
+      <Path
+        d="M7 12.5l3.2 3.2L17 9"
+        stroke={theme.colors.paper}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
 
   const go = useCallback((next: Step) => {
     Keyboard.dismiss();
@@ -220,8 +351,11 @@ export default function Onboarding() {
   const canGoBack = index > 0 && step !== "done";
   const back = useCallback(() => {
     Keyboard.dismiss();
-    setStep((current) => STEPS[Math.max(0, STEPS.indexOf(current) - 1)]);
-  }, []);
+    setStep((current) => {
+      const list = stepsFor(path);
+      return list[Math.max(0, list.indexOf(current) - 1)];
+    });
+  }, [path]);
 
   /* Read from the content rather than written into the copy, so a new lesson
      never leaves a number stale on this screen. */
@@ -247,10 +381,20 @@ export default function Onboarding() {
         currentLesson: lesson,
         remindersOn: withReminders,
         secondReminderOn: evening,
+        /*
+          Both of these are what the path actually decides.
+
+          The Wednesday nudge is about a class, so a self-teacher must not get
+          it. The pace is the self-teacher's answer to a question a syllabus
+          answers for everyone else, so the class path leaves newPerDay at
+          whatever it already was.
+        */
+        classDayReminder: path === "class",
+        ...(path === "self" ? { newPerDay: pace } : null),
       });
       if (withReminders) await syncReminders(db, profileId);
     },
-    [profileId, name, book, lesson, evening],
+    [profileId, name, book, lesson, evening, path, pace],
   );
 
   /*
@@ -300,7 +444,7 @@ export default function Onboarding() {
   return (
     <Screen>
       <WordField />
-      <OnboardingChrome step={index} total={STEPS.length} onBack={canGoBack ? back : undefined} />
+      <OnboardingChrome step={index} total={steps.length} onBack={canGoBack ? back : undefined} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -354,6 +498,59 @@ export default function Onboarding() {
                 </View>
               ) : null}
 
+              {step === "path" ? (
+                <>
+                  <View style={s.heads}>
+                    <Text variant="pageTitle" style={s.h1}>
+                      How are you learning?
+                    </Text>
+                    <Text color="inkSoft" style={s.sub}>
+                      This decides what Durus asks you next.
+                    </Text>
+                  </View>
+                  <View style={{ gap: space(1.5) }}>
+                    {PATHS.map((option) => (
+                      <ChoiceCard
+                        key={option.value}
+                        label={option.label}
+                        hint={option.hint}
+                        selected={path === option.value}
+                        onPress={() => setPath(option.value)}
+                        styles={s}
+                        tick={tick}
+                      />
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
+              {step === "pace" ? (
+                <>
+                  <View style={s.heads}>
+                    <Text variant="pageTitle" style={s.h1}>
+                      How fast do you want to go?
+                    </Text>
+                    <Text color="inkSoft" style={s.sub}>
+                      How many new words arrive each day. You can change this
+                      later.
+                    </Text>
+                  </View>
+                  <View style={{ gap: space(1.5) }}>
+                    {PACES.map((option) => (
+                      <ChoiceCard
+                        key={option.label}
+                        label={option.label}
+                        hint={option.hint}
+                        selected={pace === option.newPerDay}
+                        onPress={() => setPace(option.newPerDay)}
+                        styles={s}
+                        tick={tick}
+                      />
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
               {step === "book" ? (
                 <>
                   <View style={s.heads}>
@@ -381,19 +578,7 @@ export default function Onboarding() {
                         </Text>
                         <View style={s.bookMark} pointerEvents="none">
                           {b.available ? (
-                            b.number === book ? (
-                              <Svg width={22} height={22} viewBox="0 0 24 24">
-                                <Circle cx={12} cy={12} r={11} fill={theme.colors.lapis} />
-                                <Path
-                                  d="M7 12.5l3.2 3.2L17 9"
-                                  stroke={theme.colors.paper}
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  fill="none"
-                                />
-                              </Svg>
-                            ) : null
+                            b.number === book ? tick : null
                           ) : (
                             <View style={s.soon}>
                               <Text variant="eyebrow" color="inkFaint">
@@ -408,14 +593,24 @@ export default function Onboarding() {
                 </>
               ) : null}
 
-              {step === "lesson" ? (
+              {step === "lesson" || step === "start" ? (
                 <>
+                  {/*
+                    One picker, two questions. A class student is reporting a
+                    fact about their syllabus; a self teacher is making a
+                    decision about where to begin. Same control, and the copy
+                    is the whole difference.
+                  */}
                   <View style={s.heads}>
                     <Text variant="pageTitle" style={s.h1}>
-                      Which lesson is your class on?
+                      {step === "start"
+                        ? "Where would you like to start?"
+                        : "Which lesson is your class on?"}
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      Nothing appears before you have been taught it.
+                      {step === "start"
+                        ? "Begin at the beginning unless you already know some of it."
+                        : "Nothing appears before you have been taught it."}
                     </Text>
                   </View>
 
@@ -586,7 +781,9 @@ export default function Onboarding() {
                         ? `${waiting} ${waiting === 1 ? "word" : "words"} from Lesson ${lesson} and earlier`
                         : `Lesson ${lesson} and everything before it`,
                       "Reviews start today",
-                      "Add new words after class",
+                      path === "self"
+                        ? "Move to the next lesson when you are ready"
+                        : "Add new words after class",
                     ].map((line) => (
                       <View key={line} style={s.bullet}>
                         <View style={s.dot} />
@@ -609,8 +806,24 @@ export default function Onboarding() {
         than a suggestion.
       */}
       <View style={s.actions}>
-        {step === "intro" ? <Button label="Get started" onPress={() => go("book")} /> : null}
-        {step === "book" ? <Button label="Continue" onPress={() => go("lesson")} /> : null}
+        {step === "intro" ? <Button label="Get started" onPress={() => go("path")} /> : null}
+        {step === "path" ? (
+          /* Disabled rather than defaulted. Guessing which of the two somebody
+             is would send half of them down the wrong flow silently. */
+          <Button
+            label="Continue"
+            disabled={path === null}
+            onPress={() => go("book")}
+          />
+        ) : null}
+        {step === "book" ? (
+          <Button
+            label="Continue"
+            onPress={() => go(path === "self" ? "start" : "lesson")}
+          />
+        ) : null}
+        {step === "start" ? <Button label="Continue" onPress={() => go("pace")} /> : null}
+        {step === "pace" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
         {step === "lesson" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
         {step === "reminders" ? (
           <Button label="Continue" onPress={() => void leaveReminders()} />
