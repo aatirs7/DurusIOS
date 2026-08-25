@@ -10,21 +10,24 @@
       "ios": {
         "simulator": false
       },
-      "channel": "development"
+      "channel": "development",
+      "node": "22.19.0"
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "simulator": false
       },
-      "channel": "preview"
+      "channel": "preview",
+      "node": "22.19.0"
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "ios": {
         "resourceClass": "m-medium"
-      }
+      },
+      "node": "22.19.0"
     }
   },
   "submit": {

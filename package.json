@@ -11,7 +11,7 @@
     "lint": "expo lint",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "lockcheck": "npm ci --dry-run --os=darwin --cpu=arm64",
+    "lockcheck": "npm exec --yes npm@10.9.3 -- ci --dry-run --os=darwin --cpu=arm64",
     "preflight": "npm run lockcheck && npm run typecheck && npm run lint && npm test",
     "db:generate": "drizzle-kit generate",
     "content:build": "tsx scripts/generate-content.ts",
@@ -65,5 +65,9 @@
     "react-test-renderer": "^19.2.0",
     "tsx": "^4.23.12",
     "typescript": "~5.9.2"
+  },
+  "overrides": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
   }
 }
