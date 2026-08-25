@@ -1,4 +1,4 @@
-import { useSSO } from "@clerk/clerk-expo";
+import { useAuth, useSSO } from "@clerk/clerk-expo";
 import * as AuthSession from "expo-auth-session";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -91,6 +91,7 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: () => void }) {
   const theme = useTheme();
   const router = useRouter();
   const { startSSOFlow } = useSSO();
+  const { isSignedIn } = useAuth();
 
   const [busy, setBusy] = useState<"apple" | "google" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,8 +121,24 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: () => void }) {
           onSignedIn();
           return;
         }
-        /* Cancelled, or the account needs more steps. Neither is an error worth
-           shouting about - the panel is still usable. */
+
+        /*
+          No session was CREATED, but there may already be one.
+
+          Clerk returns an empty result when the tapped account is already
+          signed in on this device, which is exactly what happens when the app
+          is reopened with a live session it has not noticed yet. Treating that
+          as "nothing happened" left the user pressing a button that told them
+          they were already signed in and then did nothing - a locked door with
+          the key in it.
+        */
+        if (isSignedIn) {
+          onSignedIn();
+          return;
+        }
+
+        /* Otherwise: cancelled, or the account needs more steps. Neither is an
+           error worth shouting about - the panel is still usable. */
       } catch (e) {
         setError(
           (e as { errors?: { longMessage?: string }[] })?.errors?.[0]?.longMessage ??
@@ -131,7 +148,7 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: () => void }) {
         setBusy(null);
       }
     },
-    [busy, startSSOFlow, onSignedIn],
+    [busy, startSSOFlow, onSignedIn, isSignedIn],
   );
 
   return (

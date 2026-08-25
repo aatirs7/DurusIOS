@@ -1,4 +1,6 @@
+import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
@@ -53,20 +55,33 @@ const useStyles = makeStyles((t) => ({
 export default function Welcome() {
   const s = useStyles();
   const router = useRouter();
+  const { isSignedIn } = useAuth();
+
+  /*
+    Never sit on the gate with a live session.
+
+    The gate on the index route reads the LOCAL account row, which is what keeps
+    a cold launch off the network. Clerk can disagree with it - a session it
+    restored from the keychain that this device has no account row for yet - and
+    when it does, the right answer is to go in, not to ask someone to sign in to
+    the account they are already signed in to.
+  */
+  useEffect(() => {
+    if (isSignedIn) router.replace("/today");
+  }, [isSignedIn, router]);
 
   return (
     <Screen>
       <View style={s.header}>
-        {/* The wordmark, unvowelled, the way the site sets it. */}
-        <Arabic variant="title" color="lapis" showHarakat={false}>
-          دروس
+        <Arabic variant="title" color="lapis">
+          دُرُوس
         </Arabic>
         <ThemeToggle />
       </View>
 
       <View style={s.hero}>
-        <Arabic variant="card" color="lapis" showHarakat={false}>
-          دروس
+        <Arabic variant="card" color="lapis">
+          دُرُوس
         </Arabic>
 
         <View style={s.titles}>

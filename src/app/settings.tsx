@@ -53,6 +53,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
   const resetSession = useSession((st) => st.reset);
+  const restartOnboarding = useSession((st) => st.restartOnboarding);
   const themeChoice = useThemeChoice((st) => st.choice);
   const setThemeChoice = useThemeChoice((st) => st.setChoice);
 
@@ -380,37 +381,6 @@ export default function SettingsScreen() {
                 }}
               />
 
-              <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    "Sign out?",
-                    "Your progress stays on this phone and syncs again when you sign back in.",
-                    [
-                      { text: "Stay", style: "cancel" },
-                      {
-                        text: "Sign out",
-                        style: "destructive",
-                        /*
-                          Leave for the sign in screen ourselves rather than
-                          waiting to be redirected. Signing out is not reactive
-                          here - the gate on the index route reads the local
-                          account row at launch - so without this the app sits
-                          on a Settings screen belonging to an account it no
-                          longer has.
-                        */
-                        onPress: () => {
-                          void signOut();
-                          router.replace("/welcome");
-                        },
-                      },
-                    ],
-                  )
-                }
-                style={{ paddingVertical: space(1.5), alignItems: "center" }}
-              >
-                <Text color="clay">Sign out</Text>
-              </Pressable>
-
               {/*
                 Deleting the account, from inside the app.
 
@@ -467,6 +437,74 @@ export default function SettingsScreen() {
             </>
           )}
         </Section>
+
+        {/*
+          Sign out lives OUT here, not inside the Account section.
+
+          Collapsing the sections tidied the screen and hid the one control
+          people come to Settings specifically to find. A drawer is fine for
+          things you configure once; it is not fine for the way out.
+        */}
+        {isSignedIn ? (
+          <Pressable
+            onPress={() =>
+              Alert.alert(
+                "Sign out?",
+                "Your progress stays on this phone and syncs again when you sign back in.",
+                [
+                  { text: "Stay", style: "cancel" },
+                  {
+                    text: "Sign out",
+                    style: "destructive",
+                    /*
+                      Leave for the sign in screen ourselves rather than waiting
+                      to be redirected. Signing out is not reactive here - the
+                      gate on the index route reads the local account row at
+                      launch - so without this the app sits on a Settings screen
+                      belonging to an account it no longer has.
+                    */
+                    onPress: () => {
+                      void signOut();
+                      router.replace("/welcome");
+                    },
+                  },
+                ],
+              )
+            }
+            style={{ paddingVertical: space(2), alignItems: "center" }}
+          >
+            <Text color="clay">Sign out</Text>
+          </Pressable>
+        ) : null}
+
+        {/*
+          Setup again, keeping the account.
+
+          Signing out goes to the sign in screen rather than back through the
+          questions, which is right for someone returning and leaves no way to
+          revisit them. This is that way: it forgets only that setup was done.
+        */}
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              "Run setup again?",
+              "Durus will ask about your book, your lesson and your reminders again. Nothing you have answered is lost.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Run setup",
+                  onPress: () => {
+                    restartOnboarding();
+                    router.replace("/onboarding");
+                  },
+                },
+              ],
+            )
+          }
+          style={{ paddingVertical: space(2), alignItems: "center" }}
+        >
+          <Text color="lapis">Run setup again</Text>
+        </Pressable>
 
         <Pressable
           onPress={() => router.push("/about")}

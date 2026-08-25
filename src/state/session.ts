@@ -33,6 +33,16 @@ type SessionState = Hydratable & {
     already been done and send a profile-less app straight to Today.
   */
   reset: () => void;
+  /*
+    Run the setup questions again, keeping the account.
+
+    Distinct from reset(), which is account deletion and drops the profile with
+    it. This only forgets that setup was done, so the next launch asks the book,
+    the lesson and the reminders again - which is the only way to reach that
+    flow a second time, since signing out sends you to the sign in screen
+    rather than back through setup.
+  */
+  restartOnboarding: () => void;
 };
 
 export const useSession = create<SessionState>()(
@@ -45,6 +55,7 @@ export const useSession = create<SessionState>()(
       onboardedAt: null,
       completeOnboarding: () => set({ onboardedAt: Date.now() }),
       reset: () => set({ onboardedAt: null, activeProfileId: null }),
+      restartOnboarding: () => set({ onboardedAt: null }),
     }),
     {
       name: KEYS.session,
