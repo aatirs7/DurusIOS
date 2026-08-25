@@ -19,7 +19,7 @@ Durus: Arabic Revision
 ## Subtitle — 30 char limit
 
 ```
-Madinah Book 1 vocabulary
+Madinah Arabic vocabulary
 ```
 
 (25 characters.)
@@ -29,7 +29,7 @@ Madinah Book 1 vocabulary
 Editable without a new build, so this is the field to change when Book 2 lands.
 
 ```
-The vocabulary you have been taught, brought back just before you forget it. Built for students working through Madinah Arabic Book 1, one lesson at a time.
+The vocabulary you have been taught, brought back just before you forget it. Built for students working through the Madinah Arabic books, one lesson at a time.
 ```
 
 (154 characters.)
@@ -37,7 +37,8 @@ The vocabulary you have been taught, brought back just before you forget it. Bui
 ## Description — 4000 char limit
 
 ```
-Durus is a revision app for the vocabulary of Madinah Arabic Book 1.
+Durus is a revision app for the vocabulary of the Madinah Arabic course.
+Book 1 is in there in full today; Book 2 and Book 3 follow.
 
 It is built around one idea: you should see a word again just before you would
 have forgotten it. Not every day, which is unsustainable once the book gets
@@ -60,8 +61,8 @@ apart. Production only begins once recognition is solid.
 
 NOTHING BEFORE YOU HAVE BEEN TAUGHT IT
 
-You tell Durus which lesson your class is on, and it never shows you a word
-from beyond it. The newest lesson stays in tight rotation for the fortnight
+You tell Durus which book and which lesson your class is on, and it never
+shows you a word from beyond it. The newest lesson stays in tight rotation for the fortnight
 after you reach it, because that is the one being tested.
 
 THREE MORE DRILLS
@@ -200,8 +201,8 @@ NOTIFICATIONS
   Declining has no effect on any other feature.
 
 CONTENT
-  The vocabulary is from Madinah Arabic Book 1, used with permission from the
-  publisher. The credit is in the app under Settings -> About Durus.
+  The vocabulary is from the Madinah Arabic course, used with permission from
+  the publisher. The credit is in the app under Settings -> About Durus.
 ```
 
 ### Creating the demo account
