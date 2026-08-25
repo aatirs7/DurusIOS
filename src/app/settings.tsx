@@ -2,12 +2,13 @@ import { File, Paths } from "expo-file-system";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Share, Switch, View } from "react-native";
+import { Alert, Pressable, ScrollView, Share, Switch } from "react-native";
 
 import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
-import { Field, Rule, Segmented, Stepper } from "@/components/Field";
+import { Field, Segmented, Stepper } from "@/components/Field";
 import { Screen } from "@/components/Screen";
+import { Section } from "@/components/Section";
 import { Text } from "@/components/Text";
 import { db } from "@/data/client";
 import { exportAll } from "@/data/export";
@@ -24,11 +25,7 @@ import { useSession } from "@/state/session";
 import { useThemeChoice, type ThemeChoice } from "@/state/theme";
 import { pendingCount, syncNow } from "@/sync/engine";
 import { space } from "@/theme/layout";
-import { makeStyles, useTheme } from "@/theme/useTheme";
-
-const useStyles = makeStyles(() => ({
-  group: { paddingTop: space(3), gap: space(0.5) },
-}));
+import { useTheme } from "@/theme/useTheme";
 
 /*
   The sync line. Deliberately plain: no relative-time library, no colour, and
@@ -50,7 +47,6 @@ function hourLabel(h: number): string {
 }
 
 export default function SettingsScreen() {
-  const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
@@ -86,7 +82,7 @@ export default function SettingsScreen() {
       >
         <Text variant="pageTitle">Settings</Text>
 
-        <View style={s.group}>
+        <Section title="Appearance">
           <Field label="Theme">
             <Segmented<ThemeChoice>
               value={themeChoice}
@@ -98,11 +94,10 @@ export default function SettingsScreen() {
               onChange={setThemeChoice}
             />
           </Field>
-        </View>
+        </Section>
 
-        <Rule />
-
-        <View style={s.group}>
+        {/* The one group most people came for, so it is the one that is open. */}
+        <Section title="Study" defaultOpen>
           {/* The app never unlocks a lesson on its own. Moving this restamps
               currentLessonSince, which starts the 14 day interval cap. */}
           <Field label="Current lesson" hint="What the class has covered">
@@ -152,14 +147,9 @@ export default function SettingsScreen() {
               trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
             />
           </Field>
-        </View>
+        </Section>
 
-        <Rule />
-
-        <View style={s.group}>
-          <Text variant="eyebrow" color="inkSoft">
-            Reminders
-          </Text>
+        <Section title="Reminders">
 
           <Field
             label="Daily reminders"
@@ -245,14 +235,9 @@ export default function SettingsScreen() {
               );
             }}
           />
-        </View>
+        </Section>
 
-        <Rule />
-
-        <View style={s.group}>
-          <Text variant="eyebrow" color="inkSoft">
-            This device
-          </Text>
+        <Section title="This device">
 
           <Field label="Haptics" hint="A tap when you choose an answer">
             <Switch
@@ -272,14 +257,9 @@ export default function SettingsScreen() {
               trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
             />
           </Field>
-        </View>
+        </Section>
 
-        <Rule />
-
-        <View style={s.group}>
-          <Text variant="eyebrow" color="inkSoft">
-            Data
-          </Text>
+        <Section title="Data">
           <Button
             label={busy ? "Preparing…" : "Export all data as JSON"}
             variant="quiet"
@@ -321,14 +301,9 @@ export default function SettingsScreen() {
           <Pressable onPress={() => router.push("/paste")} style={{ paddingVertical: space(1.5) }}>
             <Text color="lapis">Add cards from a pasted block</Text>
           </Pressable>
-        </View>
+        </Section>
 
-        <Rule />
-
-        <View style={s.group}>
-          <Text variant="eyebrow" color="inkSoft">
-            Account
-          </Text>
+        <Section title="Account">
 
           {isSignedIn ? (
             <>
@@ -386,7 +361,7 @@ export default function SettingsScreen() {
                     ],
                   )
                 }
-                style={{ paddingVertical: space(1.5) }}
+                style={{ paddingVertical: space(1.5), alignItems: "center" }}
               >
                 <Text color="clay">Sign out</Text>
               </Pressable>
@@ -399,11 +374,12 @@ export default function SettingsScreen() {
               <Button label="Sign in" onPress={() => router.push("/sign-in")} />
             </>
           )}
-        </View>
+        </Section>
 
-        <Rule />
-
-        <Pressable onPress={() => router.push("/about")} style={{ paddingVertical: space(2) }}>
+        <Pressable
+          onPress={() => router.push("/about")}
+          style={{ paddingVertical: space(2), alignItems: "center" }}
+        >
           <Text>About Durus</Text>
         </Pressable>
 

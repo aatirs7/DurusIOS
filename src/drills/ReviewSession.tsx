@@ -1,5 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, TextInput, View, type ViewStyle } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
@@ -107,6 +113,55 @@ const useStyles = makeStyles((t) => ({
   },
 }));
 
+/*
+  Fades a piece of the answer in without moving anything.
+
+  The three things that appear on an answer - the transliteration, the gender
+  and plural chips, and the verdict - used to pop in, and the chips pushed the
+  four options down the screen as they did. A moving target under a thumb
+  already on its way is worse than a slow one.
+
+  So the space is always reserved and only the opacity changes. It fades IN over
+  a couple of hundred milliseconds and out instantly: the outward fade would
+  otherwise still be running over the next card, which is the one thing the
+  hand-off must never show.
+*/
+const REVEAL_MS = 240;
+
+function Reveal({
+  show,
+  style,
+  children,
+}: {
+  show: boolean;
+  style?: ViewStyle | ViewStyle[];
+  children: React.ReactNode;
+}) {
+  /*
+    Always starts at zero, even when it mounts already shown.
+
+    The verdict overlay is mounted only once there is an answer, so seeding it
+    from `show` would have it appear at full opacity and skip the fade entirely
+    - the exact abruptness this exists to remove. The effect runs after the
+    first paint and takes it up from there.
+  */
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = show
+      ? withTiming(1, { duration: REVEAL_MS, easing: Easing.bezier(0.2, 0, 0.1, 1) })
+      : 0;
+  }, [show, opacity]);
+
+  const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.View style={[style, animated]} pointerEvents="none">
+      {children}
+    </Animated.View>
+  );
+}
+
 type Result = {
   correct: boolean;
   close: boolean;
@@ -210,21 +265,26 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
               </Text>
             )}
 
-            <Text
-              color="inkFaint"
-              style={[s.translit, { opacity: done && question.transliteration ? 1 : 0 }]}
-            >
-              {question.transliteration ?? " "}
-            </Text>
+            <Reveal show={done && !!question.transliteration}>
+              <Text color="inkFaint" style={s.translit}>
+                {question.transliteration ?? " "}
+              </Text>
+            </Reveal>
           </View>
 
           {/*
             Gender and plural belong under the word they describe, not down
-            beside the verdict where wide pills read as buttons. Shown only on a
-            correct answer: on a wrong one, the word itself is what to read.
+            beside the verdict where wide pills read as buttons. Revealed only
+            on a correct answer: on a wrong one, the word itself is what to
+            read.
+
+            The row is RENDERED as soon as the card is, and only faded in later.
+            Whether a word has a gender is known before it is answered, so the
+            height can be reserved from the start - which is what stops the four
+            options sliding down at the moment of the answer.
           */}
-          {result?.correct && (question.gender || question.plural) ? (
-            <View style={s.notes}>
+          {question.gender || question.plural ? (
+            <Reveal show={!!result?.correct} style={s.notes}>
               {question.gender ? (
                 <View style={s.note}>
                   <Text variant="label" color="inkSoft">
@@ -239,7 +299,7 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
                   </Arabic>
                 </View>
               ) : null}
-            </View>
+            </Reveal>
           ) : null}
 
           {question.mode === "choice" ? (
@@ -359,7 +419,7 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
             onPress={advance}
           />
 
-          <View style={s.verdict} pointerEvents="none">
+          <Reveal show style={s.verdict}>
             {/*
               On a wrong answer, the side that was being asked for. The other
               side is the prompt, still on screen, so repeating it would say
@@ -384,7 +444,7 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
             <Text variant="label" color="inkFaint">
               Tap anywhere to continue
             </Text>
-          </View>
+          </Reveal>
         </>
       ) : null}
     </View>

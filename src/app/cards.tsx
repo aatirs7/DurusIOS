@@ -1,12 +1,14 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+
+import Svg, { Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
@@ -20,7 +22,7 @@ import { getDeck, setHeart } from "@/data/drills";
 import { getSettingsFor } from "@/data/settings";
 import { useSession } from "@/state/session";
 import { RADIUS, space } from "@/theme/layout";
-import { makeStyles } from "@/theme/useTheme";
+import { makeStyles, useTheme } from "@/theme/useTheme";
 
 /*
   The card turn.
@@ -64,9 +66,74 @@ const useStyles = makeStyles((t) => ({
     /* Keeps the far face from bleeding a hairline along the edge mid turn. */
     backfaceVisibility: "hidden",
   },
+  /*
+    The heart sits ON the card, in the corner, on BOTH faces.
+
+    It used to be a line of text under the nav, which read as a caption about
+    the card rather than as a mark on it - and it stayed put while the card
+    turned, so nothing tied the two together. One per face, inside the
+    transform, means it turns with the card and is only ever tappable on the
+    side you can see.
+  */
+  heart: {
+    position: "absolute",
+    top: space(1.5),
+    right: space(1.5),
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space(2) },
   counter: { minWidth: 80, textAlign: "center" },
 }));
+
+/* Drawn rather than a glyph so the outline and the filled state are the same
+   shape, and so it takes a theme colour in both. */
+function Heart({ filled, color }: { filled: boolean; color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path
+        d="M12 20.3l-1.5-1.35C5.4 14.36 2.5 11.72 2.5 8.5 2.5 6.02 4.42 4 6.9 4c1.4 0 2.75.66 3.6 1.7L12 7.1l1.5-1.4A4.74 4.74 0 0 1 17.1 4C19.58 4 21.5 6.02 21.5 8.5c0 3.22-2.9 5.86-8 10.45z"
+        fill={filled ? color : "none"}
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/*
+  The corner control, one per face.
+
+  Hoisted rather than declared inside the screen: a component defined during
+  render is a new type on every pass, so React tears the subtree down and builds
+  it again each time - which for something sitting inside a running transform
+  is a flicker waiting to happen.
+*/
+function HeartButton({
+  hearted,
+  onPress,
+  style,
+}: {
+  hearted: boolean;
+  onPress: () => void;
+  style: StyleProp<ViewStyle>;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={hearted ? "Unmark this word" : "Mark this word for more work"}
+      hitSlop={8}
+      style={style}
+      onPress={onPress}
+    >
+      <Heart filled={hearted} color={hearted ? theme.colors.clay : theme.colors.inkFaint} />
+    </Pressable>
+  );
+}
 
 export default function Flashcards() {
   const s = useStyles();
@@ -119,6 +186,12 @@ export default function Flashcards() {
   const card = start.deck[index];
   const hearted = hearts[card.cardId] ?? card.hearted;
 
+  const toggleHeart = () => {
+    const next = !hearted;
+    setHearts((h) => ({ ...h, [card.cardId]: next }));
+    if (boot.ok) setHeart(db, profileId, boot.deviceId, card.cardId, next);
+  };
+
   const flip = () => {
     const next = flipped ? 0 : 1;
     setFlipped(!flipped);
@@ -157,6 +230,7 @@ export default function Flashcards() {
             <Arabic variant="card" showHarakat={start.showHarakat}>
               {card.arabic}
             </Arabic>
+            <HeartButton hearted={hearted} onPress={toggleHeart} style={s.heart} />
           </Animated.View>
 
           <Animated.View
@@ -176,6 +250,7 @@ export default function Flashcards() {
                 {card.plural}
               </Arabic>
             ) : null}
+            <HeartButton hearted={hearted} onPress={toggleHeart} style={s.heart} />
           </Animated.View>
         </View>
       </Pressable>
@@ -188,18 +263,7 @@ export default function Flashcards() {
         <Button label="Next" variant="quiet" onPress={() => move(1)} />
       </View>
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: space(1) }}>
-        <Pressable
-          onPress={() => {
-            const next = !hearted;
-            setHearts((h) => ({ ...h, [card.cardId]: next }));
-            if (boot.ok) setHeart(db, profileId, boot.deviceId, card.cardId, next);
-          }}
-        >
-          <Text color={hearted ? "clay" : "inkFaint"}>
-            {hearted ? "Marked for more work" : "Mark for more work"}
-          </Text>
-        </Pressable>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingTop: space(1) }}>
         <ExitDrill />
       </View>
       <Help topic="cards" open={help.open} onClose={help.close} />

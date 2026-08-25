@@ -12,8 +12,17 @@ import { FONTS_ARE_PLACEHOLDERS } from "@/theme/typography";
 import { makeStyles } from "@/theme/useTheme";
 
 const useStyles = makeStyles((t) => ({
-  group: { paddingTop: space(3), gap: space(1) },
+  /*
+    Centred, like every other reading screen in the app. About is a page of
+    credits and version numbers rather than running prose, so the ragged left
+    edge a paragraph needs buys nothing here and left alignment just made it
+    the one screen that did not match.
+  */
+  group: { paddingTop: space(3), gap: space(1), alignItems: "center" },
+  centred: { textAlign: "center" },
   credit: {
+    width: "100%",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: t.colors.rule,
     backgroundColor: t.colors.surface,
@@ -73,14 +82,14 @@ export default function About() {
         contentContainerStyle={{ paddingBottom: space(4) }}
         showsVerticalScrollIndicator={false}
       >
-        <Text variant="pageTitle">About Durus</Text>
+        <Text variant="pageTitle" style={s.centred}>About Durus</Text>
 
         <View style={s.group}>
-          <Text color="inkSoft">
+          <Text color="inkSoft" style={s.centred}>
             Durus keeps the vocabulary from Madinah Arabic Book 1 in working
             memory, alongside a class that meets weekly.
           </Text>
-          <Text color="inkSoft">
+          <Text color="inkSoft" style={s.centred}>
             It grades you from your answer and how long it took, so there is
             nothing to rate and no score to keep.
           </Text>
@@ -100,7 +109,7 @@ export default function About() {
             <Text variant="label" color="inkSoft">
               {CREDIT.publisher}
             </Text>
-            <Text variant="label" color="inkFaint">
+            <Text variant="label" color="inkFaint" style={s.centred}>
               The vocabulary and phrases in this app are drawn from that course
               and are used with the publisher&apos;s permission. Durus does not
               claim authorship of the material, and nothing here implies
@@ -118,11 +127,11 @@ export default function About() {
             <Text variant="label" color="inkSoft">
               Indian Type Foundry
             </Text>
-            <Text variant="label" color="inkFaint">
+            <Text variant="label" color="inkFaint" style={s.centred}>
               Satoshi is a trademark of the Indian Type Foundry.
               Copyright 2017-2021 Indian Type Foundry. All rights reserved.
             </Text>
-            <Text variant="label" color="inkFaint">
+            <Text variant="label" color="inkFaint" style={s.centred}>
               Arabic is set in Amiri and numerals in IBM Plex Mono, both under
               the SIL Open Font License.
             </Text>
