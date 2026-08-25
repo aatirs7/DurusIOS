@@ -141,9 +141,20 @@ export default function RootLayout() {
   const [introDone, setIntroDone] = useState(false);
   const endIntro = useCallback(() => setIntroDone(true), []);
 
+  /*
+    Only the failure screen hides the native splash from here.
+
+    On the normal path AnimatedSplash hides it, from its own onLayout, once it
+    has actually been laid out. Hiding on `ready` instead meant the native
+    splash could go one frame before the drawn one had painted, and whatever
+    the window was showing underneath came through in the gap - which on a
+    phone in system dark mode, running the app in light, was a black flash.
+    Invisible in dark mode, because there the gap is the same colour as both
+    sides of it.
+  */
   useEffect(() => {
-    if (ready || failure) SplashScreen.hideAsync().catch(() => {});
-  }, [ready, failure]);
+    if (failure) SplashScreen.hideAsync().catch(() => {});
+  }, [failure]);
 
   /*
     A migration or seed failure must not hide the splash into a broken app. It

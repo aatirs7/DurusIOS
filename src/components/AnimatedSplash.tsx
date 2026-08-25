@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Image, StyleSheet } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import Animated, {
   Easing,
   runOnJS,
@@ -56,8 +57,25 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
 
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
+  /*
+    The hand-off. The native splash is dismissed only once THIS view has been
+    laid out, so the drawn one is already on screen underneath it and there is
+    no frame in between showing the bare window.
+
+    Guarded with a ref rather than state: onLayout fires again on every
+    rotation and on the keyboard appearing, and hideAsync on an already hidden
+    splash is a rejected promise rather than a no-op.
+  */
+  const handedOff = useRef(false);
+  const onLayout = useCallback(() => {
+    if (handedOff.current) return;
+    handedOff.current = true;
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
   return (
     <Animated.View
+      onLayout={onLayout}
       pointerEvents="none"
       style={[
         StyleSheet.absoluteFill,

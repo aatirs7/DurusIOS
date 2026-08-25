@@ -274,6 +274,29 @@ export default function Onboarding() {
     go("done");
   }, [notify, save, completeOnboarding, go]);
 
+  /*
+    Leaving the name step. Two ways out, and BOTH have to end up saving.
+
+    Being already signed in on a first launch is not the edge case it looks
+    like: expo-secure-store keeps Clerk's token in the iOS keychain, and the
+    keychain survives deleting the app. So a reinstall comes back already
+    authenticated, the sign in step has nothing to ask, and the flow skips it.
+
+    That skip used to go straight to "done" without calling finish(), which
+    meant onboarding never recorded itself and never wrote the book, the lesson
+    or the reminders. The symptom was not a missing save - it was the app
+    asking every single launch to be set up again, because onboardedAt was
+    still null, and never showing a sign in screen, because there was nothing
+    to sign in to.
+  */
+  const leaveName = useCallback(() => {
+    if (isSignedIn) {
+      void finish();
+      return;
+    }
+    go("signin");
+  }, [isSignedIn, finish, go]);
+
   return (
     <Screen>
       <WordField />
@@ -510,7 +533,7 @@ export default function Onboarding() {
                     autoCorrect={false}
                     returnKeyType="done"
                     centered
-                    onSubmitEditing={() => go(isSignedIn ? "done" : "signin")}
+                    onSubmitEditing={leaveName}
                   />
                 </>
               ) : null}
@@ -593,7 +616,7 @@ export default function Onboarding() {
           <Button label="Continue" onPress={() => void leaveReminders()} />
         ) : null}
         {step === "name" ? (
-          <Button label="Continue" onPress={() => go(isSignedIn ? "done" : "signin")} />
+          <Button label="Continue" onPress={leaveName} />
         ) : null}
         {step === "done" ? (
           <Button label="Start reviewing" onPress={() => router.replace("/today")} />
