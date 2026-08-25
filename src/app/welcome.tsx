@@ -4,11 +4,13 @@ import { useEffect } from "react";
 import { View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
+import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { SignInPanel } from "@/components/SignIn";
 import { Text } from "@/components/Text";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TOTAL_LESSONS } from "@/engine/constants";
+import { useSession } from "@/state/session";
 import { TICK, space } from "@/theme/layout";
 import { makeStyles } from "@/theme/useTheme";
 
@@ -56,6 +58,7 @@ export default function Welcome() {
   const s = useStyles();
   const router = useRouter();
   const { isSignedIn } = useAuth();
+  const restartOnboarding = useSession((st) => st.restartOnboarding);
 
   /*
     Never sit on the gate with a live session.
@@ -107,6 +110,24 @@ export default function Welcome() {
 
       <View style={s.actions}>
         <SignInPanel onSignedIn={() => router.replace("/today")} />
+
+        {/*
+          A way in for somebody who has never set Durus up on this phone.
+
+          This screen is reached whenever there is no account on the device, and
+          that is not only the returning user it addresses - a friend borrowing
+          the phone, or anyone who signed out before finishing. Without this
+          there is no route to the setup questions at all: every button here
+          assumes an account already exists.
+        */}
+        <Button
+          label="New here? Set up Durus"
+          variant="text"
+          onPress={() => {
+            restartOnboarding();
+            router.replace("/onboarding");
+          }}
+        />
       </View>
     </Screen>
   );

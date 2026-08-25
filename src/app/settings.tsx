@@ -457,15 +457,25 @@ export default function SettingsScreen() {
                     text: "Sign out",
                     style: "destructive",
                     /*
-                      Leave for the sign in screen ourselves rather than waiting
-                      to be redirected. Signing out is not reactive here - the
-                      gate on the index route reads the local account row at
-                      launch - so without this the app sits on a Settings screen
-                      belonging to an account it no longer has.
+                      AWAIT the sign out before navigating, and do not fire and
+                      forget it.
+
+                      signOut() is asynchronous. Navigating while it was still
+                      in flight landed on a welcome screen that asks Clerk
+                      whether there is a session, got "yes" because the sign out
+                      had not finished, and bounced straight back into the app -
+                      so the button appeared to do nothing until the app was
+                      force quit and the gate was re-read from disk.
+
+                      The navigation is explicit rather than reactive because
+                      the gate on the index route reads the local account row at
+                      launch, so nothing here re-routes on its own.
                     */
                     onPress: () => {
-                      void signOut();
-                      router.replace("/welcome");
+                      void (async () => {
+                        await signOut();
+                        router.replace("/welcome");
+                      })();
                     },
                   },
                 ],

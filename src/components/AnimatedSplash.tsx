@@ -1,6 +1,6 @@
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useRef } from "react";
-import { Appearance, Image, StyleSheet } from "react-native";
+import { Appearance, Image, StyleSheet, type ImageSourcePropType } from "react-native";
 import Animated, {
   Easing,
   runOnJS,
@@ -15,8 +15,10 @@ import {
   SPLASH_HOLD_MS,
   SPLASH_IMAGE_HEIGHT,
   SPLASH_IMAGE_WIDTH,
+  SPLASH_MORPH_MS,
 } from "@/theme/layout";
-import { THEMES } from "@/theme/tokens";
+import { THEMES, type Theme } from "@/theme/tokens";
+import { useTheme } from "@/theme/useTheme";
 
 /*
   A second splash, drawn by us, that fades out.
@@ -26,24 +28,32 @@ import { THEMES } from "@/theme/tokens";
   rather than a hand-off. The only workaround is to draw the same thing again in
   JavaScript the moment the native one goes, hold it briefly, and fade it.
 
-  It has to match the native splash exactly or the swap is visible: same mark,
-  same width (SPLASH_IMAGE_WIDTH, which app.json's imageWidth also uses), and
-  the same ground.
+  THE CONSTRAINT THAT SHAPES ALL OF THIS
 
-  "The same ground" is the subtle one, and it is NOT the app's theme.
+  app.json sets userInterfaceStyle "automatic", so iOS chooses the launch image
+  from the SYSTEM appearance, before a line of JavaScript has run and long
+  before anything can know which theme the user toggled. That asset is static
+  and there is no API that makes it follow an in-app setting. Forcing
+  UIUserInterfaceStyle in Info.plist would pin it, but it would also pin every
+  keyboard, alert and action sheet in the app to one appearance, and it would
+  simply move the mismatch to whoever chose the other theme.
 
-  app.json sets userInterfaceStyle "automatic", so iOS draws the launch screen
-  from the SYSTEM appearance - before a line of JavaScript has run, and long
-  before anything knows which theme the user toggled. A phone in system dark
-  running the app in light therefore gets the DARK launch image, and drawing
-  this one in the app's theme put a light screen immediately after it. That
-  mismatch is what read as a flash of dark blue, and it is a mismatch of
-  COLOUR, so no amount of adjusting when the hand-off happens can fix it.
+  So a phone in system dark running Durus in light gets a DARK launch image, and
+  there is no version of this where that does not happen. What there is a
+  version of is what happens NEXT:
 
-  So this draws the scheme the native splash actually used, and the fade is
-  what carries the eye from there to the app's own theme - a crossfade rather
-  than a cut. When the two agree, which is most of the time, none of this is
-  visible at all.
+    drawn in the app's theme   -> a hard cut from the launch image to it
+    drawn in the launch theme  -> seamless, but the device appears to override
+                                  a setting the user chose
+
+  Neither is right, so this does both in order. It opens on the launch scheme -
+  pixel-identical to what iOS just had on screen, so the hand-off is invisible -
+  and then crossfades to the app's own theme over SPLASH_MORPH_MS before the
+  hold begins. The colour change becomes a deliberate transition rather than a
+  flash, and the theme the user chose is the one left standing.
+
+  When the two schemes agree, which is most of the time, the morph is a no-op
+  between two identical layers and none of this is visible at all.
 */
 
 /*
@@ -57,11 +67,59 @@ import { THEMES } from "@/theme/tokens";
 */
 const LAUNCH_THEME = THEMES[Appearance.getColorScheme() === "dark" ? "dark" : "light"];
 
+/* Required at module scope: a require() inside the component would be resolved
+   on every render, and Metro wants these static anyway. */
+const LIGHT_MARK = require("@/assets/brand/splash.png") as ImageSourcePropType;
+const DARK_MARK = require("@/assets/brand/splash-dark.png") as ImageSourcePropType;
+
+const markFor = (theme: Theme) => (theme.dark ? DARK_MARK : LIGHT_MARK);
+
+/* One full-screen splash in a given scheme. Two of these are stacked. */
+function Layer({ theme, style }: { theme: Theme; style?: object }) {
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          backgroundColor: theme.colors.paper,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        style,
+      ]}
+    >
+      <Image
+        source={markFor(theme)}
+        style={{ width: SPLASH_IMAGE_WIDTH, height: SPLASH_IMAGE_HEIGHT }}
+        resizeMode="contain"
+        fadeDuration={0}
+      />
+    </Animated.View>
+  );
+}
+
 export function AnimatedSplash({ onDone }: { onDone: () => void }) {
-  const opacity = useSharedValue(1);
+  const theme = useTheme();
+
+  /* The launch layer on top, fading away to reveal the app-themed one under
+     it. Starts fully opaque so the first frame matches the native splash. */
+  const launch = useSharedValue(1);
+  /* The pair as a whole, fading away to reveal the app. */
+  const whole = useSharedValue(1);
+
+  const sameScheme = theme.key === LAUNCH_THEME.key;
 
   useEffect(() => {
-    opacity.value = withDelay(
+    /* Nothing to morph between when the schemes already agree. */
+    launch.value = sameScheme
+      ? 0
+      : withTiming(0, {
+          duration: SPLASH_MORPH_MS,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+        });
+
+    whole.value = withDelay(
       SPLASH_HOLD_MS,
       withTiming(
         0,
@@ -77,9 +135,10 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
         },
       ),
     );
-  }, [opacity, onDone]);
+  }, [launch, whole, onDone, sameScheme]);
 
-  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const wholeStyle = useAnimatedStyle(() => ({ opacity: whole.value }));
+  const launchStyle = useAnimatedStyle(() => ({ opacity: launch.value }));
 
   /*
     The hand-off. The native splash is dismissed only once THIS view has been
@@ -101,26 +160,12 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
     <Animated.View
       onLayout={onLayout}
       pointerEvents="none"
-      style={[
-        StyleSheet.absoluteFill,
-        {
-          backgroundColor: LAUNCH_THEME.colors.paper,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        style,
-      ]}
+      style={[StyleSheet.absoluteFill, wholeStyle]}
     >
-      <Image
-        source={
-          LAUNCH_THEME.dark
-            ? require("@/assets/brand/splash-dark.png")
-            : require("@/assets/brand/splash.png")
-        }
-        style={{ width: SPLASH_IMAGE_WIDTH, height: SPLASH_IMAGE_HEIGHT }}
-        resizeMode="contain"
-        fadeDuration={0}
-      />
+      {/* Underneath: the theme the user chose, which is what is left standing. */}
+      <Layer theme={theme} />
+      {/* On top: what iOS just had on screen, fading off it. */}
+      {sameScheme ? null : <Layer theme={LAUNCH_THEME} style={launchStyle} />}
     </Animated.View>
   );
 }

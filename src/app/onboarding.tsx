@@ -19,11 +19,9 @@ import { OnboardingChrome, WordField } from "@/components/OnboardingChrome";
 import { Screen } from "@/components/Screen";
 import { SignInPanel } from "@/components/SignIn";
 import { Text } from "@/components/Text";
-import { TextField } from "@/components/TextField";
 import { db } from "@/data/client";
 import { countNewAvailable } from "@/data/queue";
 import { syncReminders } from "@/data/reminders";
-import { setProfileName } from "@/data/session";
 import { updateSettings } from "@/data/settings";
 import { TOTAL_LESSONS } from "@/engine/constants";
 import { requestPermission } from "@/lib/notifications";
@@ -40,8 +38,12 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   icon has been told nothing yet, and "what should we call you?" as a first
   screen reads as a form rather than as an introduction. Then the two questions
   that decide what the app will actually show - the book and the lesson - then
-  the schedule, then the name, which is the least consequential of the four
-  answers and the one most likely to be given carelessly if it is asked first.
+  the schedule.
+
+  There is no "what should we call you?". It was asked, saved, overwritten by
+  the Clerk name seconds later at the sign in step, and read by nothing: the
+  screen promised it was "only used to greet you" and nothing greets. A
+  question that buys nothing is worse than one fewer screen.
 
   Sign in is last and is the only step with no way past it. Everything before it
   is held in component state and thrown away if the app is closed early:
@@ -70,7 +72,6 @@ const CLASS_STEPS = [
   "book",
   "lesson",
   "reminders",
-  "name",
   "signin",
   "done",
 ] as const;
@@ -82,7 +83,6 @@ const SELF_STEPS = [
   "start",
   "pace",
   "reminders",
-  "name",
   "signin",
   "done",
 ] as const;
@@ -311,7 +311,6 @@ export default function Onboarding() {
   const [step, setStep] = useState<Step>("intro");
   const [path, setPath] = useState<LearnerPath | null>(null);
   const [pace, setPace] = useState(10);
-  const [name, setName] = useState("");
   const [book, setBook] = useState(1);
   const [lesson, setLesson] = useState(1);
   const [morning, setMorning] = useState(true);
@@ -375,7 +374,6 @@ export default function Onboarding() {
   const save = useCallback(
     async (withReminders: boolean) => {
       if (profileId === null) return;
-      setProfileName(db, profileId, name);
       updateSettings(db, profileId, {
         currentBook: book,
         currentLesson: lesson,
@@ -394,7 +392,7 @@ export default function Onboarding() {
       });
       if (withReminders) await syncReminders(db, profileId);
     },
-    [profileId, name, book, lesson, evening, path, pace],
+    [profileId, book, lesson, evening, path, pace],
   );
 
   /*
@@ -407,11 +405,6 @@ export default function Onboarding() {
     what it was for. The answer is carried to the save rather than re-asked.
   */
   const [notify, setNotify] = useState(false);
-  const leaveReminders = useCallback(async () => {
-    setNotify(morning || evening ? await requestPermission() : false);
-    go("name");
-  }, [morning, evening, go]);
-
   const finish = useCallback(async () => {
     await save(notify);
     completeOnboarding();
@@ -433,13 +426,20 @@ export default function Onboarding() {
     still null, and never showing a sign in screen, because there was nothing
     to sign in to.
   */
-  const leaveName = useCallback(() => {
+  const leaveSetup = useCallback(() => {
     if (isSignedIn) {
       void finish();
       return;
     }
     go("signin");
   }, [isSignedIn, finish, go]);
+
+  /* Declared after leaveSetup because it calls it: the permission prompt is the
+     last thing this step does, and where it goes next is that decision. */
+  const leaveReminders = useCallback(async () => {
+    setNotify(morning || evening ? await requestPermission() : false);
+    leaveSetup();
+  }, [morning, evening, leaveSetup]);
 
   return (
     <Screen>
@@ -710,34 +710,11 @@ export default function Onboarding() {
                 </>
               ) : null}
 
-              {step === "name" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      What should we call you?
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      Only used to greet you.
-                    </Text>
-                  </View>
-                  <TextField
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Your name"
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    returnKeyType="done"
-                    centered
-                    onSubmitEditing={leaveName}
-                  />
-                </>
-              ) : null}
-
               {step === "signin" ? (
                 <>
                   <View style={s.heads}>
                     <Text variant="pageTitle" style={s.h1}>
-                      {name.trim() === "" ? "One last thing" : `Nearly there, ${name.trim()}`}
+                      One last thing
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
                       An account is what keeps your progress if you lose this
@@ -827,9 +804,6 @@ export default function Onboarding() {
         {step === "lesson" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
         {step === "reminders" ? (
           <Button label="Continue" onPress={() => void leaveReminders()} />
-        ) : null}
-        {step === "name" ? (
-          <Button label="Continue" onPress={leaveName} />
         ) : null}
         {step === "done" ? (
           <Button label="Start reviewing" onPress={() => router.replace("/today")} />
