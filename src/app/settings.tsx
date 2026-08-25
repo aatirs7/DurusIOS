@@ -1,4 +1,5 @@
 import { File, Paths } from "expo-file-system";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Share, Switch, View } from "react-native";
@@ -20,12 +21,25 @@ import {
 } from "@/lib/notifications";
 import { useSession } from "@/state/session";
 import { useThemeChoice, type ThemeChoice } from "@/state/theme";
+import { pendingCount, syncNow } from "@/sync/engine";
 import { space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles(() => ({
   group: { paddingTop: space(3), gap: space(0.5) },
 }));
+
+/*
+  The sync line. Deliberately plain: no relative-time library, no colour, and
+  no count when there is nothing to say.
+*/
+function syncLine(profileId: number, _tick: number): string {
+  const pending = pendingCount(profileId);
+  if (pending === 0) return "Everything here has been sent.";
+  return pending === 1
+    ? "1 answer has not been sent yet."
+    : `${pending} answers have not been sent yet.`;
+}
 
 /* 12 hour labels, because a reminder time is read, not calculated. */
 function hourLabel(h: number): string {
@@ -46,6 +60,10 @@ export default function SettingsScreen() {
     profileId === null ? null : getSettingsFor(db, profileId),
   );
   const [busy, setBusy] = useState(false);
+  const { isSignedIn, getToken, signOut } = useAuth();
+  const { user } = useUser();
+  const [syncing, setSyncing] = useState(false);
+  const [syncTick, setSyncTick] = useState(0);
 
   if (profileId === null || !config) return null;
 
@@ -299,6 +317,69 @@ export default function SettingsScreen() {
           <Pressable onPress={() => router.push("/paste")} style={{ paddingVertical: space(1.5) }}>
             <Text color="lapis">Add cards from a pasted block</Text>
           </Pressable>
+        </View>
+
+        <Rule />
+
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Account
+          </Text>
+
+          {isSignedIn ? (
+            <>
+              <Text color="inkSoft">
+                {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
+              </Text>
+
+              {/*
+                The ONLY sync surface in the app. One static line, body text,
+                no colour, no icon, no badge - it states a fact and offers an
+                action, in the one place someone came looking for both.
+              */}
+              <Text variant="label" color="inkFaint">
+                {syncLine(profileId, syncTick)}
+              </Text>
+
+              <Button
+                label={syncing ? "Syncing…" : "Sync now"}
+                variant="quiet"
+                disabled={syncing}
+                onPress={async () => {
+                  setSyncing(true);
+                  try {
+                    await syncNow(getToken);
+                  } finally {
+                    setSyncing(false);
+                    setSyncTick((n) => n + 1);
+                  }
+                }}
+              />
+
+              <Pressable
+                onPress={() =>
+                  Alert.alert(
+                    "Sign out?",
+                    "Your progress stays on this phone and syncs again when you sign back in.",
+                    [
+                      { text: "Stay", style: "cancel" },
+                      { text: "Sign out", style: "destructive", onPress: () => void signOut() },
+                    ],
+                  )
+                }
+                style={{ paddingVertical: space(1.5) }}
+              >
+                <Text color="clay">Sign out</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text variant="label" color="inkFaint">
+                Without an account your progress lives only on this phone.
+              </Text>
+              <Button label="Sign in" onPress={() => router.push("/sign-in")} />
+            </>
+          )}
         </View>
 
         <Rule />

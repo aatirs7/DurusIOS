@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/clerk-expo";
 import { Amiri_400Regular, Amiri_700Bold } from "@expo-google-fonts/amiri";
 import {
   IBMPlexMono_400Regular,
@@ -14,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Button } from "@/components/Button";
+import { ClerkGate } from "@/components/ClerkGate";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
@@ -21,6 +23,7 @@ import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
 import { syncReminders } from "@/data/reminders";
 import { useSession } from "@/state/session";
+import { tokenCache } from "@/lib/tokenCache";
 import { space } from "@/theme/layout";
 import { useTheme } from "@/theme/useTheme";
 
@@ -143,23 +146,35 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar style={theme.dark ? "light" : "dark"} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: theme.colors.paper },
-          }}
-        >
-          {/* Spec section 7.4: motion is limited to four animations, so
-              entering a drill does not slide. */}
-          <Stack.Screen name="review" options={{ animation: "none" }} />
-          <Stack.Screen name="speed" options={{ animation: "none" }} />
-          <Stack.Screen name="cases" options={{ animation: "none" }} />
-          <Stack.Screen name="cards" options={{ animation: "none" }} />
-        </Stack>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    /*
+      ClerkProvider wraps the tree but gates nothing. The splash was already
+      lifted by the time this renders, because the boot gate above waits on
+      migrations, the seed and the local account row - never on Clerk, whose
+      isLoaded can require a network round trip.
+    */
+    <ClerkProvider
+      publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+      tokenCache={tokenCache}
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ClerkGate />
+          <StatusBar style={theme.dark ? "light" : "dark"} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: theme.colors.paper },
+            }}
+          >
+            {/* Spec section 7.4: motion is limited to four animations, so
+                entering a drill does not slide. */}
+            <Stack.Screen name="review" options={{ animation: "none" }} />
+            <Stack.Screen name="speed" options={{ animation: "none" }} />
+            <Stack.Screen name="cases" options={{ animation: "none" }} />
+            <Stack.Screen name="cards" options={{ animation: "none" }} />
+          </Stack>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ClerkProvider>
   );
 }
