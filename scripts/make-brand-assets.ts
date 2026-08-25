@@ -51,7 +51,7 @@ const LAPIS_DARK = "#7FA0DC";
   Every offset below is a fraction of the font size, so the whole construction
   scales. They were measured, not guessed: the word was rendered once with each
   letter in its own colour, the letters located by their pixels, and the marks
-  placed a hair above the tops of the dal and the waw. scripts/measure-mark.mjs
+  placed a hair above the tops of the dal and the ra. scripts/measure-mark.mjs
   is not kept - the numbers are the output, and this comment is the record of
   where they came from.
 
@@ -59,7 +59,8 @@ const LAPIS_DARK = "#7FA0DC";
   x=600:
 
     dal   ink x 825..915  top 443      damma placed to sit just above it
-    waw   ink x 537..662  top 473
+    ra    ink x 657..782  top 475
+    waw   ink x 537..662  top 473      (no mark: it is the long vowel)
     damma ink is 0.24 wide and 0.31 tall, and floats 0.84 above its own
           baseline, which is why the mark's baseline goes BELOW the word's
 
@@ -70,9 +71,17 @@ const LAPIS_DARK = "#7FA0DC";
 const WORD = "دروس";
 const DAMMA = "&#x064F;";
 
-/* Mark offsets from the word's centre and baseline, in multiples of font size. */
-const DAL_DAMMA = { dx: 0.6533, dy: 0.4 };
-const WAW_DAMMA = { dx: -0.25, dy: 0.5 };
+/*
+  Mark offsets from the word's centre and baseline, in multiples of font size.
+
+  The dammas belong on the DAL and the RA, not on the waw: the word is
+  du-ru-s, and the waw is the long vowel the ra's damma is already spelling.
+  Placing the second mark over the waw is wrong Arabic, and it is an easy
+  mistake to make from the rendered shape alone, because the ra and the waw sit
+  side by side with no gap between their ink.
+*/
+const DAL_DAMMA = { dx: 0.65, dy: 0.4 };
+const RA_DAMMA = { dx: 0.15, dy: 0.5067 };
 
 /* Ink extents of the composed mark, in multiples of font size. */
 const INK_ABOVE_BASELINE = 0.7467;
@@ -95,7 +104,7 @@ function markSvg(cx: number, baseline: number, fontSize: number, fill: string): 
         direction="rtl" font-family="Amiri" font-size="${fontSize}"
         fill="${fill}">${WORD}</text>
   ${damma(DAL_DAMMA)}
-  ${damma(WAW_DAMMA)}`;
+  ${damma(RA_DAMMA)}`;
 }
 
 /* The baseline that puts the composed mark's visual centre on a canvas's. */

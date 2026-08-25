@@ -125,7 +125,7 @@ const useStyles = makeStyles((t) => ({
   /* Lesson picker. */
   stripWrap: { alignItems: "center", gap: space(2) },
   strip: { flexDirection: "row", justifyContent: "center", gap: 4, alignItems: "flex-end" },
-  bar: { width: 3, borderRadius: 999 },
+  bar: { width: 3, height: 28, borderRadius: 999 },
   stepper: {
     flexDirection: "row",
     alignItems: "center",
@@ -253,15 +253,26 @@ export default function Onboarding() {
     [profileId, name, book, lesson, evening],
   );
 
+  /*
+    Permission is asked as this step is LEFT, not later when everything is
+    saved.
+
+    iOS gives exactly one chance at the prompt, and it only makes sense next to
+    the question that motivates it. Asking at the end instead meant the system
+    dialog appeared moments after signing in, with nothing on screen to explain
+    what it was for. The answer is carried to the save rather than re-asked.
+  */
+  const [notify, setNotify] = useState(false);
+  const leaveReminders = useCallback(async () => {
+    setNotify(morning || evening ? await requestPermission() : false);
+    go("name");
+  }, [morning, evening, go]);
+
   const finish = useCallback(async () => {
-    /* The one place permission is asked, along with the Settings toggle. iOS
-       gives exactly one chance, so it is spent here, after the user has said
-       they want reminders, rather than on entering the screen. */
-    const granted = morning || evening ? await requestPermission() : false;
-    await save(granted);
+    await save(notify);
     completeOnboarding();
     go("done");
-  }, [morning, evening, save, completeOnboarding, go]);
+  }, [notify, save, completeOnboarding, go]);
 
   return (
     <Screen>
@@ -295,8 +306,8 @@ export default function Onboarding() {
             <View style={s.body}>
               {step === "intro" ? (
                 <View style={s.hero}>
-                  <Arabic variant="card" color="lapis" showHarakat={false}>
-                    دروس
+                  <Arabic variant="card" color="lapis">
+                    دُرُوس
                   </Arabic>
                   <View style={s.heads}>
                     <Text variant="pageTitle" style={s.h1}>
@@ -392,10 +403,15 @@ export default function Onboarding() {
                       {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
                         <View
                           key={i}
+                          /*
+                            One height for every tick. Growing the filled ones
+                            makes the strip lurch as the number changes, and it
+                            reads as two different scales rather than as one
+                            scale being filled in. Colour carries the state.
+                          */
                           style={[
                             s.bar,
                             {
-                              height: i < lesson ? 30 : 20,
                               backgroundColor:
                                 i < lesson ? theme.colors.lapis : theme.colors.rule,
                             },
@@ -529,13 +545,8 @@ export default function Onboarding() {
                       />
                     </Svg>
                     <View style={s.ringMark}>
-                      {/*
-                        Unvowelled here, like every other place the logotype
-                        appears. The vowelled form is for card faces, where the
-                        harakat are the content.
-                      */}
-                      <Arabic variant="card" color="lapis" showHarakat={false}>
-                        دروس
+                      <Arabic variant="card" color="lapis">
+                        دُرُوس
                       </Arabic>
                     </View>
                   </View>
@@ -578,7 +589,9 @@ export default function Onboarding() {
         {step === "intro" ? <Button label="Get started" onPress={() => go("book")} /> : null}
         {step === "book" ? <Button label="Continue" onPress={() => go("lesson")} /> : null}
         {step === "lesson" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
-        {step === "reminders" ? <Button label="Continue" onPress={() => go("name")} /> : null}
+        {step === "reminders" ? (
+          <Button label="Continue" onPress={() => void leaveReminders()} />
+        ) : null}
         {step === "name" ? (
           <Button label="Continue" onPress={() => go(isSignedIn ? "done" : "signin")} />
         ) : null}

@@ -28,6 +28,42 @@ export function remindersAvailable(): boolean {
 }
 
 /*
+  Show reminders even when Durus is the app in front.
+
+  iOS delivers a notification to a foregrounded app silently and hands it to the
+  delegate instead of drawing a banner. Without a handler saying otherwise,
+  "Send a test reminder" appeared to do nothing at all unless the phone was
+  locked first - which is why the button had to tell people to lock their phone,
+  a thing no other app asks. Every OS-level setting still applies on top of
+  this; it only declines the silent-while-foregrounded default.
+
+  Registered lazily on first use rather than at import, so a JS-only update
+  landing on a binary that predates expo-notifications still degrades to "not
+  scheduled" rather than crashing at module scope.
+*/
+let handlerSet = false;
+function ensureHandler(N: NotificationsModule) {
+  if (handlerSet) return;
+  handlerSet = true;
+  try {
+    N.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        /* No sound and no badge, the same as the scheduled ones. A reminder is
+           a nudge, not an alarm, and a badge is a count the app would then be
+           editorialising with. */
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch {
+    /* An older expo-notifications with a different handler shape must not stop
+       anything being scheduled. */
+  }
+}
+
+/*
   Permission is requested ONLY from an explicit toggle, never on screen entry.
   iOS gives exactly one chance, and spending it on a screen the user was merely
   passing through means the reminder can never be offered again.
@@ -48,6 +84,7 @@ export async function requestPermission(): Promise<boolean> {
 const CHANNEL = "reminders";
 
 async function ensureChannel(N: NotificationsModule) {
+  ensureHandler(N);
   if (Platform.OS !== "android") return;
   try {
     await N.setNotificationChannelAsync(CHANNEL, {
@@ -192,8 +229,14 @@ export async function cancelAllReminders(): Promise<void> {
   }
 }
 
-/* Settings' "Send a test reminder", five seconds out. More useful than the
-   web's "Test push" button, which only proved the server could reach you. */
+/*
+  Settings' "Send a test reminder", five seconds out. More useful than the web's
+  "Test push" button, which only proved the server could reach you.
+
+  Five seconds rather than immediately: a notification that arrives while the
+  thumb is still on the button is easy to miss, and the delay also demonstrates
+  that these are scheduled rather than sent.
+*/
 export async function sendTestReminder(): Promise<boolean> {
   const N = load();
   if (!N) return false;

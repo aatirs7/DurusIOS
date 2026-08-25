@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Share, Switch, View } from "react-native";
 
+import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Field, Rule, Segmented, Stepper } from "@/components/Field";
 import { Screen } from "@/components/Screen";
@@ -76,10 +77,13 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: space(5) }}>
-        <Text variant="eyebrow" color="inkSoft">
-          Preferences
-        </Text>
+      <BackBar />
+      {/* The indicator is chrome about the length of a settings list, which is
+          not a thing anyone needs told. */}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: space(5) }}
+        showsVerticalScrollIndicator={false}
+      >
         <Text variant="pageTitle">Settings</Text>
 
         <View style={s.group}>
@@ -236,7 +240,7 @@ export default function SettingsScreen() {
               Alert.alert(
                 ok ? "On its way" : "Could not schedule",
                 ok
-                  ? "It will arrive in about five seconds. Lock the phone to see it as you normally would."
+                  ? "It will arrive in about five seconds."
                   : "Notifications are not allowed for Durus. Turn them on in iOS Settings.",
               );
             }}

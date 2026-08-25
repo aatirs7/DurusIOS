@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
+import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -67,7 +68,11 @@ export default function About() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: space(4) }}>
+      <BackBar />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: space(4) }}
+        showsVerticalScrollIndicator={false}
+      >
         <Text variant="pageTitle">About Durus</Text>
 
         <View style={s.group}>

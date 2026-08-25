@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
+import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -71,6 +72,7 @@ export default function Paste() {
 
   return (
     <Screen>
+      <BackBar fallback="/settings" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}

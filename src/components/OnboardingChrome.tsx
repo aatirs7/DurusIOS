@@ -93,6 +93,7 @@ export function WordField() {
         <Arabic
           key={`${w.word}-${i}`}
           variant="inline"
+          color="lapis"
           showHarakat={false}
           style={[
             s.word,
@@ -101,9 +102,20 @@ export function WordField() {
               left: w.left as unknown as number,
               fontSize: w.size,
               lineHeight: Math.round(w.size * 1.6),
-              /* Faint enough to be texture rather than content. Any stronger
-                 and it competes with the question being asked. */
-              opacity: theme.dark ? 0.06 : 0.05,
+              /*
+                Lapis, not ink.
+
+                On paper, ink at this opacity is a grey so close to the
+                background that the field simply is not there - the words only
+                ever showed up in dark mode, where ink is near white. The mark
+                colour reads as a tint of the brand at low alpha in both themes
+                instead of as washed out text.
+
+                Light needs more of it than dark: a dark wash on a light ground
+                carries further than a light wash on a dark one, but paper's
+                contrast range here is the narrower of the two.
+              */
+              opacity: theme.dark ? 0.10 : 0.14,
             },
           ]}
         >
@@ -154,8 +166,10 @@ export function OnboardingChrome({
         </View>
 
         <View style={s.mark}>
-          <Arabic variant="title" color="lapis" showHarakat={false}>
-            دروس
+          {/* Vowelled, like the icon and the launch screen. The harakat are
+              part of the mark, not a card-face-only affectation. */}
+          <Arabic variant="title" color="lapis">
+            دُرُوس
           </Arabic>
         </View>
 

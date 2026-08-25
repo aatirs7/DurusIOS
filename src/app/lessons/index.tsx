@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
+import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -41,8 +42,12 @@ export default function Lessons() {
 
   return (
     <Screen>
+      <BackBar />
       <Text variant="pageTitle">Lessons</Text>
-      <ScrollView contentContainerStyle={{ paddingBottom: space(4) }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: space(4) }}
+        showsVerticalScrollIndicator={false}
+      >
         {view.rows.map((l) => (
           <Pressable
             key={l.number}

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
+import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -88,7 +89,11 @@ export default function Stats() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: space(4) }}>
+      <BackBar />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: space(4) }}
+        showsVerticalScrollIndicator={false}
+      >
         <Text variant="pageTitle">Stats</Text>
 
         <View style={s.group}>
@@ -179,6 +184,15 @@ export default function Stats() {
           <View style={s.group}>
             <Text variant="eyebrow" color="inkSoft">
               Words that keep coming back
+            </Text>
+            {/*
+              What a lapse is, in one line, because "lapses" below is otherwise
+              a number with no unit. Stated as a fact about the word rather than
+              about the reader - these are the hard ones, not a failing.
+            */}
+            <Text variant="label" color="inkFaint" style={{ paddingBottom: space(1) }}>
+              A lapse is a word you had learnt and then missed, so it went back
+              to the start. These are the ones worth a second look.
             </Text>
             {stats.leeches.map((l) => (
               <View key={l.cardId} style={s.leech}>
