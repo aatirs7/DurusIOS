@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Durus",
+    "slug": "durus",
+    "owner": "aatirs7",
+    "scheme": "durus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "requireFullScreen": true,
+      "bundleIdentifier": "com.elysiumventures.durus",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIViewControllerBasedStatusBarAppearance": true
+      },
+      "icon": {
+        "light": "./assets/brand/icon.png",
+        "dark": "./assets/brand/icon-dark.png",
+        "tinted": "./assets/brand/icon-tinted.png"
+      }
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-sqlite",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash.png",
+          "imageWidth": 120,
+          "backgroundColor": "#f6f4ef",
+          "dark": {
+            "image": "./assets/brand/splash-dark.png",
+            "backgroundColor": "#131722"
+          }
+        }
+      ],
+      "./plugins/withoutPushEntitlement"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3676d869-b225-4861-a70a-6efb4ccf9cc2"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3676d869-b225-4861-a70a-6efb4ccf9cc2"
+    },
+    "icon": "./assets/brand/icon.png"
+  }
+}

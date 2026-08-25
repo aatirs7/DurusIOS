@@ -1,0 +1,1182 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-25T06:18:47.466Z",
+  "source": "neon",
+  "lessons": [
+    {
+      "id": 1,
+      "number": 1,
+      "titleAr": "الدَّرْسُ الأَوَّلُ",
+      "titleEn": "Lesson one",
+      "grammarNote": "هٰذَا \"this\". Arabic has no copula, so هٰذَا بَيْتٌ is a complete sentence. Tanwin (the -n ending) is the indefinite article. The particle أ at the front turns a statement into a question."
+    },
+    {
+      "id": 2,
+      "number": 2,
+      "titleAr": "الدَّرْسُ الثَّانِي",
+      "titleEn": "Lesson two",
+      "grammarNote": "ذٰلِكَ \"that\", and وَ \"and\". ذٰلِكَ is pronounced dhalika but written without the alif, same pattern as هٰذَا. The وَ is written joined to the word that follows it."
+    },
+    {
+      "id": 3,
+      "number": 3,
+      "titleAr": "الدَّرْسُ الثَّالِثُ",
+      "titleEn": "Lesson three",
+      "grammarNote": "The definite article ال. When ال is prefixed, the tanwin drops: بَيْتٌ becomes البَيْتُ. Of the 28 letters, 14 are Solar and 14 are Lunar. Before a Solar letter the ل assimilates in pronunciation, marked by shadda on the following letter, so الشَّمْسُ is read ash-shamsu. Lunar letters do not assimilate, so القَمَرُ is read al-qamaru. The alif of ال is dropped in pronunciation when preceded by another word, marked with wasla, so وَالبَيْتُ is read wa l-baitu. Adjectives with tanwin are not translated with \"a\", so مَفْتُوحٌ is just \"open\"."
+    },
+    {
+      "id": 4,
+      "number": 4,
+      "titleAr": "الدَّرْسُ الرَّابِعُ",
+      "titleEn": "Lesson four",
+      "grammarNote": "Prepositions and case. The normal noun ending is -u, called مَرْفُوعٌ (nominative). After a preposition it changes to -i, called مَجْرُورٌ (genitive). So البَيْتُ becomes فِي البَيْتِ. Also the pronouns هُوَ and هِيَ. Every noun is masculine or feminine, and هُوَ or هِيَ is used regardless of whether the noun is a person, animal, or thing. Most feminine nouns end in ة but not all. Proper nouns take no tanwin, and feminine proper nouns never do."
+    },
+    {
+      "id": 5,
+      "number": 5,
+      "titleAr": "الدَّرْسُ الخَامِسُ",
+      "titleEn": "Lesson five",
+      "grammarNote": null
+    },
+    {
+      "id": 6,
+      "number": 6,
+      "titleAr": "الدَّرْسُ السَّادِسُ",
+      "titleEn": "Lesson six",
+      "grammarNote": null
+    },
+    {
+      "id": 7,
+      "number": 7,
+      "titleAr": "الدَّرْسُ السَّابِعُ",
+      "titleEn": "Lesson seven",
+      "grammarNote": null
+    },
+    {
+      "id": 8,
+      "number": 8,
+      "titleAr": "الدَّرْسُ الثَّامِنُ",
+      "titleEn": "Lesson eight",
+      "grammarNote": null
+    },
+    {
+      "id": 9,
+      "number": 9,
+      "titleAr": "الدَّرْسُ التَّاسِعُ",
+      "titleEn": "Lesson nine",
+      "grammarNote": null
+    },
+    {
+      "id": 10,
+      "number": 10,
+      "titleAr": "الدَّرْسُ العَاشِرُ",
+      "titleEn": "Lesson ten",
+      "grammarNote": null
+    },
+    {
+      "id": 11,
+      "number": 11,
+      "titleAr": "الدَّرْسُ الحَادِيَ عَشَرَ",
+      "titleEn": "Lesson eleven",
+      "grammarNote": null
+    },
+    {
+      "id": 12,
+      "number": 12,
+      "titleAr": "الدَّرْسُ الثَّانِيَ عَشَرَ",
+      "titleEn": "Lesson twelve",
+      "grammarNote": null
+    },
+    {
+      "id": 13,
+      "number": 13,
+      "titleAr": "الدَّرْسُ الثَّالِثَ عَشَرَ",
+      "titleEn": "Lesson thirteen",
+      "grammarNote": null
+    },
+    {
+      "id": 14,
+      "number": 14,
+      "titleAr": "الدَّرْسُ الرَّابِعَ عَشَرَ",
+      "titleEn": "Lesson fourteen",
+      "grammarNote": null
+    },
+    {
+      "id": 15,
+      "number": 15,
+      "titleAr": "الدَّرْسُ الخَامِسَ عَشَرَ",
+      "titleEn": "Lesson fifteen",
+      "grammarNote": null
+    },
+    {
+      "id": 16,
+      "number": 16,
+      "titleAr": "الدَّرْسُ السَّادِسَ عَشَرَ",
+      "titleEn": "Lesson sixteen",
+      "grammarNote": null
+    },
+    {
+      "id": 17,
+      "number": 17,
+      "titleAr": "الدَّرْسُ السَّابِعَ عَشَرَ",
+      "titleEn": "Lesson seventeen",
+      "grammarNote": null
+    },
+    {
+      "id": 18,
+      "number": 18,
+      "titleAr": "الدَّرْسُ الثَّامِنَ عَشَرَ",
+      "titleEn": "Lesson eighteen",
+      "grammarNote": null
+    },
+    {
+      "id": 19,
+      "number": 19,
+      "titleAr": "الدَّرْسُ التَّاسِعَ عَشَرَ",
+      "titleEn": "Lesson nineteen",
+      "grammarNote": null
+    },
+    {
+      "id": 20,
+      "number": 20,
+      "titleAr": "الدَّرْسُ العِشْرُونَ",
+      "titleEn": "Lesson twenty",
+      "grammarNote": null
+    },
+    {
+      "id": 21,
+      "number": 21,
+      "titleAr": "الدَّرْسُ الحَادِي وَالعِشْرُونَ",
+      "titleEn": "Lesson twenty one",
+      "grammarNote": null
+    },
+    {
+      "id": 22,
+      "number": 22,
+      "titleAr": "الدَّرْسُ الثَّانِي وَالعِشْرُونَ",
+      "titleEn": "Lesson twenty two",
+      "grammarNote": null
+    },
+    {
+      "id": 23,
+      "number": 23,
+      "titleAr": "الدَّرْسُ الثَّالِثُ وَالعِشْرُونَ",
+      "titleEn": "Lesson twenty three",
+      "grammarNote": null
+    }
+  ],
+  "cards": [
+    {
+      "id": 1,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "بَيْتٌ",
+      "english": "house",
+      "transliteration": "baytun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 2,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "مَسْجِدٌ",
+      "english": "mosque",
+      "transliteration": "masjidun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 3,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "بَابٌ",
+      "english": "door",
+      "transliteration": "babun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 4,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "كِتَابٌ",
+      "english": "book",
+      "transliteration": "kitabun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 5,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "قَلَمٌ",
+      "english": "pen",
+      "transliteration": "qalamun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 6,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "مِفْتَاحٌ",
+      "english": "key",
+      "transliteration": "miftahun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 7,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "مَكْتَبٌ",
+      "english": "writing table",
+      "transliteration": "maktabun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 8,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "سَرِيرٌ",
+      "english": "bed",
+      "transliteration": "sarirun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 9,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "كُرْسِيٌّ",
+      "english": "chair",
+      "transliteration": "kursiyyun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 10,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "نَجْمٌ",
+      "english": "star",
+      "transliteration": "najmun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 11,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "قَمِيصٌ",
+      "english": "shirt",
+      "transliteration": "qamisun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 12,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "طَبِيبٌ",
+      "english": "doctor",
+      "transliteration": "tabibun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 13,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "وَلَدٌ",
+      "english": "boy",
+      "transliteration": "waladun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 14,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "طَالِبٌ",
+      "english": "student",
+      "transliteration": "talibun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 15,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "رَجُلٌ",
+      "english": "man",
+      "transliteration": "rajulun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 16,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "تَاجِرٌ",
+      "english": "merchant",
+      "transliteration": "tajirun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 17,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "كَلْبٌ",
+      "english": "dog",
+      "transliteration": "kalbun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 18,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "قِطٌّ",
+      "english": "cat",
+      "transliteration": "qittun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 19,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "حِمَارٌ",
+      "english": "donkey",
+      "transliteration": "himarun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 20,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "حِصَانٌ",
+      "english": "horse",
+      "transliteration": "hisanun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 21,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "جَمَلٌ",
+      "english": "camel",
+      "transliteration": "jamalun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 22,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "دِيكٌ",
+      "english": "rooster",
+      "transliteration": "dikun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 23,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "مُدَرِّسٌ",
+      "english": "teacher",
+      "transliteration": "mudarrisun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 24,
+      "lessonId": 1,
+      "type": "vocab",
+      "arabic": "مِنْدِيلٌ",
+      "english": "kerchief",
+      "transliteration": "mindilun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 25,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "هٰذَا",
+      "english": "this",
+      "transliteration": "hadha",
+      "gender": null,
+      "plural": null,
+      "note": "written without the first alif"
+    },
+    {
+      "id": 26,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "مَا هٰذَا؟",
+      "english": "what is this?",
+      "transliteration": "ma hadha",
+      "gender": null,
+      "plural": null,
+      "note": "used for things"
+    },
+    {
+      "id": 27,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "مَنْ هٰذَا؟",
+      "english": "who is this?",
+      "transliteration": "man hadha",
+      "gender": null,
+      "plural": null,
+      "note": "used for people"
+    },
+    {
+      "id": 28,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "أَهٰذَا بَيْتٌ؟",
+      "english": "is this a house?",
+      "transliteration": "a hadha baytun",
+      "gender": null,
+      "plural": null,
+      "note": "the alif turns a statement into a question"
+    },
+    {
+      "id": 29,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "نَعَمْ",
+      "english": "yes",
+      "transliteration": "naam",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 30,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "لَا",
+      "english": "no",
+      "transliteration": "la",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 31,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "هٰذَا كِتَابٌ",
+      "english": "this is a book",
+      "transliteration": "hadha kitabun",
+      "gender": null,
+      "plural": null,
+      "note": "no word for \"is\" and no word for \"a\""
+    },
+    {
+      "id": 32,
+      "lessonId": 1,
+      "type": "phrase",
+      "arabic": "لَا، هٰذَا مَسْجِدٌ",
+      "english": "no, this is a mosque",
+      "transliteration": "la, hadha masjidun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 33,
+      "lessonId": 2,
+      "type": "vocab",
+      "arabic": "إِمَامٌ",
+      "english": "imam",
+      "transliteration": "imamun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 34,
+      "lessonId": 2,
+      "type": "vocab",
+      "arabic": "حَجَرٌ",
+      "english": "stone",
+      "transliteration": "hajarun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 35,
+      "lessonId": 2,
+      "type": "vocab",
+      "arabic": "سُكَّرٌ",
+      "english": "sugar",
+      "transliteration": "sukkarun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 36,
+      "lessonId": 2,
+      "type": "vocab",
+      "arabic": "لَبَنٌ",
+      "english": "milk",
+      "transliteration": "labanun",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 37,
+      "lessonId": 2,
+      "type": "phrase",
+      "arabic": "ذٰلِكَ",
+      "english": "that",
+      "transliteration": "dhalika",
+      "gender": null,
+      "plural": null,
+      "note": "written without the alif"
+    },
+    {
+      "id": 38,
+      "lessonId": 2,
+      "type": "phrase",
+      "arabic": "مَا ذٰلِكَ؟",
+      "english": "what is that?",
+      "transliteration": "ma dhalika",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 39,
+      "lessonId": 2,
+      "type": "phrase",
+      "arabic": "وَ",
+      "english": "and",
+      "transliteration": "wa",
+      "gender": null,
+      "plural": null,
+      "note": "written joined to the following word"
+    },
+    {
+      "id": 40,
+      "lessonId": 2,
+      "type": "phrase",
+      "arabic": "هٰذَا بَيْتٌ وَذٰلِكَ مَسْجِدٌ",
+      "english": "this is a house and that is a mosque",
+      "transliteration": "hadha baytun wa dhalika masjidun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 41,
+      "lessonId": 2,
+      "type": "phrase",
+      "arabic": "أَذٰلِكَ كَلْبٌ؟ لَا، ذٰلِكَ قِطٌّ",
+      "english": "is that a dog? no, that is a cat",
+      "transliteration": "a dhalika kalbun? la, dhalika qittun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 42,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "غَنِيٌّ",
+      "english": "rich",
+      "transliteration": "ghaniyyun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of poor"
+    },
+    {
+      "id": 43,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "فَقِيرٌ",
+      "english": "poor",
+      "transliteration": "faqirun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of rich"
+    },
+    {
+      "id": 44,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "طَوِيلٌ",
+      "english": "tall",
+      "transliteration": "tawilun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of short"
+    },
+    {
+      "id": 45,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "قَصِيرٌ",
+      "english": "short",
+      "transliteration": "qasirun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of tall"
+    },
+    {
+      "id": 46,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "بَارِدٌ",
+      "english": "cold",
+      "transliteration": "baridun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of hot"
+    },
+    {
+      "id": 47,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "حَارٌّ",
+      "english": "hot",
+      "transliteration": "harrun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of cold"
+    },
+    {
+      "id": 48,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "جَالِسٌ",
+      "english": "sitting",
+      "transliteration": "jalisun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of standing"
+    },
+    {
+      "id": 49,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "وَاقِفٌ",
+      "english": "standing",
+      "transliteration": "waqifun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of sitting"
+    },
+    {
+      "id": 50,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "جَدِيدٌ",
+      "english": "new",
+      "transliteration": "jadidun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of old"
+    },
+    {
+      "id": 51,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "قَدِيمٌ",
+      "english": "old",
+      "transliteration": "qadimun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of new"
+    },
+    {
+      "id": 52,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "قَرِيبٌ",
+      "english": "near",
+      "transliteration": "qaribun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of far"
+    },
+    {
+      "id": 53,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "بَعِيدٌ",
+      "english": "far away",
+      "transliteration": "baidun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of near"
+    },
+    {
+      "id": 54,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "نَظِيفٌ",
+      "english": "clean",
+      "transliteration": "nazifun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of dirty"
+    },
+    {
+      "id": 55,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "وَسِخٌ",
+      "english": "dirty",
+      "transliteration": "wasikhun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of clean"
+    },
+    {
+      "id": 56,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "صَغِيرٌ",
+      "english": "small",
+      "transliteration": "saghirun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of big"
+    },
+    {
+      "id": 57,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "كَبِيرٌ",
+      "english": "big",
+      "transliteration": "kabirun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of small"
+    },
+    {
+      "id": 58,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "خَفِيفٌ",
+      "english": "light",
+      "transliteration": "khafifun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of heavy"
+    },
+    {
+      "id": 59,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "ثَقِيلٌ",
+      "english": "heavy",
+      "transliteration": "thaqilun",
+      "gender": null,
+      "plural": null,
+      "note": "opposite of light"
+    },
+    {
+      "id": 60,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "جَمِيلٌ",
+      "english": "beautiful",
+      "transliteration": "jamilun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 61,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "حُلْوٌ",
+      "english": "sweet",
+      "transliteration": "hulwun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 62,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "مَرِيضٌ",
+      "english": "sick",
+      "transliteration": "maridun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 63,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "مَفْتُوحٌ",
+      "english": "open",
+      "transliteration": "maftuhun",
+      "gender": null,
+      "plural": null,
+      "note": "adjective, the tanwin here is not \"a\""
+    },
+    {
+      "id": 64,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "مَكْسُورٌ",
+      "english": "broken",
+      "transliteration": "maksurun",
+      "gender": null,
+      "plural": null,
+      "note": "adjective, the tanwin here is not \"a\""
+    },
+    {
+      "id": 65,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "الوَرَقُ",
+      "english": "paper",
+      "transliteration": "al-waraqu",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 66,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "المَاءُ",
+      "english": "water",
+      "transliteration": "al-mau",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 67,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "التُّفَّاحُ",
+      "english": "apple",
+      "transliteration": "at-tuffahu",
+      "gender": "m",
+      "plural": null,
+      "note": "solar letter"
+    },
+    {
+      "id": 68,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "الدُّكَّانُ",
+      "english": "shop",
+      "transliteration": "ad-dukkanu",
+      "gender": "m",
+      "plural": null,
+      "note": "solar letter"
+    },
+    {
+      "id": 69,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "الشَّمْسُ",
+      "english": "the sun",
+      "transliteration": "ash-shamsu",
+      "gender": "f",
+      "plural": null,
+      "note": "solar letter"
+    },
+    {
+      "id": 70,
+      "lessonId": 3,
+      "type": "vocab",
+      "arabic": "القَمَرُ",
+      "english": "the moon",
+      "transliteration": "al-qamaru",
+      "gender": "m",
+      "plural": null,
+      "note": "lunar letter"
+    },
+    {
+      "id": 71,
+      "lessonId": 3,
+      "type": "phrase",
+      "arabic": "البَيْتُ نَظِيفٌ",
+      "english": "the house is clean",
+      "transliteration": "al-baytu nazifun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 72,
+      "lessonId": 3,
+      "type": "phrase",
+      "arabic": "البَابُ مَفْتُوحٌ",
+      "english": "the door is open",
+      "transliteration": "al-babu maftuhun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 73,
+      "lessonId": 3,
+      "type": "phrase",
+      "arabic": "القَلَمُ مَكْسُورٌ",
+      "english": "the pen is broken",
+      "transliteration": "al-qalamu maksurun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 74,
+      "lessonId": 3,
+      "type": "phrase",
+      "arabic": "وَالبَيْتُ",
+      "english": "and the house",
+      "transliteration": "wa l-baytu",
+      "gender": null,
+      "plural": null,
+      "note": "the alif of al drops"
+    },
+    {
+      "id": 75,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "أَيْنَ",
+      "english": "where",
+      "transliteration": "ayna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 76,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "عَلَى",
+      "english": "on",
+      "transliteration": "ala",
+      "gender": null,
+      "plural": null,
+      "note": "preposition, puts the next noun in genitive"
+    },
+    {
+      "id": 77,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "فِي",
+      "english": "in",
+      "transliteration": "fi",
+      "gender": null,
+      "plural": null,
+      "note": "preposition, puts the next noun in genitive"
+    },
+    {
+      "id": 78,
+      "lessonId": 4,
+      "type": "vocab",
+      "arabic": "غُرْفَةٌ",
+      "english": "room",
+      "transliteration": "ghurfatun",
+      "gender": "f",
+      "plural": null,
+      "note": "ends in round ta"
+    },
+    {
+      "id": 79,
+      "lessonId": 4,
+      "type": "vocab",
+      "arabic": "السَّمَاءُ",
+      "english": "sky",
+      "transliteration": "as-samau",
+      "gender": "f",
+      "plural": null,
+      "note": "solar letter"
+    },
+    {
+      "id": 80,
+      "lessonId": 4,
+      "type": "vocab",
+      "arabic": "الحَمَّامُ",
+      "english": "bathroom",
+      "transliteration": "al-hammamu",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 81,
+      "lessonId": 4,
+      "type": "vocab",
+      "arabic": "الفَصْلُ",
+      "english": "classroom",
+      "transliteration": "al-faslu",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 82,
+      "lessonId": 4,
+      "type": "vocab",
+      "arabic": "المَطْبَخُ",
+      "english": "kitchen",
+      "transliteration": "al-matbakhu",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 83,
+      "lessonId": 4,
+      "type": "vocab",
+      "arabic": "المِرْحَاضُ",
+      "english": "toilet",
+      "transliteration": "al-mirhadu",
+      "gender": "m",
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 84,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "هُوَ",
+      "english": "he, it",
+      "transliteration": "huwa",
+      "gender": null,
+      "plural": null,
+      "note": "used for any masculine noun"
+    },
+    {
+      "id": 85,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "هِيَ",
+      "english": "she, it",
+      "transliteration": "hiya",
+      "gender": null,
+      "plural": null,
+      "note": "used for any feminine noun"
+    },
+    {
+      "id": 86,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "أَيْنَ الوَلَدُ؟ هُوَ فِي المَسْجِدِ",
+      "english": "where is the boy? he is in the mosque",
+      "transliteration": "ayna l-waladu? huwa fi l-masjidi",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 87,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "أَيْنَ الكِتَابُ؟ هُوَ عَلَى المَكْتَبِ",
+      "english": "where is the book? it is on the table",
+      "transliteration": "ayna l-kitabu? huwa ala l-maktabi",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 88,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "أَيْنَ آمِنَةُ؟ هِيَ فِي البَيْتِ",
+      "english": "where is Aminah? she is in the house",
+      "transliteration": "ayna aminatu? hiya fi l-bayti",
+      "gender": null,
+      "plural": null,
+      "note": "feminine proper noun, no tanwin"
+    },
+    {
+      "id": 89,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "أَيْنَ السَّاعَةُ؟ هِيَ عَلَى السَّرِيرِ",
+      "english": "where is the watch? it is on the bed",
+      "transliteration": "ayna s-saatu? hiya ala s-siriri",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 90,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "البَيْتُ جَدِيدٌ",
+      "english": "the house is new",
+      "transliteration": "al-baytu jadidun",
+      "gender": null,
+      "plural": null,
+      "note": "al-baytu is marfu"
+    },
+    {
+      "id": 91,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "فِي البَيْتِ",
+      "english": "in the house",
+      "transliteration": "fi l-bayti",
+      "gender": null,
+      "plural": null,
+      "note": "al-bayti is majrur after the preposition"
+    },
+    {
+      "id": 92,
+      "lessonId": 4,
+      "type": "phrase",
+      "arabic": "عَلَى المَكْتَبِ",
+      "english": "on the table",
+      "transliteration": "ala l-maktabi",
+      "gender": null,
+      "plural": null,
+      "note": null
+    }
+  ]
+}
