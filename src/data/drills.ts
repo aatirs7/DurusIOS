@@ -129,6 +129,9 @@ export type DeckCard = {
   note: string | null;
   plural: string | null;
   hearted: boolean;
+  /* Null when the card has never been answered, which maturityOf reads as
+     unseen. */
+  intervalDays: number | null;
 };
 
 /* The flashcard deck. Browsing, not drilling: no grading and no scheduling. */
@@ -150,12 +153,21 @@ export function getDeck(db: Db, profileId: number, lessonNumber?: number): DeckC
         version has exactly that bug.
       */
       hearted: sql<number>`(${cardHearts.cardId} is not null and ${cardHearts.deletedAt} is null)`,
+      intervalDays: cardStates.intervalDays,
     })
     .from(cards)
     .innerJoin(lessons, eq(cards.lessonId, lessons.id))
     .leftJoin(
       cardHearts,
       and(eq(cardHearts.cardId, cards.id), eq(cardHearts.profileId, profileId)),
+    )
+    .leftJoin(
+      cardStates,
+      and(
+        eq(cardStates.cardId, cards.id),
+        eq(cardStates.direction, "recognition"),
+        eq(cardStates.profileId, profileId),
+      ),
     )
     .where(
       lessonNumber

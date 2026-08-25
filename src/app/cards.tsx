@@ -10,6 +10,8 @@ import Animated, {
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
+import { ExitDrill } from "@/components/ExitDrill";
+import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
@@ -36,10 +38,21 @@ const FLIP_MS = 700;
 const FLIP_EASING = Easing.bezier(0.16, 0.84, 0.28, 1);
 
 const useStyles = makeStyles((t) => ({
-  scene: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: {
-    width: "100%",
-    minHeight: 260,
+  scene: { flex: 1, alignItems: "center", justifyContent: "center", width: "100%" },
+  /*
+    An explicit height, not minHeight. Both faces are absolutely positioned, so
+    they contribute nothing to layout and a hug-content parent collapses to
+    zero - which is exactly how this screen shipped blank.
+  */
+  card: { width: "100%", height: 280 },
+  face: {
+    position: "absolute",
+    /* Explicit edges rather than `inset: 0`. React Native does not support the
+       inset shorthand, so it is silently dropped and the face has no size. */
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: t.colors.rule,
@@ -48,8 +61,9 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center",
     padding: space(3),
     gap: space(1),
+    /* Keeps the far face from bleeding a hairline along the edge mid turn. */
+    backfaceVisibility: "hidden",
   },
-  face: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", padding: space(3), gap: space(1) },
   nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space(2) },
   counter: { minWidth: 80, textAlign: "center" },
 }));
@@ -58,6 +72,7 @@ export default function Flashcards() {
   const s = useStyles();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
+  const help = useHelp("cards");
   const boot = bootOnce();
 
   const start = useMemo(() => {
@@ -73,13 +88,16 @@ export default function Flashcards() {
   const [hearts, setHearts] = useState<Record<number, boolean>>({});
   const turn = useSharedValue(0);
 
+  /*
+    perspective comes FIRST in the transform array. React Native applies these
+    in order, so a perspective listed after the rotation is applied to an
+    already-flat result and the card turns without any depth at all.
+  */
   const front = useAnimatedStyle(() => ({
     transform: [{ perspective: 1200 }, { rotateY: `${turn.value * 180}deg` }],
-    backfaceVisibility: "hidden",
   }));
   const back = useAnimatedStyle(() => ({
     transform: [{ perspective: 1200 }, { rotateY: `${turn.value * 180 + 180}deg` }],
-    backfaceVisibility: "hidden",
   }));
 
   if (profileId === null || !start) return null;
@@ -90,7 +108,7 @@ export default function Flashcards() {
         <Text variant="pageTitle">No cards yet.</Text>
         <Button
           label="Back to today"
-          variant="secondary"
+          variant="quiet"
           style={{ marginTop: space(3) }}
           onPress={() => router.back()}
         />
@@ -117,21 +135,34 @@ export default function Flashcards() {
 
   return (
     <Screen>
-      <Text variant="eyebrow" color="inkSoft">
-        Flashcards
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Text variant="eyebrow" color="inkSoft">
+          Flashcards
+        </Text>
+        <HelpButton onPress={help.show} />
+      </View>
 
       <Pressable style={s.scene} onPress={flip} accessibilityRole="button">
         <View style={s.card}>
-          {/* Both faces are always mounted and hidden by backfaceVisibility, so
-              the turn has something to reveal rather than swapping content. */}
-          <Animated.View style={[s.face, front]}>
+          {/*
+            Both faces stay mounted and are hidden by backfaceVisibility, so the
+            turn reveals the other side rather than swapping content halfway.
+            pointerEvents follows the facing side so a tap always lands on the
+            face you can actually see.
+          */}
+          <Animated.View
+            pointerEvents={flipped ? "none" : "auto"}
+            style={[s.face, front]}
+          >
             <Arabic variant="card" showHarakat={start.showHarakat}>
               {card.arabic}
             </Arabic>
           </Animated.View>
 
-          <Animated.View style={[s.face, back]}>
+          <Animated.View
+            pointerEvents={flipped ? "auto" : "none"}
+            style={[s.face, back]}
+          >
             <Text variant="pageTitle" style={{ textAlign: "center" }}>
               {card.english}
             </Text>
@@ -169,10 +200,9 @@ export default function Flashcards() {
             {hearted ? "Marked for more work" : "Mark for more work"}
           </Text>
         </Pressable>
-        <Pressable onPress={() => router.back()}>
-          <Text color="inkSoft">Done</Text>
-        </Pressable>
+        <ExitDrill />
       </View>
+      <Help topic="cards" open={help.open} onClose={help.close} />
     </Screen>
   );
 }

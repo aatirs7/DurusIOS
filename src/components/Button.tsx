@@ -2,25 +2,39 @@ import { Pressable, type ViewStyle } from "react-native";
 
 import { Text } from "@/components/Text";
 import { haptics } from "@/lib/haptics";
-import { RADIUS, space } from "@/theme/layout";
+import { RADIUS } from "@/theme/layout";
 import { makeStyles } from "@/theme/useTheme";
 
+/*
+  Ported from the web app's components/ui.tsx BUTTON_BASE and VARIANTS, so the
+  two clients agree on shape: 12px radius, 20px horizontal, 14px vertical, 16px
+  medium label.
+
+  Three variants and no more. `text` is a plain link rather than a fourth box:
+  the web version's comment is the reason, and it is worth keeping - four
+  bordered tiles under the primary button turned a quiet list of alternatives
+  into a second menu competing with it.
+*/
 const useStyles = makeStyles((t) => ({
   base: {
     borderRadius: RADIUS.button,
-    paddingVertical: space(2),
-    paddingHorizontal: space(3),
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   primary: { backgroundColor: t.colors.lapis },
-  secondary: { backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule },
-  quiet: { backgroundColor: "transparent", paddingVertical: space(1.5) },
-  pressed: { opacity: 0.85 },
+  quiet: {
+    backgroundColor: t.colors.surface,
+    borderWidth: 1,
+    borderColor: t.colors.rule,
+  },
+  text: { paddingHorizontal: 0, paddingVertical: 6 },
+  pressed: { opacity: 0.75 },
   disabled: { opacity: 0.4 },
 }));
 
-export type ButtonVariant = "primary" | "secondary" | "quiet";
+export type ButtonVariant = "primary" | "quiet" | "text";
 
 export function Button({
   label,
@@ -28,17 +42,18 @@ export function Button({
   variant = "primary",
   disabled,
   style,
+  align = "center",
 }: {
   label: string;
   onPress: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
   style?: ViewStyle;
+  /* `text` links in the Today grid are left aligned inside their column. */
+  align?: "center" | "left";
 }) {
   const s = useStyles();
 
-  /* Light impact on tap. Spec section 7.5 permits exactly this and a Success at
-     the end of a session; a wrong answer must never buzz. */
   const press = () => {
     haptics.select();
     onPress();
@@ -53,15 +68,13 @@ export function Button({
       style={({ pressed }) => [
         s.base,
         s[variant],
+        align === "left" && { alignItems: "flex-start" },
         pressed && s.pressed,
         disabled && s.disabled,
         style,
       ]}
     >
-      <Text
-        variant={variant === "quiet" ? "body" : "body"}
-        color={variant === "primary" ? "paper" : "ink"}
-      >
+      <Text color={variant === "primary" ? "paper" : variant === "text" ? "lapis" : "ink"}>
         {label}
       </Text>
     </Pressable>

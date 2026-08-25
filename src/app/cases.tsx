@@ -4,6 +4,8 @@ import { Pressable, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
+import { ExitDrill } from "@/components/ExitDrill";
+import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { db } from "@/data/client";
@@ -57,6 +59,7 @@ export default function Cases() {
   const s = useStyles();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
+  const help = useHelp("cases");
 
   const start = useMemo(() => {
     if (profileId === null) return null;
@@ -82,7 +85,7 @@ export default function Cases() {
         </Text>
         <Button
           label="Back to today"
-          variant="secondary"
+          variant="quiet"
           style={{ marginTop: space(3) }}
           onPress={() => router.back()}
         />
@@ -115,9 +118,13 @@ export default function Cases() {
   return (
     <Screen>
       <View style={s.head}>
-        <Text variant="eyebrow" color="inkSoft">
-          Which ending
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text variant="eyebrow" color="inkSoft">
+            Which ending
+          </Text>
+          <HelpButton onPress={help.show} />
+          <ExitDrill confirm label="Leave" />
+        </View>
         <Text variant="label" color="inkFaint">
           {`${index + 1} / ${start.questions.length}`}
         </Text>
@@ -188,7 +195,7 @@ export default function Cases() {
             </Text>
             <Button
               label="Next"
-              variant="secondary"
+              variant="quiet"
               onPress={() => {
                 setPicked(null);
                 setIndex((i) => i + 1);
@@ -197,6 +204,7 @@ export default function Cases() {
           </>
         ) : null}
       </View>
+      <Help topic="cases" open={help.open} onClose={help.close} />
     </Screen>
   );
 }

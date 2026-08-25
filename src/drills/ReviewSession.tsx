@@ -3,6 +3,8 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
+import { ExitDrill } from "@/components/ExitDrill";
+import { HelpButton } from "@/components/Help";
 import { Text } from "@/components/Text";
 import type { Question } from "@/data/queue";
 import { assembledCorrectly, type Tile } from "@/engine/letters";
@@ -14,19 +16,36 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles((t) => ({
   root: { flex: 1 },
-  header: { alignItems: "center", paddingBottom: space(1) },
-  prompt: { flex: 1, justifyContent: "center", alignItems: "center", gap: space(2) },
+  header: {
+    height: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space(1),
+  },
+  headerMid: { flexDirection: "row", alignItems: "center", gap: space(1) },
+  headerSide: { minWidth: 44 },
+  /*
+    The card face sits on its own above the answers rather than being centred
+    with them as one block. Giving the face a fixed share of the height keeps
+    the options in the same place from card to card - when the whole stack is
+    centred, a two line phrase shunts every option down and the row you were
+    about to tap moves under your thumb.
+  */
+  face: { minHeight: 160, justifyContent: "center", alignItems: "center", width: "100%" },
+  prompt: { flex: 1, justifyContent: "center", width: "100%", gap: space(3) },
   english: { textAlign: "center" },
 
-  options: { gap: space(1) },
+  options: { gap: space(1.5), width: "100%" },
   option: {
     borderWidth: 1,
     borderColor: t.colors.rule,
     backgroundColor: t.colors.surface,
     borderRadius: RADIUS.button,
-    paddingVertical: space(1.5),
-    paddingHorizontal: space(2),
-    minHeight: 52,
+    paddingVertical: space(2),
+    paddingHorizontal: space(2.5),
+    minHeight: 56,
+    width: "100%",
     justifyContent: "center",
   },
   optionRight: { borderColor: t.colors.verdigris, backgroundColor: t.colors.lapisWash },
@@ -88,6 +107,7 @@ export type ReviewSessionProps = {
   onAnswer: (q: Question, grade: ReturnType<typeof gradeFor>, msToAnswer: number) => void;
   onUndo: (q: Question) => void;
   onDone: () => void;
+  onHelp: () => void;
   showHarakat: boolean;
 };
 
@@ -96,6 +116,7 @@ export function ReviewSession({
   onAnswer,
   onUndo,
   onDone,
+  onHelp,
   showHarakat,
 }: ReviewSessionProps) {
   const s = useStyles();
@@ -177,10 +198,19 @@ export function ReviewSession({
   return (
     <View style={s.root}>
       <View style={s.header}>
-        {/* Shown above the card, so the rung you are on is never a surprise. */}
-        <Text variant="eyebrow" color="inkSoft">
-          {modeLabel(question.mode, question.direction)}
-        </Text>
+        {/* An empty box the same width as the exit control, so the mode label
+            stays optically centred rather than being pushed left by it. */}
+        <View style={s.headerSide} />
+        <View style={s.headerMid}>
+          {/* Shown above the card, so the rung you are on is never a surprise. */}
+          <Text variant="eyebrow" color="inkSoft">
+            {modeLabel(question.mode, question.direction)}
+          </Text>
+          <HelpButton onPress={onHelp} />
+        </View>
+        <View style={[s.headerSide, { alignItems: "flex-end" }]}>
+          <ExitDrill />
+        </View>
       </View>
 
       <ScrollView
@@ -188,15 +218,17 @@ export function ReviewSession({
         keyboardShouldPersistTaps="handled"
       >
         <View style={s.prompt}>
-          {question.direction === "recognition" ? (
-            <Arabic variant="card" showHarakat={showHarakat}>
-              {question.arabic}
-            </Arabic>
-          ) : (
-            <Text variant="pageTitle" style={s.english}>
-              {question.english}
-            </Text>
-          )}
+          <View style={s.face}>
+            {question.direction === "recognition" ? (
+              <Arabic variant="card" showHarakat={showHarakat}>
+                {question.arabic}
+              </Arabic>
+            ) : (
+              <Text variant="pageTitle" style={s.english}>
+                {question.english}
+              </Text>
+            )}
+          </View>
 
           {question.mode === "choice" ? (
             <View style={s.options}>
@@ -343,7 +375,7 @@ export function ReviewSession({
             */}
             <Button
               label="Next"
-              variant="secondary"
+              variant="quiet"
               onPress={() => advance(result.grade === "again")}
             />
           </>

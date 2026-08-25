@@ -1,18 +1,19 @@
 import { eq } from "drizzle-orm";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { db } from "@/data/client";
 import { countDue, countNewAvailable } from "@/data/queue";
 import { lessons } from "@/data/schema";
-import { getSettingsFor } from "@/data/settings";
+import { getSettingsFor, updateSettings } from "@/data/settings";
 import { TOTAL_LESSONS } from "@/engine/constants";
-import { gregorianDate, hijriDate } from "@/lib/time";
+import { dateLine } from "@/lib/time";
 import { useSession } from "@/state/session";
 import { TICK, space } from "@/theme/layout";
 import { textStyles } from "@/theme/typography";
@@ -20,28 +21,34 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles((t) => ({
   /*
-    Three rows, 1fr / auto / 1fr, so Start review sits on the exact centre line
-    of the screen regardless of how much sits above or below it. Centring the
-    whole stack instead drifts the button every time a line appears or
-    disappears, which is visible when the due count changes.
-  */
-  top: { flex: 1, justifyContent: "center", alignItems: "center", gap: space(1) },
-  middle: { flexShrink: 0, paddingVertical: space(2) },
-  bottom: { flex: 1, justifyContent: "flex-end", gap: space(2), paddingBottom: space(2) },
+    Three rows, 1fr auto 1fr, so Start review sits on the exact centre line of
+    the screen regardless of how much sits above or below it. Centring the whole
+    stack instead drifts the button every time a line appears or disappears.
 
-  dateLine: { flexDirection: "row", alignItems: "center", gap: space(1) },
-  count: { ...textStyles.numeral, color: t.colors.ink, textAlign: "center" },
-  links: { flexDirection: "row", flexWrap: "wrap" },
-  link: { width: "50%", paddingVertical: space(1) },
+    The top row spreads its three groups across the row rather than stacking
+    them centred: date at the top, where you are in the book in the middle, and
+    the count sitting just above the button that acts on it. Centring all three
+    together is what left a large void under the count.
+  */
+  top: { flex: 1, alignItems: "center", justifyContent: "space-between", paddingBottom: space(4) },
+  middle: { flexShrink: 0 },
+  bottom: { flex: 1, alignItems: "center", justifyContent: "flex-start", gap: space(2.5), paddingTop: space(3) },
+
+  /* Same height as the theme toggle in the corner, so the two sit on one line
+     rather than the date floating below it. */
+  dateRow: { height: 40, justifyContent: "center" },
+  lesson: { alignItems: "center", gap: space(0.5) },
+  count: { alignItems: "center", gap: space(0.5) },
+  numeral: { ...textStyles.numeral, color: t.colors.ink },
+
+  grid: { flexDirection: "row", flexWrap: "wrap", width: "100%" },
+  gridItem: { width: "50%" },
+
+  foot: { marginTop: "auto", alignItems: "center", gap: space(2.5), width: "100%" },
   ticks: { flexDirection: "row", justifyContent: "center", gap: TICK.gap },
-  tick: { width: TICK.width, height: TICK.height, borderRadius: 2 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: space(4),
-    paddingTop: space(1),
-  },
-  quiet: { textAlign: "center" },
+  tick: { width: TICK.width, height: TICK.height, borderRadius: 999 },
+  footLinks: { flexDirection: "row", justifyContent: "center", gap: space(3) },
+  toggle: { position: "absolute", right: 0, top: 0, zIndex: 1 },
 }));
 
 export default function Today() {
@@ -51,133 +58,145 @@ export default function Today() {
   const profileId = useSession((st) => st.activeProfileId);
 
   const [tick, setTick] = useState(0);
-  /* Recount on focus rather than on an interval: the count only changes when
-     the user answers something, and they have to come back here to see it. */
-  useFocusEffect(useCallback(() => setTick((n) => n + 1), []));
+  const bump = useCallback(() => setTick((n) => n + 1), []);
+  useFocusEffect(bump);
 
   const view = useMemo(() => {
     if (profileId === null) return null;
     const config = getSettingsFor(db, profileId);
     const due = countDue(db, profileId);
-    const fresh = countNewAvailable(db, profileId, config.currentLesson);
+    const newAvailable = countNewAvailable(db, profileId, config.currentLesson);
+    /* What a session would actually introduce today, not the whole backlog. */
+    const newToday = Math.min(newAvailable, config.newPerDay);
     const lesson = db
       .select()
       .from(lessons)
       .where(eq(lessons.number, config.currentLesson))
       .get();
-    return { config, due, fresh, lesson };
-    /* `tick` is not read in the body and that is the point: it is the
-       cache-buster that re-runs these queries when the screen regains focus.
-       SQLite is an external store, so nothing else here changes identity when
-       the underlying rows do. */
+    return { config, due, newToday, lesson };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, tick]);
 
-  const now = new Date();
-  const hijri = hijriDate(now);
-
   if (!view) return null;
-  const { config, due, fresh, lesson } = view;
+  const { config, due, newToday, lesson } = view;
+  const now = new Date();
+
+  /*
+    Nothing scheduled. The screen does not change shape for it: the same count,
+    the same button, the same links. Finishing what is loaded is not a different
+    mode, it just means review goes over the lessons you have rather than a
+    queue the scheduler picked.
+  */
+  const clear = due === 0 && newToday === 0;
+  const canUnlock = config.currentLesson < TOTAL_LESSONS;
 
   return (
     <Screen>
+      <View style={s.toggle}>
+        <ThemeToggle />
+      </View>
+
       <View style={s.top}>
-        {/*
-          Hijri and Gregorian on one line, but as two elements. Spec section 7.3
-          rule 3: Arabic and English never share a text node. These are both
-          Latin script here, so one node would be safe, but keeping them
-          separate matches the lessons list and survives a future Arabic month
-          name.
-        */}
-        <View style={s.dateLine}>
-          {hijri ? (
-            <>
-              <Text variant="label" color="inkSoft">
-                {hijri}
-              </Text>
-              <Text variant="label" color="inkFaint">
-                ·
-              </Text>
-            </>
-          ) : null}
-          <Text variant="label" color="inkSoft">
-            {gregorianDate(now)}
+        <View style={s.dateRow}>
+          <Text variant="eyebrow" color="inkSoft">
+            {dateLine(now, config.timezone)}
           </Text>
         </View>
 
+        {/* The English sits under the Arabic, the way the lessons list sets it,
+            and never in the same text node, or bidi reorders the two. */}
         {lesson ? (
-          <>
+          <View style={s.lesson}>
             <Arabic variant="title" showHarakat={config.showHarakat}>
               {lesson.titleAr}
             </Arabic>
-            <Text variant="label" color="inkSoft">
+            <Text variant="eyebrow" color="inkSoft">
               {`Lesson ${config.currentLesson}`}
             </Text>
-          </>
-        ) : null}
+          </View>
+        ) : (
+          <View />
+        )}
 
-        <View style={{ marginTop: space(2) }}>
-          <Text style={s.count}>{String(due)}</Text>
-          <Text variant="eyebrow" color="inkSoft" style={s.quiet}>
+        <View style={s.count}>
+          <Text style={s.numeral}>{String(due)}</Text>
+          <Text variant="eyebrow" color="inkSoft">
             due
           </Text>
+          {newToday > 0 ? (
+            <Text color="inkSoft">{`${newToday} new to learn`}</Text>
+          ) : null}
+          {clear ? (
+            <Text variant="bodySoft" color="inkFaint" style={{ textAlign: "center" }}>
+              {`Nothing scheduled. Review goes over Lessons 1 to ${config.currentLesson}.`}
+            </Text>
+          ) : null}
         </View>
       </View>
 
+      {/* The centre line. */}
       <View style={s.middle}>
         <Button label="Start review" onPress={() => router.push("/review")} />
-        {/*
-          Nothing is due is not a different screen. The same count, the same
-          button, the same links, plus one faint line. The screen does not change
-          shape.
-        */}
-        {due === 0 && fresh === 0 ? (
-          <Text variant="label" color="inkFaint" style={[s.quiet, { marginTop: space(1) }]}>
-            {`Nothing scheduled. Review goes over Lessons 1 to ${config.currentLesson}.`}
-          </Text>
-        ) : null}
       </View>
 
       <View style={s.bottom}>
-        <View style={s.links}>
+        {/*
+          A fixed two column grid rather than a row of links left to wrap
+          wherever they run out of width. A wrapped row puts a different number
+          of items on each line depending on the lesson number, which is what
+          made this read as unfinished: the layout was an accident of the text.
+        */}
+        <View style={s.grid}>
           {(
             [
               ["Speed drill", "/speed"],
-              ["Case drill", "/cases"],
               ["Flashcards", "/cards"],
-              ["Lessons", "/lessons"],
+              ["Case drill", "/cases"],
+              [`Lesson ${config.currentLesson}`, `/lessons/${config.currentLesson}`],
             ] as const
           ).map(([label, href]) => (
-            <Pressable key={href} style={s.link} onPress={() => router.push(href)}>
-              <Text color="lapis">{label}</Text>
-            </Pressable>
+            <View key={href} style={s.gridItem}>
+              <Button label={label} variant="text" align="left" onPress={() => router.push(href)} />
+            </View>
           ))}
         </View>
 
-        {/* 23 ticks. Filled to currentLesson, so where you are in the book is
-            legible without a number. */}
-        <View style={s.ticks}>
-          {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
-            <View
-              key={i}
-              style={[
-                s.tick,
-                {
-                  backgroundColor:
-                    i < config.currentLesson ? theme.colors.lapis : theme.colors.rule,
-                },
-              ]}
-            />
-          ))}
-        </View>
+        {canUnlock ? (
+          <Button
+            label={`Add Lesson ${config.currentLesson + 1}`}
+            variant="quiet"
+            onPress={() => {
+              updateSettings(db, profileId!, { currentLesson: config.currentLesson + 1 });
+              bump();
+            }}
+          />
+        ) : null}
 
-        <View style={s.footer}>
-          <Pressable onPress={() => router.push("/stats")}>
-            <Text color="inkSoft">Stats</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push("/settings")}>
-            <Text color="inkSoft">Settings</Text>
-          </Pressable>
+        <View style={s.foot}>
+          {/*
+            Twenty three tick marks, no numbers. A progress bar that happens to
+            be honest about how far the book goes. Decoration only - a two pixel
+            tap target is not a control.
+          */}
+          <View style={s.ticks}>
+            {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
+              <View
+                key={i}
+                style={[
+                  s.tick,
+                  {
+                    backgroundColor:
+                      i < config.currentLesson ? theme.colors.lapis : theme.colors.rule,
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
+          <View style={s.footLinks}>
+            <Button label="Stats" variant="text" onPress={() => router.push("/stats")} />
+            <Button label="Settings" variant="text" onPress={() => router.push("/settings")} />
+          </View>
         </View>
       </View>
     </Screen>

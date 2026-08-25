@@ -112,7 +112,7 @@ export default function About() {
 
         <Button
           label="Back"
-          variant="secondary"
+          variant="quiet"
           style={{ marginTop: space(3) }}
           onPress={() => router.back()}
         />

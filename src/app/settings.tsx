@@ -1,187 +1,316 @@
+import { File, Paths } from "expo-file-system";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Switch, View } from "react-native";
+import { Alert, Pressable, ScrollView, Share, Switch, View } from "react-native";
 
 import { Button } from "@/components/Button";
+import { Field, Rule, Segmented, Stepper } from "@/components/Field";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { db } from "@/data/client";
+import { exportAll } from "@/data/export";
+import { syncReminders } from "@/data/reminders";
 import { getSettingsFor, updateSettings } from "@/data/settings";
 import { TOTAL_LESSONS } from "@/engine/constants";
 import { setHapticsEnabled } from "@/lib/haptics";
+import {
+  remindersAvailable,
+  requestPermission,
+  sendTestReminder,
+} from "@/lib/notifications";
 import { useSession } from "@/state/session";
-import { RADIUS, space } from "@/theme/layout";
+import { useThemeChoice, type ThemeChoice } from "@/state/theme";
+import { space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
-const useStyles = makeStyles((t) => ({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: space(1.5),
-    borderBottomWidth: 1,
-    borderBottomColor: t.colors.rule,
-  },
-  group: { paddingTop: space(3), paddingBottom: space(1) },
-  stepper: { flexDirection: "row", alignItems: "center", gap: space(2) },
-  step: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.button,
-    borderWidth: 1,
-    borderColor: t.colors.rule,
-    backgroundColor: t.colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+const useStyles = makeStyles(() => ({
+  group: { paddingTop: space(3), gap: space(0.5) },
 }));
+
+/* 12 hour labels, because a reminder time is read, not calculated. */
+function hourLabel(h: number): string {
+  const suffix = h < 12 ? "am" : "pm";
+  const twelve = h % 12 === 0 ? 12 : h % 12;
+  return `${twelve}${suffix}`;
+}
 
 export default function SettingsScreen() {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
+  const themeChoice = useThemeChoice((st) => st.choice);
+  const setThemeChoice = useThemeChoice((st) => st.setChoice);
 
   const [config, setConfig] = useState(() =>
     profileId === null ? null : getSettingsFor(db, profileId),
   );
+  const [busy, setBusy] = useState(false);
 
   if (profileId === null || !config) return null;
 
   const patch = (next: Parameters<typeof updateSettings>[2]) => {
-    setConfig(updateSettings(db, profileId, next));
+    const updated = updateSettings(db, profileId, next);
+    setConfig(updated);
+    /* Any change to a reminder field invalidates the scheduled window. */
+    void syncReminders(db, profileId);
   };
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingBottom: space(4) }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: space(5) }}>
+        <Text variant="eyebrow" color="inkSoft">
+          Preferences
+        </Text>
         <Text variant="pageTitle">Settings</Text>
 
-        <Text variant="eyebrow" color="inkSoft" style={s.group}>
-          The course
-        </Text>
-
-        {/*
-          The app never unlocks a lesson on its own. This is the control that
-          moves the course forward, and moving it restamps currentLessonSince,
-          which is what starts the 14 day interval cap on the new lesson.
-        */}
-        <View style={s.row}>
-          <View>
-            <Text>Current lesson</Text>
-            <Text variant="label" color="inkFaint">
-              What the class has covered
-            </Text>
-          </View>
-          <View style={s.stepper}>
-            <Pressable
-              style={s.step}
-              onPress={() =>
-                patch({ currentLesson: Math.max(1, config.currentLesson - 1) })
-              }
-            >
-              <Text>−</Text>
-            </Pressable>
-            <Text variant="pageTitle">{String(config.currentLesson)}</Text>
-            <Pressable
-              style={s.step}
-              onPress={() =>
-                patch({
-                  currentLesson: Math.min(TOTAL_LESSONS, config.currentLesson + 1),
-                })
-              }
-            >
-              <Text>+</Text>
-            </Pressable>
-          </View>
+        <View style={s.group}>
+          <Field label="Theme">
+            <Segmented<ThemeChoice>
+              value={themeChoice}
+              options={[
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
+                { value: "system", label: "System" },
+              ]}
+              onChange={setThemeChoice}
+            />
+          </Field>
         </View>
 
-        <View style={s.row}>
-          <View>
-            <Text>New cards a day</Text>
-            <Text variant="label" color="inkFaint">
-              How fast new words arrive
-            </Text>
-          </View>
-          <View style={s.stepper}>
-            <Pressable
-              style={s.step}
-              onPress={() => patch({ newPerDay: Math.max(0, config.newPerDay - 2) })}
-            >
-              <Text>−</Text>
-            </Pressable>
-            <Text variant="pageTitle">{String(config.newPerDay)}</Text>
-            <Pressable
-              style={s.step}
-              onPress={() => patch({ newPerDay: Math.min(50, config.newPerDay + 2) })}
-            >
-              <Text>+</Text>
-            </Pressable>
-          </View>
+        <Rule />
+
+        <View style={s.group}>
+          {/* The app never unlocks a lesson on its own. Moving this restamps
+              currentLessonSince, which starts the 14 day interval cap. */}
+          <Field label="Current lesson" hint="What the class has covered">
+            <Stepper
+              value={config.currentLesson}
+              min={1}
+              max={TOTAL_LESSONS}
+              onChange={(currentLesson) => patch({ currentLesson })}
+            />
+          </Field>
+
+          <Field label="New cards per day" hint="How fast new words arrive">
+            <Stepper
+              value={config.newPerDay}
+              min={0}
+              max={60}
+              step={2}
+              onChange={(newPerDay) => patch({ newPerDay })}
+            />
+          </Field>
+
+          <Field label="Max reviews per day" hint="The ceiling on one session">
+            <Stepper
+              value={config.maxReviews}
+              min={10}
+              max={400}
+              step={10}
+              onChange={(maxReviews) => patch({ maxReviews })}
+            />
+          </Field>
+
+          <Field label="Speed window" hint="Time per word in the speed drill">
+            <Stepper
+              value={config.speedWindowMs}
+              min={700}
+              max={5000}
+              step={100}
+              format={(n) => `${(n / 1000).toFixed(1)}s`}
+              onChange={(speedWindowMs) => patch({ speedWindowMs })}
+            />
+          </Field>
+
+          <Field label="Show harakat" hint="The short vowels, on every card face">
+            <Switch
+              value={config.showHarakat}
+              onValueChange={(showHarakat) => patch({ showHarakat })}
+              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+            />
+          </Field>
         </View>
 
-        <Text variant="eyebrow" color="inkSoft" style={s.group}>
-          Reading
-        </Text>
+        <Rule />
 
-        <View style={s.row}>
-          <View>
-            <Text>Show harakat</Text>
-            <Text variant="label" color="inkFaint">
-              The short vowels, on every card face
-            </Text>
-          </View>
-          <Switch
-            value={config.showHarakat}
-            onValueChange={(v) => patch({ showHarakat: v })}
-            trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-          />
-        </View>
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Reminders
+          </Text>
 
-        <Text variant="eyebrow" color="inkSoft" style={s.group}>
-          This device
-        </Text>
+          <Field
+            label="Daily reminders"
+            hint="Silent when nothing is due, or when you have just finished"
+          >
+            <Switch
+              value={config.remindersOn}
+              disabled={!remindersAvailable()}
+              onValueChange={async (remindersOn) => {
+                /* Permission is asked here and nowhere else. iOS gives exactly
+                   one chance, so it is spent on an explicit toggle. */
+                if (remindersOn) {
+                  const granted = await requestPermission();
+                  if (!granted) {
+                    Alert.alert(
+                      "Notifications are off",
+                      "Durus cannot schedule reminders until notifications are allowed for it in iOS Settings.",
+                    );
+                    return;
+                  }
+                }
+                patch({ remindersOn });
+              }}
+              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+            />
+          </Field>
 
-        <View style={s.row}>
-          <View>
-            <Text>Haptics</Text>
-            <Text variant="label" color="inkFaint">
-              A tap when you choose an answer
-            </Text>
-          </View>
-          <Switch
-            value={config.hapticsEnabled}
-            onValueChange={(v) => {
-              setHapticsEnabled(v);
-              patch({ hapticsEnabled: v });
+          {config.remindersOn ? (
+            <>
+              <Field label="First reminder">
+                <Stepper
+                  value={config.reminderHour}
+                  min={5}
+                  max={22}
+                  format={hourLabel}
+                  onChange={(reminderHour) => patch({ reminderHour })}
+                />
+              </Field>
+
+              <Field label="Second reminder">
+                <Switch
+                  value={config.secondReminderOn}
+                  onValueChange={(secondReminderOn) => patch({ secondReminderOn })}
+                  trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+                />
+              </Field>
+
+              {config.secondReminderOn ? (
+                <Field label="Second time">
+                  <Stepper
+                    value={config.reminderHour2}
+                    min={5}
+                    max={22}
+                    format={hourLabel}
+                    onChange={(reminderHour2) => patch({ reminderHour2 })}
+                  />
+                </Field>
+              ) : null}
+
+              <Field
+                label="Class day nudge"
+                hint="Wednesday, whether or not anything is due"
+              >
+                <Switch
+                  value={config.classDayReminder}
+                  onValueChange={(classDayReminder) => patch({ classDayReminder })}
+                  trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+                />
+              </Field>
+            </>
+          ) : null}
+
+          <Button
+            label="Send a test reminder"
+            variant="quiet"
+            onPress={async () => {
+              const ok = await sendTestReminder();
+              Alert.alert(
+                ok ? "On its way" : "Could not schedule",
+                ok
+                  ? "It will arrive in about five seconds. Lock the phone to see it as you normally would."
+                  : "Notifications are not allowed for Durus. Turn them on in iOS Settings.",
+              );
             }}
-            trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
           />
         </View>
 
-        <View style={s.row}>
-          <View>
-            <Text>Reduce motion</Text>
-            <Text variant="label" color="inkFaint">
-              The card turn becomes a fade
-            </Text>
-          </View>
-          <Switch
-            value={config.reduceMotion}
-            onValueChange={(v) => patch({ reduceMotion: v })}
-            trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-          />
+        <Rule />
+
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            This device
+          </Text>
+
+          <Field label="Haptics" hint="A tap when you choose an answer">
+            <Switch
+              value={config.hapticsEnabled}
+              onValueChange={(hapticsEnabled) => {
+                setHapticsEnabled(hapticsEnabled);
+                patch({ hapticsEnabled });
+              }}
+              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+            />
+          </Field>
+
+          <Field label="Reduce motion" hint="The card turn becomes a fade">
+            <Switch
+              value={config.reduceMotion}
+              onValueChange={(reduceMotion) => patch({ reduceMotion })}
+              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+            />
+          </Field>
         </View>
 
-        <Pressable style={s.row} onPress={() => router.push("/about")}>
-          <Text>About</Text>
-          <Text color="inkFaint">›</Text>
+        <Rule />
+
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Data
+          </Text>
+          <Button
+            label={busy ? "Preparing…" : "Export all data as JSON"}
+            variant="quiet"
+            disabled={busy}
+            onPress={async () => {
+              setBusy(true);
+              try {
+                const data = exportAll(db, profileId);
+                /*
+                  A real .json file rather than a string in a share sheet. An
+                  export of a few thousand reviews is far past what a share
+                  message body handles gracefully, and a file is what the user
+                  actually wants at the other end - it lands in Files, iCloud or
+                  a mail attachment intact.
+                */
+                const name = `durus-${new Date().toISOString().slice(0, 10)}.json`;
+                /* SDK 55's File API, not the legacy writeAsStringAsync helpers.
+                   Cache rather than documents: an export is a copy on its way
+                   somewhere else, and leaving them in documents accumulates
+                   files the user never asked to keep. */
+                const file = new File(Paths.cache, name);
+                if (file.exists) file.delete();
+                file.create();
+                file.write(JSON.stringify(data, null, 2));
+                const uri = file.uri;
+                /* iOS's share sheet takes a file:// url directly, so this needs
+                   no extra native module - the recipient gets a real .json
+                   attachment rather than pasted text. */
+                await Share.share({ url: uri, title: name });
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+          <Text variant="label" color="inkFaint">
+            Everything this profile has answered, as JSON.
+          </Text>
+
+          <Pressable onPress={() => router.push("/paste")} style={{ paddingVertical: space(1.5) }}>
+            <Text color="lapis">Add cards from a pasted block</Text>
+          </Pressable>
+        </View>
+
+        <Rule />
+
+        <Pressable onPress={() => router.push("/about")} style={{ paddingVertical: space(2) }}>
+          <Text>About Durus</Text>
         </Pressable>
 
         <Button
           label="Back to today"
-          variant="secondary"
-          style={{ marginTop: space(3) }}
+          variant="quiet"
+          style={{ marginTop: space(2) }}
           onPress={() => router.back()}
         />
       </ScrollView>

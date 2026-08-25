@@ -4,6 +4,8 @@ import { Pressable, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
+import { ExitDrill } from "@/components/ExitDrill";
+import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
@@ -23,17 +25,21 @@ import { RADIUS, space } from "@/theme/layout";
 import { makeStyles } from "@/theme/useTheme";
 
 const useStyles = makeStyles((t) => ({
-  head: { alignItems: "center", gap: space(1) },
-  prompt: { flex: 1, alignItems: "center", justifyContent: "center", gap: space(3) },
-  options: { gap: space(1), width: "100%" },
+  head: { alignItems: "center", gap: space(1), paddingBottom: space(2) },
+  prompt: { flex: 1, justifyContent: "center", width: "100%", gap: space(3) },
+  /* Fixed share of the height, so the options never shift between cards. A word
+     that wraps would otherwise move the row about to be tapped. */
+  face: { minHeight: 140, justifyContent: "center", alignItems: "center", width: "100%" },
+  options: { gap: space(1.5), width: "100%" },
   option: {
     borderWidth: 1,
     borderColor: t.colors.rule,
     backgroundColor: t.colors.surface,
     borderRadius: RADIUS.button,
-    paddingVertical: space(1.5),
-    paddingHorizontal: space(2),
-    minHeight: 52,
+    paddingVertical: space(2),
+    paddingHorizontal: space(2.5),
+    minHeight: 56,
+    width: "100%",
     justifyContent: "center",
   },
 }));
@@ -44,6 +50,7 @@ export default function Speed() {
   const s = useStyles();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
+  const help = useHelp("speed");
   const boot = bootOnce();
 
   const start = useMemo(() => {
@@ -139,7 +146,7 @@ export default function Speed() {
         </Text>
         <Button
           label="Back to today"
-          variant="secondary"
+          variant="quiet"
           style={{ marginTop: space(3) }}
           onPress={() => router.back()}
         />
@@ -170,9 +177,13 @@ export default function Speed() {
   return (
     <Screen>
       <View style={s.head}>
-        <Text variant="eyebrow" color="inkSoft">
-          Speed drill
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text variant="eyebrow" color="inkSoft">
+            Speed drill
+          </Text>
+          <HelpButton onPress={help.show} />
+          <ExitDrill confirm label="Leave" />
+        </View>
         {/* Keyed to the card, so a remount can never leave a half finished
             drain attached to the next word. */}
         <SpeedRing key={round.word.cardId} windowMs={start.windowMs} running />
@@ -182,9 +193,11 @@ export default function Speed() {
       </View>
 
       <View style={s.prompt}>
-        <Arabic variant="card" showHarakat={start.showHarakat}>
-          {round.word.arabic}
-        </Arabic>
+        <View style={s.face}>
+          <Arabic variant="card" showHarakat={start.showHarakat}>
+            {round.word.arabic}
+          </Arabic>
+        </View>
 
         <View style={s.options}>
           {round.options.map((o) => (
@@ -201,6 +214,7 @@ export default function Speed() {
           ))}
         </View>
       </View>
+      <Help topic="speed" open={help.open} onClose={help.close} />
     </Screen>
   );
 }

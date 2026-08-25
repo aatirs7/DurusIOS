@@ -18,10 +18,13 @@
     "brand:build": "tsx scripts/make-brand-assets.ts"
   },
   "dependencies": {
+    "@expo-google-fonts/amiri": "^0.4.1",
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "drizzle-orm": "^0.45.2",
     "expo": "~55.0.29",
     "expo-constants": "~55.0.17",
+    "expo-file-system": "~55.0.25",
     "expo-font": "~55.0.8",
     "expo-haptics": "~55.0.17",
     "expo-linking": "~55.0.17",

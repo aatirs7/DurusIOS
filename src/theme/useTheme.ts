@@ -7,16 +7,22 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import { useThemeChoice } from "@/state/theme";
+
 import { THEMES, type SchemeKey, type Theme } from "./tokens";
 
 /*
   Durus has a real light mode - it is the icon's own colours - so the scheme
-  follows the system rather than being a stored choice, matching app.json's
-  userInterfaceStyle: "automatic". This is the one place useColorScheme is read.
+  follows the system by default, matching app.json's userInterfaceStyle:
+  "automatic". A stored choice overrides it, which is what the corner glyph
+  writes. This is the one place useColorScheme is read.
 */
 export function useTheme(): Theme {
   const scheme = useColorScheme();
-  return THEMES[(scheme ?? "light") as SchemeKey] ?? THEMES.light;
+  const choice = useThemeChoice((s) => s.choice);
+  const key: SchemeKey =
+    choice === "system" ? ((scheme ?? "light") as SchemeKey) : choice;
+  return THEMES[key] ?? THEMES.light;
 }
 
 /*

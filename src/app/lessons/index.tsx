@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
-import { ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
@@ -44,7 +44,11 @@ export default function Lessons() {
       <Text variant="pageTitle">Lessons</Text>
       <ScrollView contentContainerStyle={{ paddingBottom: space(4) }}>
         {view.rows.map((l) => (
-          <View key={l.number} style={[s.row, !l.unlocked && s.locked]}>
+          <Pressable
+            key={l.number}
+            style={[s.row, !l.unlocked && s.locked]}
+            onPress={() => router.push(`/lessons/${l.number}`)}
+          >
             {/*
               Arabic and English stacked as separate elements rather than joined
               into one line. Bidi reorders them around each other inside a single
@@ -63,12 +67,12 @@ export default function Lessons() {
                   : `${l.seen} of ${l.total} seen`}
               </Text>
             </View>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
       <Button
         label="Back to today"
-        variant="secondary"
+        variant="quiet"
         onPress={() => router.back()}
       />
     </Screen>

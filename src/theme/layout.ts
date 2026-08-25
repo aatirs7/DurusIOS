@@ -24,5 +24,7 @@ export const HAIRLINE = 1;
 */
 export const BAND_HEIGHT = 96;
 
-/* 23 lesson ticks across the width of Today. */
-export const TICK = { width: 6, height: 14, gap: 4 } as const;
+/* 23 lesson ticks across the width of Today. Hairline marks, not bars: the web
+   sets h-4 w-[2px] with a 6px gap, and anything fatter reads as a segmented
+   progress bar rather than a scale. */
+export const TICK = { width: 2, height: 16, gap: 6 } as const;

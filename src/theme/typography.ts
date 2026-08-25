@@ -3,21 +3,19 @@ import { Platform, type TextStyle } from "react-native";
 /*
   Type scale, ported from the web app's globals.css and components/ui.tsx.
 
-  !!! PLACEHOLDER FONTS - AREA OF CONCERN !!!
-
   Spec section 7.2 calls for three families: Satoshi for UI, IBM Plex Mono for
-  numerals, Amiri for Arabic. None of them are bundled yet:
+  numerals, Amiri for Arabic. Two of the three are now bundled.
 
-    - Satoshi ships in the web repo only as Satoshi-Variable.woff2. woff2 does
-      not work in React Native at all, and the spec additionally requires one
-      static cut per weight. The statics have to come from the original licence.
-    - Amiri: the web repo has Amiri-Regular.ttf. Section 7.2 wants 400 and 700.
-    - IBM Plex Mono is OFL and can simply be fetched.
+  Amiri matters most and is no longer optional. On the placeholder face (iOS's
+  Geeza Pro) the harakat detached from their letters and floated above the word
+  - a vowelled card was unreadable, which for this app is not a cosmetic
+  problem. Amiri carries the mark positioning the text depends on.
 
-  Until those land, FONTS points at the platform faces and the app is legible
-  but wrong. The Arabic in particular will render in whatever naskh face iOS
-  picks, not Amiri, and the harakat line height tuned below is for Amiri's
-  metrics. Do not ship to real users on placeholders.
+  Satoshi is still the system face. It ships in the web repo only as
+  Satoshi-Variable.woff2; woff2 does not work in React Native at all, and
+  section 7.2 additionally wants one static cut per weight, so the statics have
+  to come from the Fontshare licence. Until then the UI is set in SF, which is
+  a defensible face rather than a broken one.
 
   The rule that survives the swap, and the reason this file is shaped this way:
   each weight is registered as its OWN family name and fontWeight is never set
@@ -25,18 +23,15 @@ import { Platform, type TextStyle } from "react-native";
   produces synthesised bolding or silently picks the wrong face.
 */
 export const FONTS = {
-  /* TODO(fonts): "Satoshi-Regular" / "-Medium" once the statics are bundled. */
+  /* TODO(fonts): "Satoshi-Regular" / "-Medium" once the statics are licensed. */
   uiRegular: Platform.select({ ios: "System", default: "System" })!,
   uiMedium: Platform.select({ ios: "System", default: "System" })!,
-  /* TODO(fonts): "IBMPlexMono-Regular". */
-  mono: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" })!,
-  /* TODO(fonts): "Amiri-Regular" / "Amiri-Bold". */
-  arabicRegular: Platform.select({ ios: "Geeza Pro", default: "serif" })!,
-  arabicBold: Platform.select({ ios: "Geeza Pro", default: "serif" })!,
+  mono: "IBMPlexMono_400Regular",
+  arabicRegular: "Amiri_400Regular",
+  arabicBold: "Amiri_700Bold",
 } as const;
 
-/* True once real faces are bundled. Flipped in the same commit that adds them,
-   so anything gating on font metrics has one thing to read. */
+/* Only the UI face is still a stand-in. The About screen reads this. */
 export const FONTS_ARE_PLACEHOLDERS = true;
 
 export type TextVariant =

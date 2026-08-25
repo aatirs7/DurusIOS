@@ -1,9 +1,15 @@
+import { Amiri_400Regular, Amiri_700Bold } from "@expo-google-fonts/amiri";
+import {
+  IBMPlexMono_400Regular,
+  IBMPlexMono_500Medium,
+} from "@expo-google-fonts/ibm-plex-mono";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { useEffect, useMemo } from "react";
-import { View } from "react-native";
+import { AppState, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -11,8 +17,9 @@ import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
-import { DB_NAME, sqlite } from "@/data/client";
+import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
+import { syncReminders } from "@/data/reminders";
 import { useSession } from "@/state/session";
 import { space } from "@/theme/layout";
 import { useTheme } from "@/theme/useTheme";
@@ -38,6 +45,19 @@ export default function RootLayout() {
   const hydrated = useSession((s) => s._hydrated);
   const setActiveProfile = useSession((s) => s.setActiveProfile);
 
+  /*
+    Amiri is load-bearing rather than decorative: without it the harakat detach
+    from their letters and float above the word, which makes a vowelled card
+    unreadable. A missing font must still never block launch though, so a load
+    error degrades to the system face rather than holding the splash.
+  */
+  const [fontsLoaded, fontError] = useFonts({
+    Amiri_400Regular,
+    Amiri_700Bold,
+    IBMPlexMono_400Regular,
+    IBMPlexMono_500Medium,
+  });
+
   /* bootOnce is synchronous and memoised at module scope, so this is a read
      rather than a side effect that has to settle over several renders. */
   const boot = useMemo(
@@ -54,6 +74,25 @@ export default function RootLayout() {
     SystemUI.setBackgroundColorAsync(theme.colors.paper).catch(() => {});
   }, [theme]);
 
+  /*
+    The rolling notification window is rebuilt on every foreground, and after
+    every session (see review.tsx).
+
+    It has to be re-planned rather than left alone because a DAILY trigger
+    cannot consult the due count: the whole point is that a slot goes quiet when
+    nothing is waiting. Time passing changes which slots deserve a notification
+    even when the user has done nothing at all.
+  */
+  useEffect(() => {
+    if (!boot?.ok) return;
+    const profileId = boot.profileId;
+    void syncReminders(db, profileId);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") void syncReminders(db, profileId);
+    });
+    return () => sub.remove();
+  }, [boot]);
+
   const failure =
     migration.phase === "failed"
       ? migration.error
@@ -61,7 +100,7 @@ export default function RootLayout() {
         ? boot.error
         : null;
 
-  const ready = !!boot?.ok && hydrated;
+  const ready = !!boot?.ok && hydrated && (fontsLoaded || !!fontError);
 
   useEffect(() => {
     if (ready || failure) SplashScreen.hideAsync().catch(() => {});

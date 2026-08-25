@@ -92,3 +92,27 @@ export function dayKey(at: Date, timeZone: string): string {
   }
   return f.format(at);
 }
+
+/*
+  The Today header line, formatted exactly as the web sets it:
+  "12 Rabi' I 1448 AH, 25 August 2026".
+
+  Both halves carry the year and both run through the profile's timezone, so the
+  two calendars never disagree about which day it is.
+*/
+export function dateLine(now: Date, timeZone: string): string {
+  let gregorian: string;
+  try {
+    gregorian = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(now);
+  } catch {
+    gregorian = now.toDateString();
+  }
+
+  const hijri = hijriDate(now);
+  return hijri ? `${hijri} AH, ${gregorian}` : gregorian;
+}
