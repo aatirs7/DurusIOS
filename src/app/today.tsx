@@ -42,7 +42,14 @@ const useStyles = makeStyles((t) => ({
   numeral: { ...textStyles.numeral, color: t.colors.ink },
 
   grid: { flexDirection: "row", flexWrap: "wrap", width: "100%" },
-  gridItem: { width: "50%" },
+  /*
+    alignItems, not just width. The web's ButtonLink is `inline-flex
+    justify-center` at `w-full`, so each label centres inside its own column.
+    A React Native Pressable does not centre its child for free, so half the
+    grid was sitting hard against the left of its column while everything above
+    it on the screen was centred.
+  */
+  gridItem: { width: "50%", alignItems: "center" },
 
   /*
     Flows directly under the links rather than being pushed to the bottom edge.

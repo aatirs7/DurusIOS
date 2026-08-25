@@ -159,7 +159,7 @@ export default function SettingsScreen() {
 
           <Field
             label="Daily reminders"
-            hint="Silent when nothing is due, or when you have just finished"
+            hint="A time to sit down, once or twice a day"
           >
             <Switch
               value={config.remindersOn}
@@ -217,7 +217,7 @@ export default function SettingsScreen() {
 
               <Field
                 label="Class day nudge"
-                hint="Wednesday, whether or not anything is due"
+                hint="Wednesday, to add the words from class"
               >
                 <Switch
                   value={config.classDayReminder}
@@ -363,7 +363,22 @@ export default function SettingsScreen() {
                     "Your progress stays on this phone and syncs again when you sign back in.",
                     [
                       { text: "Stay", style: "cancel" },
-                      { text: "Sign out", style: "destructive", onPress: () => void signOut() },
+                      {
+                        text: "Sign out",
+                        style: "destructive",
+                        /*
+                          Leave for the sign in screen ourselves rather than
+                          waiting to be redirected. Signing out is not reactive
+                          here - the gate on the index route reads the local
+                          account row at launch - so without this the app sits
+                          on a Settings screen belonging to an account it no
+                          longer has.
+                        */
+                        onPress: () => {
+                          void signOut();
+                          router.replace("/welcome");
+                        },
+                      },
                     ],
                   )
                 }

@@ -14,15 +14,17 @@ type SessionState = Hydratable & {
   */
   activeProfileId: number | null;
   setActiveProfile: (id: number | null) => void;
-  /* Null until the welcome screen has been answered one way or the other, so a
-     reinstall that kept its data does not ask again. */
-  /* Null until the setup questions have been answered. Separate from
-     welcomedAt: setup is about the book and the schedule, welcome is about an
-     account, and skipping one must not skip the other. */
+  /*
+    Null until onboarding has been completed in full, which now includes
+    signing in - the flow writes nothing before that, so this doubles as the
+    record that there is something worth resuming into.
+
+    There used to be a second flag recording that the account question had been
+    answered, because it could be answered by declining. It cannot any more, so
+    one flag says everything.
+  */
   onboardedAt: number | null;
   completeOnboarding: () => void;
-  welcomedAt: number | null;
-  completeWelcome: () => void;
 };
 
 export const useSession = create<SessionState>()(
@@ -34,8 +36,6 @@ export const useSession = create<SessionState>()(
       setActiveProfile: (id) => set({ activeProfileId: id }),
       onboardedAt: null,
       completeOnboarding: () => set({ onboardedAt: Date.now() }),
-      welcomedAt: null,
-      completeWelcome: () => set({ welcomedAt: Date.now() }),
     }),
     {
       name: KEYS.session,

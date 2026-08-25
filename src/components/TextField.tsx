@@ -26,9 +26,16 @@ const useStyles = makeStyles((t) => ({
     /* 56pt clears Apple's 44pt minimum with room for descenders. */
     height: 58,
   },
+  centered: { textAlign: "center" },
 }));
 
-export function TextField(props: TextInputProps) {
+/*
+  `centered` rather than passing textAlign through style: the placeholder and
+  the typed value have to agree, and on iOS a TextInput whose alignment is set
+  only once the user starts typing visibly jumps its content sideways on the
+  first keystroke.
+*/
+export function TextField({ centered, ...props }: TextInputProps & { centered?: boolean }) {
   const s = useStyles();
   const theme = useTheme();
   const [focused, setFocused] = useState(false);
@@ -39,7 +46,7 @@ export function TextField(props: TextInputProps) {
         {...props}
         placeholderTextColor={theme.colors.inkFaint}
         selectionColor={theme.colors.lapis}
-        style={[s.input, props.style]}
+        style={[s.input, centered && s.centered, props.style]}
         onFocus={(e) => {
           setFocused(true);
           props.onFocus?.(e);

@@ -42,5 +42,34 @@ export const TICK = { width: 2, height: 16, gap: 6 } as const;
   again and dismiss it ourselves.
 */
 export const ENTER_MS = 420;
-/* Long enough that the mark is actually seen rather than glimpsed. */
-export const SPLASH_HOLD_MS = 550;
+
+/*
+  How long the drawn splash sits still before it begins to leave, and how long
+  it takes to go.
+
+  Deliberately slower than the app enter fade. The native launch image is
+  replaced the instant the first frame draws, so these two numbers are the whole
+  of the transition the user actually perceives - at half a second the mark
+  registered as a flash and the app appeared to jump. A held beat followed by a
+  long fade reads as the app opening rather than as a screen being swapped.
+*/
+export const SPLASH_HOLD_MS = 1100;
+export const SPLASH_FADE_MS = 700;
+
+/*
+  The width, in points, at which the splash mark is drawn - by
+  expo-splash-screen before JavaScript runs, and by AnimatedSplash after.
+
+  BOTH have to use it. The drawn splash exists only to be indistinguishable
+  from the native one, and a few points of difference in the mark's size is
+  exactly the kind of mismatch that reads as a flicker at the hand-off.
+
+  The value itself comes from the web app: scripts/make-pwa-assets.ts sets the
+  launch image's word at 0.16 of the screen's short edge, and this is what
+  reproduces that on a 393pt class phone given the proportions the mark is
+  generated at. See scripts/make-brand-assets.ts.
+*/
+export const SPLASH_IMAGE_WIDTH = 155;
+/* The generated mark's canvas is 1000x700; the drawn Image has to be given the
+   same ratio or `contain` letterboxes it and silently shrinks the word. */
+export const SPLASH_IMAGE_HEIGHT = Math.round((SPLASH_IMAGE_WIDTH * 700) / 1000);

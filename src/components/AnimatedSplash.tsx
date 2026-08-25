@@ -9,7 +9,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { ENTER_MS, SPLASH_HOLD_MS } from "@/theme/layout";
+import {
+  SPLASH_FADE_MS,
+  SPLASH_HOLD_MS,
+  SPLASH_IMAGE_HEIGHT,
+  SPLASH_IMAGE_WIDTH,
+} from "@/theme/layout";
 import { useTheme } from "@/theme/useTheme";
 
 /*
@@ -21,7 +26,8 @@ import { useTheme } from "@/theme/useTheme";
   JavaScript the moment the native one goes, hold it briefly, and fade it.
 
   It has to match the native splash exactly or the swap is visible: same mark,
-  same width (200pt, per app.json imageWidth), same ground. The app is already
+  same width (SPLASH_IMAGE_WIDTH, which app.json's imageWidth also uses), same
+  ground. The app is already
   mounted underneath, so the fade reveals a finished screen rather than an empty
   frame.
 */
@@ -34,9 +40,13 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
       SPLASH_HOLD_MS,
       withTiming(
         0,
-        /* The same curve as globals.css durus-enter. Nearly all ease-out, so it
-           leaves briskly and settles rather than stopping dead. */
-        { duration: ENTER_MS, easing: Easing.bezier(0.2, 0, 0.1, 1) },
+        /*
+          Ease-IN-out rather than the app's usual ease-out curve. The mark
+          should linger a moment longer before it starts to go, so the fade
+          begins imperceptibly instead of the opacity dropping the instant the
+          hold expires - which is what made a 550ms hold read as an abrupt cut.
+        */
+        { duration: SPLASH_FADE_MS, easing: Easing.bezier(0.4, 0, 0.2, 1) },
         (finished) => {
           if (finished) runOnJS(onDone)();
         },
@@ -61,7 +71,7 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
             ? require("@/assets/brand/splash-dark.png")
             : require("@/assets/brand/splash.png")
         }
-        style={{ width: 200, height: 100 }}
+        style={{ width: SPLASH_IMAGE_WIDTH, height: SPLASH_IMAGE_HEIGHT }}
         resizeMode="contain"
         fadeDuration={0}
       />

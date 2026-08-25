@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -8,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { Arabic } from "@/components/Arabic";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
@@ -34,7 +36,17 @@ const useStyles = makeStyles((t) => ({
   field: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   word: { position: "absolute" },
 
-  header: { alignItems: "center", gap: space(1.5), paddingBottom: space(1) },
+  header: { gap: space(1.5), paddingBottom: space(1) },
+  /*
+    The wordmark is centred in the row while back and theme sit in the corners.
+    Both corners reserve the same width whether or not they hold anything, so
+    the wordmark does not shift sideways when the back button appears on step
+    two.
+  */
+  bar: { flexDirection: "row", alignItems: "center" },
+  corner: { width: 44, alignItems: "center", justifyContent: "center" },
+  cornerEnd: { width: 44, alignItems: "flex-end", justifyContent: "center" },
+  mark: { flex: 1, alignItems: "center" },
   track: { flexDirection: "row", gap: space(0.75), width: "100%" },
   segment: { flex: 1, height: 4, borderRadius: 999, backgroundColor: t.colors.rule, overflow: "hidden" },
   fill: { height: 4, borderRadius: 999, backgroundColor: t.colors.lapis },
@@ -102,15 +114,56 @@ export function WordField() {
   );
 }
 
-/* The wordmark and the step indicator, identical on every step so the frame
-   holds still while its contents change. */
-export function OnboardingChrome({ step, total }: { step: number; total: number }) {
+/* The wordmark, the step indicator, and the two controls that must be reachable
+   from every step: a way back, and the theme toggle. */
+export function OnboardingChrome({
+  step,
+  total,
+  onBack,
+}: {
+  step: number;
+  total: number;
+  onBack?: () => void;
+}) {
   const s = useStyles();
+  const theme = useTheme();
+
   return (
     <View style={s.header}>
-      <Arabic variant="title" color="lapis" showHarakat={false}>
-        دروس
-      </Arabic>
+      <View style={s.bar}>
+        <View style={s.corner}>
+          {onBack ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              onPress={onBack}
+              hitSlop={12}
+            >
+              <Svg width={24} height={24} viewBox="0 0 24 24">
+                <Path
+                  d="M15 5l-7 7 7 7"
+                  stroke={theme.colors.ink}
+                  strokeWidth={1.75}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </Svg>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <View style={s.mark}>
+          <Arabic variant="title" color="lapis" showHarakat={false}>
+            دروس
+          </Arabic>
+        </View>
+
+        <View style={s.cornerEnd}>
+          <ThemeToggle />
+        </View>
+      </View>
+
       <View style={s.track}>
         {Array.from({ length: total }, (_, i) => (
           <Segment key={i} filled={i <= step} />

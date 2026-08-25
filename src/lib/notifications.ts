@@ -60,22 +60,21 @@ async function ensureChannel(N: NotificationsModule) {
   }
 }
 
-/* How far ahead the rolling window reaches. */
-const HORIZON_DAYS = 7;
 const WEDNESDAY = 3;
 
 export type SlotPlan = {
-  /* Epoch ms of the moment this reminder should fire. */
-  at: number;
+  /* Hour of the day, 0-23, in the device's own local time. */
+  hour: number;
   body: string;
-  classNudge: boolean;
+  /* Set only for the weekly class nudge; absent means every day. */
+  weekday?: number;
 };
 
 /*
   Only the fields the plan actually reads. Deliberately NOT engine
   ReminderConfig: that type still carries lastNotifiedOn and lastNotifiedHour,
-  which the rolling window design dropped - the notification identifiers are the
-  dedupe now, so there is no "was this slot served" to record.
+  which belonged to a design where the app decided each morning whether a slot
+  had earned a notification. It no longer makes that judgement.
 */
 export type ReminderSettings = {
   remindersOn: boolean;
@@ -87,66 +86,42 @@ export type ReminderSettings = {
 };
 
 /*
-  Works out which of the next seven days' slots deserve a notification.
+  Turns the settings into a small set of repeating triggers.
 
-  SchedulableTriggerInputTypes.DAILY fires unconditionally - it cannot consult
-  the due count - so instead of one repeating trigger this schedules a rolling
-  window of one-shot triggers and re-plans after every session and every
-  foreground. The silence is the feature, and a daily trigger cannot be silent.
+  A reminder is a time the user picked to sit down and study, not a report on
+  the queue. An earlier version consulted the due count and stayed silent on a
+  clear day, which meant scheduling a rolling window of one-shot triggers and
+  re-planning after every session, because a DAILY trigger cannot ask a
+  question. Dropping the condition drops all of that: two repeating triggers
+  survive being offline, being force quit, and being left alone for a month, and
+  none of it depends on the app having run recently.
 
-  Pure, so it is testable without the native module: it takes the clock and a
-  function that says how many cards are due by a given moment.
+  Pure, so it is testable without the native module.
 */
-export function planReminders(
-  config: ReminderSettings,
-  now: Date,
-  dueBy: (at: Date) => number,
-): SlotPlan[] {
+export function planReminders(config: ReminderSettings): SlotPlan[] {
   if (!config.remindersOn) return [];
 
   const slots = activeSlots({ ...config, lastNotifiedOn: null, lastNotifiedHour: null });
-  if (slots.length === 0) return [];
 
-  const plans: SlotPlan[] = [];
+  const plans: SlotPlan[] = slots.map((hour) => ({
+    hour,
+    /* Copy rules: no exclamation, no superlative, second person, no praise and
+       no count - a number here would be a claim about the queue, which is the
+       thing this no longer knows. */
+    body: "Time to revise.",
+  }));
 
-  for (let day = 0; day < HORIZON_DAYS; day += 1) {
-    const base = new Date(now);
-    base.setDate(base.getDate() + day);
-
-    const isClassDay = base.getDay() === WEDNESDAY;
-
-    slots.forEach((hour, i) => {
-      const at = new Date(base);
-      at.setHours(hour, 0, 0, 0);
-      if (at.getTime() <= now.getTime()) return;
-
-      /*
-        The Wednesday nudge replaces the FIRST slot of the day only, and it
-        fires regardless of due count - it is about the class, not the queue.
-      */
-      const classNudge = isClassDay && config.classDayReminder && i === 0;
-      if (classNudge) {
-        plans.push({
-          at: at.getTime(),
-          body: `Add today's words from Lesson ${config.currentLesson}`,
-          classNudge: true,
-        });
-        return;
-      }
-
-      /*
-        Silence when nothing is due. reviewsInLastFourHours cannot be predicted
-        from here, which is why the whole plan is rebuilt at the end of every
-        session - finishing one naturally drops the next slot.
-      */
-      const due = dueBy(at);
-      if (due <= 0) return;
-
-      plans.push({
-        at: at.getTime(),
-        body: due === 1 ? "1 word is due" : `${due} words are due`,
-        classNudge: false,
-      });
+  /*
+    The class nudge is a different kind of thing: weekly, tied to the lesson
+    rather than the schedule, and it says what to do rather than that it is
+    time. It rides at the first slot's hour so it never arrives at an hour the
+    user did not choose.
+  */
+  if (config.classDayReminder) {
+    plans.push({
+      hour: slots[0] ?? config.reminderHour,
+      weekday: WEDNESDAY,
+      body: `Add today's words from Lesson ${config.currentLesson}`,
     });
   }
 
@@ -156,9 +131,12 @@ export function planReminders(
 const PREFIX = "durus-slot-";
 
 /*
-  Cancels everything and lays down the new window. Cancel-all rather than a
-  diff: the identifiers are ours, the set is at most fourteen, and reconciling
-  two lists is how a reminder ends up scheduled twice.
+  Cancels everything and lays down the new set. Cancel-all rather than a diff:
+  the identifiers are ours, the set is at most three, and reconciling two lists
+  is how a reminder ends up scheduled twice.
+
+  These are REPEATING triggers, so this does not need to be called again on a
+  schedule - only when the settings themselves change.
 */
 export async function applyReminders(plans: SlotPlan[]): Promise<boolean> {
   const N = load();
@@ -172,19 +150,30 @@ export async function applyReminders(plans: SlotPlan[]): Promise<boolean> {
 
     for (const plan of plans) {
       await N.scheduleNotificationAsync({
-        identifier: `${PREFIX}${plan.at}`,
+        identifier: `${PREFIX}${plan.weekday ?? "d"}-${plan.hour}`,
         content: {
           title: "Durus",
           body: plan.body,
-          /* Copy rules: no exclamation, no superlative, second person, no
-             praise. And no sound - this is a nudge, not an alarm. */
+          /* No sound - this is a nudge, not an alarm. */
           sound: false,
         },
-        trigger: {
-          type: N.SchedulableTriggerInputTypes.DATE,
-          date: new Date(plan.at),
-          channelId: Platform.OS === "android" ? CHANNEL : undefined,
-        },
+        trigger:
+          plan.weekday === undefined
+            ? {
+                type: N.SchedulableTriggerInputTypes.DAILY,
+                hour: plan.hour,
+                minute: 0,
+                channelId: Platform.OS === "android" ? CHANNEL : undefined,
+              }
+            : {
+                type: N.SchedulableTriggerInputTypes.WEEKLY,
+                /* expo-notifications counts weekdays from 1 = Sunday, while
+                   Date#getDay counts from 0. WEDNESDAY is the getDay value. */
+                weekday: plan.weekday + 1,
+                hour: plan.hour,
+                minute: 0,
+                channelId: Platform.OS === "android" ? CHANNEL : undefined,
+              },
       });
     }
     return true;

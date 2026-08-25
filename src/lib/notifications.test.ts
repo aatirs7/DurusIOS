@@ -1,114 +1,65 @@
 import { planReminders, type ReminderSettings } from "./notifications";
 
 /*
-  A reminder gate that is slightly wrong does not throw. It just goes quiet, and
-  nobody notices for a week. That is why planReminders is pure and why this file
-  exists.
-*/
+  planReminders is pure, so none of this needs the native module.
 
+  What is being pinned down is that the plan is a function of the SETTINGS
+  alone. It used to also depend on the clock and on how many cards were due,
+  and those arguments are gone deliberately - see the comment on planReminders.
+*/
 const base: ReminderSettings = {
   remindersOn: true,
   reminderHour: 9,
-  secondReminderOn: true,
+  secondReminderOn: false,
   reminderHour2: 20,
-  classDayReminder: true,
+  classDayReminder: false,
   currentLesson: 4,
 };
 
-/* A Monday, so the Wednesday nudge is two days out rather than today. */
-const MONDAY = new Date(2026, 7, 24, 7, 0, 0);
-const always = () => 5;
-const never = () => 0;
-
 describe("planReminders", () => {
-  it("schedules nothing at all when reminders are off", () => {
-    expect(planReminders({ ...base, remindersOn: false }, MONDAY, always)).toEqual([]);
+  it("plans nothing when reminders are off", () => {
+    expect(planReminders({ ...base, remindersOn: false })).toEqual([]);
   });
 
-  it("stays silent when nothing is due, which is the whole point", () => {
-    const plans = planReminders({ ...base, classDayReminder: false }, MONDAY, never);
-    expect(plans).toEqual([]);
-  });
-
-  it("covers both slots a day across the window", () => {
-    const plans = planReminders({ ...base, classDayReminder: false }, MONDAY, always);
-    const hours = plans.map((p) => new Date(p.at).getHours());
-    expect(new Set(hours)).toEqual(new Set([9, 20]));
-  });
-
-  it("collapses two slots set to the same hour into one", () => {
-    const plans = planReminders(
-      { ...base, reminderHour2: 9, classDayReminder: false },
-      MONDAY,
-      always,
-    );
-    const firstDay = plans.filter(
-      (p) => new Date(p.at).getDate() === MONDAY.getDate(),
-    );
-    expect(firstDay).toHaveLength(1);
-  });
-
-  it("drops the second slot when it is switched off", () => {
-    const plans = planReminders(
-      { ...base, secondReminderOn: false, classDayReminder: false },
-      MONDAY,
-      always,
-    );
-    expect(new Set(plans.map((p) => new Date(p.at).getHours()))).toEqual(new Set([9]));
-  });
-
-  it("never schedules a slot that has already passed today", () => {
-    /* 10am: the 9am slot is gone, the 8pm one is not. */
-    const tenAm = new Date(2026, 7, 24, 10, 0, 0);
-    const plans = planReminders({ ...base, classDayReminder: false }, tenAm, always);
-    const today = plans.filter((p) => new Date(p.at).getDate() === tenAm.getDate());
-    expect(today.map((p) => new Date(p.at).getHours())).toEqual([20]);
-  });
-
-  it("fires the class nudge on Wednesday even when nothing is due", () => {
-    const plans = planReminders(base, MONDAY, never);
+  it("plans one daily slot by default", () => {
+    const plans = planReminders(base);
     expect(plans).toHaveLength(1);
-    const nudge = plans[0];
-    expect(nudge.classNudge).toBe(true);
-    expect(new Date(nudge.at).getDay()).toBe(3);
-    expect(nudge.body).toBe("Add today's words from Lesson 4");
+    expect(plans[0].hour).toBe(9);
+    expect(plans[0].weekday).toBeUndefined();
   });
 
-  it("replaces only the FIRST slot on class day, not the evening one", () => {
-    const plans = planReminders(base, MONDAY, always);
-    const wednesday = plans.filter((p) => new Date(p.at).getDay() === 3);
-    expect(wednesday).toHaveLength(2);
-    expect(wednesday[0].classNudge).toBe(true);
-    expect(wednesday[1].classNudge).toBe(false);
-    expect(new Date(wednesday[1].at).getHours()).toBe(20);
+  it("plans a second daily slot when it is enabled", () => {
+    const plans = planReminders({ ...base, secondReminderOn: true });
+    expect(plans.map((p) => p.hour)).toEqual([9, 20]);
+    expect(plans.every((p) => p.weekday === undefined)).toBe(true);
   });
 
-  it("counts due cards as of the slot, not as of now", () => {
-    /* Nothing due today, something due from tomorrow onward. */
-    const tomorrow = new Date(MONDAY);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-
-    const plans = planReminders(
-      { ...base, classDayReminder: false },
-      MONDAY,
-      (at) => (at.getTime() >= tomorrow.getTime() ? 3 : 0),
-    );
-
-    expect(plans.every((p) => p.at >= tomorrow.getTime())).toBe(true);
-    expect(plans.length).toBeGreaterThan(0);
+  it("collapses two slots set to the same hour", () => {
+    const plans = planReminders({ ...base, secondReminderOn: true, reminderHour2: 9 });
+    expect(plans).toHaveLength(1);
   });
 
-  it("says how many are due, and says it in the singular for one", () => {
-    const one = planReminders({ ...base, classDayReminder: false }, MONDAY, () => 1);
-    expect(one[0].body).toBe("1 word is due");
-
-    const many = planReminders({ ...base, classDayReminder: false }, MONDAY, () => 7);
-    expect(many[0].body).toBe("7 words are due");
+  /*
+    The body never carries a count. It cannot: the plan no longer knows what is
+    due, and a repeating trigger fires long after this ran. A number here would
+    be a stale claim about the queue.
+  */
+  it("never mentions a due count", () => {
+    const plans = planReminders({ ...base, secondReminderOn: true });
+    for (const plan of plans) expect(plan.body).not.toMatch(/\d/);
   });
 
-  it("never reuses a firing time, so identifiers cannot collide", () => {
-    const plans = planReminders(base, MONDAY, always);
-    expect(new Set(plans.map((p) => p.at)).size).toBe(plans.length);
+  it("adds the class nudge as a weekly slot at the first hour", () => {
+    const plans = planReminders({ ...base, classDayReminder: true });
+    const nudge = plans.find((p) => p.weekday !== undefined);
+    expect(nudge).toBeDefined();
+    /* 3 is Date#getDay's Wednesday; applyReminders shifts it for expo. */
+    expect(nudge!.weekday).toBe(3);
+    expect(nudge!.hour).toBe(9);
+    expect(nudge!.body).toContain("Lesson 4");
+  });
+
+  it("plans no class nudge when reminders are off entirely", () => {
+    expect(planReminders({ ...base, remindersOn: false, classDayReminder: true })).toEqual([]);
   });
 });

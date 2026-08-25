@@ -31,49 +31,67 @@ const LAPIS_LIGHT = "#2A4A8B";
 const LAPIS_DARK = "#7FA0DC";
 
 /*
-  Unvocalised, deliberately.
+  The word, fully vowelled, exactly as scripts/make-pwa-assets.ts sets it in the
+  web repo.
 
-  The web app's generator sets the fully vowelled دُرُوس, and its shipped
-  public/icon-512.png shows the result: resvg does not apply Amiri's mark
-  positioning, so the two dammas detach and float above and right of the word,
-  which also drags the optical centre off. It is a rendering artifact rather
-  than a design choice, and reproducing it faithfully would mean shipping a
-  broken looking icon to App Review.
+  Kept identical on purpose: this is the same mark on the same home screen, and
+  a user with both installed sees them side by side. The two generators share
+  the font file byte for byte and the same resvg version, so the same parameters
+  produce the same art.
 
-  A logotype does not need harakat - the word is still دروس - so the icon drops
-  them and the mark sits where it should. The vowelled form stays everywhere it
-  matters, which is the card faces.
+  KNOWN ISSUE, shared with the web app: resvg does not apply Amiri's mark
+  positioning here, so the two dammas float above and right of the word rather
+  than sitting on their letters. It is a rendering artifact in the PNG pipeline
+  only - the app's own Arabic, drawn by CoreText, positions them correctly. It
+  is reproduced rather than worked around because the icons must match; fixing
+  it means shaping the text to paths in both generators at once.
 */
-const WORD = "دروس";
+const WORD = "دُرُوس";
 
 function iconSvg(size: number, ground: string, mark: string): string {
   const fontSize = Math.round(size * 0.34);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="${ground}"/>
-  <text x="50%" y="${Math.round(size * 0.5 + fontSize * 0.1)}" text-anchor="middle"
+  <text x="50%" y="${Math.round(size * 0.5 + fontSize * 0.3)}" text-anchor="middle"
         direction="rtl" font-family="Amiri" font-size="${fontSize}"
         fill="${mark}">${WORD}</text>
 </svg>`;
 }
 
 /*
-  The splash mark. Transparent art on a flat background supplied by
-  expo-splash-screen, so only the word is drawn.
+  The splash mark, sized to land at the same optical size as the PWA's.
 
-  A WIDE canvas, not a square. دروس is roughly 2.2x as wide as its point size,
-  so a square canvas with a font size chosen to look right vertically runs the
-  word off both edges - which is exactly how the first build shipped, showing
-  "روس" with the dal clipped away. Sizing from the width and letting the height
-  follow is what keeps the whole word on the canvas.
+  The web generator draws a full-bleed launch image per device and sets the word
+  at 0.16 of the screen's short edge. expo-splash-screen works the other way
+  round: it paints a flat background itself and centres ONE transparent mark
+  scaled to `imageWidth` points. So parity is a matter of arithmetic rather than
+  of copying a file.
+
+  The word is drawn at WORD_FRACTION of a fixed canvas, and app.json's
+  imageWidth is then chosen so that
+      fontSize_on_screen / screen_width  ==  0.16
+  on a 393pt class phone, which is what SPLASH_IMAGE_WIDTH below records. Change
+  one of the two and the mark stops matching the web app.
+
+  A WIDE canvas, not a square: دُرُوس is roughly 2.2x as wide as its point size,
+  so a square canvas sized to look right vertically runs the word off both edges
+  - which is how the first build shipped, showing "روس" with the dal clipped.
+  The extra height is headroom for the harakat, which sit well above the
+  letters here.
 */
-const SPLASH_W = 720;
-const SPLASH_H = 360;
+const SPLASH_W = 1000;
+const SPLASH_H = 700;
+
+/* The word spans this much of the canvas width. */
+const WORD_FRACTION = 0.9;
+/* Roughly the width of دروس in multiples of its point size. */
+const WORD_ASPECT = 2.2;
 
 function splashMarkSvg(mark: string): string {
-  /* Widest safe size: the word occupies ~85% of the canvas width. */
-  const fontSize = Math.round((SPLASH_W * 0.82) / 2.2);
+  const fontSize = Math.round((SPLASH_W * WORD_FRACTION) / WORD_ASPECT);
+  /* Baseline low enough that the harakat clear the top edge. */
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${SPLASH_W}" height="${SPLASH_H}" viewBox="0 0 ${SPLASH_W} ${SPLASH_H}">
-  <text x="50%" y="${Math.round(SPLASH_H * 0.5 + fontSize * 0.30)}" text-anchor="middle"
+  <text x="50%" y="${Math.round(SPLASH_H * 0.72)}" text-anchor="middle"
         direction="rtl" font-family="Amiri" font-size="${fontSize}"
         fill="${mark}">${WORD}</text>
 </svg>`;
