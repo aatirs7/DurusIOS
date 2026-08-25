@@ -24,7 +24,14 @@ const useStyles = makeStyles((t) => ({
 }));
 
 /*
-  !!! ATTRIBUTION IS INCOMPLETE - MUST BE FILLED IN BEFORE ANY EXTERNAL BUILD !!!
+  !!! COURSE ATTRIBUTION IS INCOMPLETE - FILL IN BEFORE ANY EXTERNAL BUILD !!!
+
+  The typeface credit below is complete. Fontshare's licence (name ID 13 in the
+  font itself) requires the ITF fonts to be identified by name and ITF's
+  ownership of the trademarks and copyrights credited in production credits, so
+  that block is a licence term and not a courtesy - do not trim it in a tidy up.
+
+  What is still missing is the COURSE credit:
 
   Spec section 9.1 makes this screen a condition of the content licence, not a
   nice-to-have: the source work and its author must be credited by name, in the
@@ -93,6 +100,26 @@ export default function About() {
               and are used with the publisher&apos;s permission. Durus does not
               claim authorship of the material, and nothing here implies
               endorsement by its author or publisher.
+            </Text>
+          </View>
+        </View>
+
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Typefaces
+          </Text>
+          <View style={s.credit}>
+            <Text>Satoshi</Text>
+            <Text variant="label" color="inkSoft">
+              Indian Type Foundry
+            </Text>
+            <Text variant="label" color="inkFaint">
+              Satoshi is a trademark of the Indian Type Foundry.
+              Copyright 2017-2021 Indian Type Foundry. All rights reserved.
+            </Text>
+            <Text variant="label" color="inkFaint">
+              Arabic is set in Amiri and numerals in IBM Plex Mono, both under
+              the SIL Open Font License.
             </Text>
           </View>
         </View>

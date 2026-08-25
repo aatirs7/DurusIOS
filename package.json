@@ -15,7 +15,8 @@
     "preflight": "npm run lockcheck && npm run typecheck && npm run lint && npm test",
     "db:generate": "drizzle-kit generate",
     "content:build": "tsx scripts/generate-content.ts",
-    "brand:build": "tsx scripts/make-brand-assets.ts"
+    "brand:build": "tsx scripts/make-brand-assets.ts",
+    "fonts:build": "python scripts/build-fonts.py"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.20.0",

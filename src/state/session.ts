@@ -14,6 +14,10 @@ type SessionState = Hydratable & {
   */
   activeProfileId: number | null;
   setActiveProfile: (id: number | null) => void;
+  /* Null until the first run has been completed, so the boot route can tell a
+     genuine first launch from a reinstall that kept its data. */
+  onboardedAt: number | null;
+  completeOnboarding: () => void;
 };
 
 export const useSession = create<SessionState>()(
@@ -23,6 +27,8 @@ export const useSession = create<SessionState>()(
       markHydrated: () => set({ _hydrated: true }),
       activeProfileId: null,
       setActiveProfile: (id) => set({ activeProfileId: id }),
+      onboardedAt: null,
+      completeOnboarding: () => set({ onboardedAt: Date.now() }),
     }),
     {
       name: KEYS.session,

@@ -59,6 +59,10 @@ export default function RootLayout() {
     Amiri_700Bold,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
+    /* Each weight is its OWN family, and fontWeight is never set anywhere in
+       the app. Registering both as "Satoshi" would let iOS synthesise. */
+    "Satoshi-Regular": require("@/assets/fonts/Satoshi-Regular.ttf"),
+    "Satoshi-Medium": require("@/assets/fonts/Satoshi-Medium.ttf"),
   });
 
   /* bootOnce is synchronous and memoised at module scope, so this is a read
