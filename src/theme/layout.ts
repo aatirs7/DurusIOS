@@ -56,15 +56,6 @@ export const ENTER_MS = 420;
 export const SPLASH_HOLD_MS = 1100;
 export const SPLASH_FADE_MS = 700;
 
-/*
-  How long the drawn splash takes to cross from the appearance iOS launched
-  with to the theme the user actually chose.
-
-  Only used when those two disagree. Long enough to read as a transition rather
-  than a flicker, short enough to be over before the hold has really begun -
-  the point is that the app's own theme is what the eye settles on.
-*/
-export const SPLASH_MORPH_MS = 320;
 
 /*
   The width, in points, at which the splash mark is drawn - by

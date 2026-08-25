@@ -34,12 +34,7 @@
         {
           "image": "./assets/brand/splash.png",
           "imageWidth": 155,
-          "backgroundColor": "#f6f4ef",
-          "dark": {
-            "image": "./assets/brand/splash-dark.png",
-            "backgroundColor": "#131722",
-            "imageWidth": 155
-          }
+          "backgroundColor": "#f6f4ef"
         }
       ],
       "./plugins/withoutPushEntitlement",

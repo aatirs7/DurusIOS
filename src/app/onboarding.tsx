@@ -76,16 +76,22 @@ const CLASS_STEPS = [
   "done",
 ] as const;
 
-const SELF_STEPS = [
-  "intro",
-  "path",
-  "book",
-  "start",
-  "pace",
-  "reminders",
-  "signin",
-  "done",
-] as const;
+/*
+  The self path asks neither which book nor which lesson, and that is the point.
+
+  Both are questions only a student in a class can answer. Somebody who wants to
+  read Fusha and has never heard of the Madinah series cannot tell you which of
+  its three volumes they are on, and asking them to pick a starting lesson is
+  asking them to guess at the shape of a syllabus they have not seen. They also
+  cannot meaningfully skip ahead: the books teach in order and Book 2 assumes
+  Book 1, so the honest answer is the only correct one - start at the beginning
+  and go in order.
+
+  What they DO have to decide is how fast, because no teacher is deciding it for
+  them. That is the one question a syllabus answers for everybody else, so it is
+  the one question this path asks.
+*/
+const SELF_STEPS = ["intro", "path", "pace", "reminders", "signin", "done"] as const;
 
 type Step = (typeof CLASS_STEPS)[number] | (typeof SELF_STEPS)[number];
 
@@ -375,6 +381,11 @@ export default function Onboarding() {
     async (withReminders: boolean) => {
       if (profileId === null) return;
       updateSettings(db, profileId, {
+        /*
+          For the self path these are never asked and stay at their defaults of
+          Book 1, Lesson 1 - which is the only correct answer for somebody
+          starting from the beginning, and is why the questions are not asked.
+        */
         currentBook: book,
         currentLesson: lesson,
         remindersOn: withReminders,
@@ -477,17 +488,25 @@ export default function Onboarding() {
                     دُرُوس
                   </Arabic>
                   <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      Arabic revision for Madinah Book 1
-                    </Text>
                     {/*
-                      What the app is for, rather than what it contains. A
-                      lesson count ages the moment content is added, and tells a
-                      new reader nothing about why they would open it.
+                      This screen comes BEFORE the flow forks, so it has to be
+                      true for both people who see it. It used to say "the
+                      vocabulary you have been taught", which quietly assumed a
+                      class and told somebody arriving with no Arabic at all
+                      that they were in the wrong place.
+
+                      So it says what the app does rather than who it assumes
+                      you are, and the last line names both ways in - which also
+                      sets up the question on the next screen.
                     */}
+                    <Text variant="pageTitle" style={s.h1}>
+                      Learn the Madinah vocabulary, and keep it
+                    </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      The vocabulary you have been taught, brought back just
-                      before you forget it.
+                      Durus drills the words the Madinah books teach and brings
+                      each one back just before you would forget it. Follow a
+                      class lesson by lesson, or start at the beginning on your
+                      own.
                     </Text>
                   </View>
                   <View style={s.ticks}>
@@ -593,24 +612,14 @@ export default function Onboarding() {
                 </>
               ) : null}
 
-              {step === "lesson" || step === "start" ? (
+              {step === "lesson" ? (
                 <>
-                  {/*
-                    One picker, two questions. A class student is reporting a
-                    fact about their syllabus; a self teacher is making a
-                    decision about where to begin. Same control, and the copy
-                    is the whole difference.
-                  */}
                   <View style={s.heads}>
                     <Text variant="pageTitle" style={s.h1}>
-                      {step === "start"
-                        ? "Where would you like to start?"
-                        : "Which lesson is your class on?"}
+                      Which lesson is your class on?
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      {step === "start"
-                        ? "Begin at the beginning unless you already know some of it."
-                        : "Nothing appears before you have been taught it."}
+                      Nothing appears before you have been taught it.
                     </Text>
                   </View>
 
@@ -790,16 +799,10 @@ export default function Onboarding() {
           <Button
             label="Continue"
             disabled={path === null}
-            onPress={() => go("book")}
+            onPress={() => go(path === "self" ? "pace" : "book")}
           />
         ) : null}
-        {step === "book" ? (
-          <Button
-            label="Continue"
-            onPress={() => go(path === "self" ? "start" : "lesson")}
-          />
-        ) : null}
-        {step === "start" ? <Button label="Continue" onPress={() => go("pace")} /> : null}
+        {step === "book" ? <Button label="Continue" onPress={() => go("lesson")} /> : null}
         {step === "pace" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
         {step === "lesson" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
         {step === "reminders" ? (
