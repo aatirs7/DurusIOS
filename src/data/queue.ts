@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 
+import { pickDistractors } from "@/engine/distractors";
 import { tilesFor, type Tile } from "@/engine/letters";
 import { modeFor, type Mode } from "@/engine/modes";
 
@@ -276,21 +277,17 @@ export function buildQuestions(
     if (mode !== "choice") return { ...item, mode, options: [], tiles: [] };
 
     /*
-      Distractors match the card's own type. Offering a single word against
-      three full sentences gives the answer away by shape alone.
+      Distractors match the card's own type, and are then CHOSEN rather than
+      shuffled - see engine/distractors.ts. Taking the first three at random
+      left two ways to be right without knowing the word: a sentence among
+      three single words is obvious by shape, and a sentence about a dog next
+      to three that are not turns the question into "find the word dog".
     */
     const candidates = pool.filter(
       (c) => c.type === item.type && c.english !== item.english,
     );
 
-    const picked: typeof candidates = [];
-    const seen = new Set<string>();
-    for (const c of shuffle(candidates, random)) {
-      if (seen.has(c.english)) continue;
-      seen.add(c.english);
-      picked.push(c);
-      if (picked.length === 3) break;
-    }
+    const picked = pickDistractors(item.english, candidates, 3, random);
 
     const options = shuffle(
       [

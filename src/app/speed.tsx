@@ -111,15 +111,25 @@ export default function Speed() {
     [round, profileId, boot, start],
   );
 
-  /* The window is the clock. Running out is simply a wrong answer - there is no
-     separate timeout state to reason about. */
+  /*
+    The window is the clock. Running out is simply a wrong answer - there is no
+    separate timeout state to reason about.
+
+    It does NOT run while the help panel is open. The panel opens itself the
+    first time anyone enters this drill, and the clock was counting down behind
+    it - so a first run began with a word already lost to a screen explaining
+    the rules. Reading the instructions is not part of the twenty seconds.
+
+    help.open is in the dependencies, so closing the panel re-runs this and the
+    word gets its full window from the moment it is actually visible.
+  */
   useEffect(() => {
-    if (!start || done || !round) return;
+    if (!start || done || !round || help.open) return;
     settled.current = false;
     shownAt.current = Date.now();
     const t = setTimeout(() => next(false), start.windowMs);
     return () => clearTimeout(t);
-  }, [index, start, done, round, next]);
+  }, [index, start, done, round, next, help.open]);
 
   /*
     Ramp down only when accuracy is high. Tightening the window on someone who
@@ -186,7 +196,11 @@ export default function Speed() {
         </View>
         {/* Keyed to the card, so a remount can never leave a half finished
             drain attached to the next word. */}
-        <SpeedRing key={round.word.cardId} windowMs={start.windowMs} running />
+        <SpeedRing
+          key={`${round.word.cardId}-${help.open ? "held" : "run"}`}
+          windowMs={start.windowMs}
+          running={!help.open}
+        />
         <Text variant="label" color="inkFaint">
           {`${index + 1} / ${start.rounds.length}`}
         </Text>
