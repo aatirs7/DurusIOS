@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { db } from "@/data/client";
 import { countDue, countNewAvailable } from "@/data/queue";
 import { lessons } from "@/data/schema";
-import { getSettingsFor, updateSettings } from "@/data/settings";
+import { getSettingsFor } from "@/data/settings";
 import { TOTAL_LESSONS } from "@/engine/constants";
 import { dateLine } from "@/lib/time";
 import { useSession } from "@/state/session";
@@ -50,7 +50,7 @@ const useStyles = makeStyles((t) => ({
     grid was sitting hard against the left of its column while everything above
     it on the screen was centred.
   */
-  gridItem: { width: "33.333%", alignItems: "center" },
+  gridItem: { width: "50%", alignItems: "center" },
 
   /*
     Flows directly under the links rather than being pushed to the bottom edge.
@@ -101,7 +101,18 @@ export default function Today() {
     queue the scheduler picked.
   */
   const clear = due === 0 && newToday === 0;
-  const canUnlock = config.currentLesson < TOTAL_LESSONS;
+  /*
+    There is no "Add Lesson" here any more.
+
+    Which lesson you are on is answered once in onboarding and changed in
+    Settings, which is where a setting belongs. As a button on Today it was a
+    control you could press by accident on the screen you open most, and it
+    silently changed what the app would show you for the next fortnight - the
+    lesson cap keys off currentLessonSince, so a stray tap restarted that clock.
+
+    The tick strip below stays: it says where you are in the book without
+    offering to move you.
+  */
 
   return (
     <Screen>
@@ -201,9 +212,7 @@ export default function Today() {
           line depending on the text, which is what made this read as
           unfinished: the layout was an accident of the labels.
 
-          Three across, because there are three drills. Two columns left the
-          third sitting alone against the left edge, which looks like something
-          is missing rather than like a list of three.
+          Two columns and four drills, which fills the grid exactly.
         */}
         <View style={s.grid}>
           {(
@@ -211,6 +220,10 @@ export default function Today() {
               ["Speed drill", "/speed"],
               ["Flashcards", "/cards"],
               ["Case drill", "/cases"],
+              /* The slot the lesson left. Counting is the one piece of Book 1
+                 grammar with no drill of its own, and the numbers themselves
+                 are not cards - the book assumes a teacher said them aloud. */
+              ["Numbers", "/numbers"],
             ] as const
           ).map(([label, href]) => (
             <View key={href} style={s.gridItem}>
@@ -219,17 +232,6 @@ export default function Today() {
             </View>
           ))}
         </View>
-
-        {canUnlock ? (
-          <Button
-            label={`Add Lesson ${config.currentLesson + 1}`}
-            variant="quiet"
-            onPress={() => {
-              updateSettings(db, profileId!, { currentLesson: config.currentLesson + 1 });
-              bump();
-            }}
-          />
-        ) : null}
 
         <View style={s.foot}>
           {/*
