@@ -254,6 +254,9 @@ export function listLessons(db: Db, profileId: number): LessonRow[] {
       seen: sql<number>`count(${cardStates.cardId})`.mapWith(Number),
     })
     .from(lessons)
+    /* Book lessons only. listLessons has no other filter, so the trainer's
+       stages would otherwise appear in the lessons list as empty lessons with
+       numbers past the end of the book. */
     .leftJoin(cards, eq(cards.lessonId, lessons.id))
     .leftJoin(
       cardStates,

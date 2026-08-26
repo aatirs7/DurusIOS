@@ -130,9 +130,20 @@ export function buildQueue(
     scheduler picks across everything open.
   */
   const chosen = options.lessonNumbers?.filter((n) => Number.isInteger(n)) ?? [];
-  const lessonFilter = chosen.length
-    ? inArray(lessons.number, chosen)
-    : lte(lessons.number, config.currentLesson);
+  /*
+    The book's deck, and only the book's.
+
+    The numbers trainer's stages are lesson rows too, so without this they
+    would be drawn into an ordinary review - which is the one thing the
+    trainer must not do. The filter rides on a join that is already here to
+    read lessons.number, so it costs nothing.
+  */
+  const lessonFilter = and(
+    eq(lessons.deck, "book"),
+    chosen.length
+      ? inArray(lessons.number, chosen)
+      : lte(lessons.number, config.currentLesson),
+  );
 
   const dueRows = db
     .select({
