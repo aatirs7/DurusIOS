@@ -115,14 +115,23 @@ export function countNewAvailable(db: Db, profileId: number, currentLesson: numb
 export function buildQueue(
   db: Db,
   profileId: number,
-  options: { lessonNumber?: number; now?: Date; random?: () => number } = {},
+  options: { lessonNumbers?: number[]; now?: Date; random?: () => number } = {},
 ): QueueItem[] {
   const now = options.now ?? new Date();
   const random = options.random ?? Math.random;
   const config = getSettingsFor(db, profileId);
 
-  const lessonFilter = options.lessonNumber
-    ? eq(lessons.number, options.lessonNumber)
+  /*
+    A chosen set of lessons, or everything the class has covered.
+
+    A set rather than a single number, because "revise lessons 3 and 7 before
+    the test" is the actual request - one lesson at a time was only ever the
+    simplest case of it. An empty array means the same as no array: the
+    scheduler picks across everything open.
+  */
+  const chosen = options.lessonNumbers?.filter((n) => Number.isInteger(n)) ?? [];
+  const lessonFilter = chosen.length
+    ? inArray(lessons.number, chosen)
     : lte(lessons.number, config.currentLesson);
 
   const dueRows = db

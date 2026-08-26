@@ -31,7 +31,8 @@ const useStyles = makeStyles((t) => ({
     together is what left a large void under the count.
   */
   top: { flex: 1, alignItems: "center", justifyContent: "space-between", paddingBottom: space(4) },
-  middle: { flexShrink: 0 },
+  /* Two buttons now: the review and the lesson. */
+  middle: { flexShrink: 0, gap: space(1) },
   bottom: { flex: 1, alignItems: "center", justifyContent: "flex-start", gap: space(2.5), paddingTop: space(3) },
 
   /* Same height as the theme toggle in the corner, so the two sit on one line
@@ -167,9 +168,22 @@ export default function Today() {
         </View>
       </View>
 
-      {/* The centre line. */}
+      {/*
+        The centre line, and under it the lesson.
+
+        "Lesson 4" used to sit in the bottom right of the drill grid, below
+        Flashcards, which read as the least important of four alternatives -
+        when it is the page that says what the class is actually on and holds
+        the grammar and the word list. It has its own button now, directly
+        under Start review, where its weight matches what it is for.
+      */}
       <View style={s.middle}>
         <Button label="Start review" onPress={() => router.push("/review")} />
+        <Button
+          label={`Study Lesson ${config.currentLesson}`}
+          variant="quiet"
+          onPress={() => router.push(`/lessons/${config.currentLesson}`)}
+        />
       </View>
 
       <View style={s.bottom}>
@@ -185,7 +199,10 @@ export default function Today() {
               ["Speed drill", "/speed"],
               ["Flashcards", "/cards"],
               ["Case drill", "/cases"],
-              [`Lesson ${config.currentLesson}`, `/lessons/${config.currentLesson}`],
+              /* The slot the lesson left. Choosing lessons is the one thing
+                 here that changes what a review draws from, so it belongs
+                 beside the drills rather than buried in Settings. */
+              ["Choose lessons", "/choose"],
             ] as const
           ).map(([label, href]) => (
             <View key={href} style={s.gridItem}>

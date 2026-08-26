@@ -41,12 +41,26 @@ export default function Review() {
   const profileId = useSession((st) => st.activeProfileId);
   const deviceId = useRef(bootOnce()).current;
   const help = useHelp("review");
-  const params = useLocalSearchParams<{ lesson?: string }>();
+  const params = useLocalSearchParams<{ lesson?: string; lessons?: string }>();
 
-  /* "Drill this lesson only", from a lesson page. Absent means the scheduler
-     picks across every open lesson, which is the normal path. */
-  const lessonOnly = Number(params.lesson);
-  const lessonNumber = Number.isInteger(lessonOnly) ? lessonOnly : undefined;
+  /*
+    Which lessons this run draws from. Absent means the scheduler picks across
+    every open lesson, which is the normal path.
+
+    Two parameters, because they arrive from two places: `lesson` is "drill this
+    one" from a lesson page, and `lessons` is a chosen set from the picker. The
+    singular one is kept rather than folded in, so a link someone saved or a
+    deep link still works.
+  */
+  const chosen = useMemo(() => {
+    const many = (params.lessons ?? "")
+      .split(",")
+      .map((n) => Number(n.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0);
+    if (many.length) return many;
+    const one = Number(params.lesson);
+    return Number.isInteger(one) ? [one] : [];
+  }, [params.lesson, params.lessons]);
 
   /*
     Built once, when the screen mounts. Rebuilding as answers land would
@@ -57,15 +71,15 @@ export default function Review() {
   const start = useMemo(() => {
     if (profileId === null) return null;
     const config = getSettingsFor(db, profileId);
-    const queue = buildQueue(db, profileId, { lessonNumber });
+    const queue = buildQueue(db, profileId, { lessonNumbers: chosen });
     /* The distractor pool follows the queue: a lesson-only run should not offer
        options from lessons the drill never asks about. */
-    const lessonNumbers = lessonNumber
-      ? [lessonNumber]
+    const lessonNumbers = chosen.length
+      ? chosen
       : Array.from({ length: config.currentLesson }, (_, i) => i + 1);
     const questions: Question[] = buildQuestions(db, queue, lessonNumbers);
     return { questions, showHarakat: config.showHarakat };
-  }, [profileId, lessonNumber]);
+  }, [profileId, chosen]);
 
   if (profileId === null || !start) return null;
 

@@ -284,6 +284,23 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="This device">
+          {/*
+            The diagnostic, reachable at any time.
+
+            The window otherwise only moves by 100ms after a run above 85%,
+            which is fine for drift and useless for somebody whose pace has
+            changed - or who never had the right one to begin with.
+          */}
+          <Button
+            label="Find my speed"
+            variant="quiet"
+            onPress={() => router.push("/speed?mode=diagnostic")}
+          />
+          <Text variant="label" color="inkFaint">
+            A short run with no clock, to set the speed drill&apos;s window from
+            how fast you actually read.
+          </Text>
+
 
           <Field label="Haptics" hint="A tap when you choose an answer">
             <Switch
