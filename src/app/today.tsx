@@ -50,7 +50,7 @@ const useStyles = makeStyles((t) => ({
     grid was sitting hard against the left of its column while everything above
     it on the screen was centred.
   */
-  gridItem: { width: "50%", alignItems: "center" },
+  gridItem: { width: "33.333%", alignItems: "center" },
 
   /*
     Flows directly under the links rather than being pushed to the bottom edge.
@@ -179,19 +179,31 @@ export default function Today() {
       */}
       <View style={s.middle}>
         <Button label="Start review" onPress={() => router.push("/review")} />
+        {/*
+          A link, not a button.
+
+          As a quiet button it sat directly under Start review at the same
+          width and nearly the same weight, so the page had two things
+          competing to be the thing you press - and Start review is the thing
+          you press. Being central is what this needed; being loud is not.
+        */}
         <Button
           label={`Study Lesson ${config.currentLesson}`}
-          variant="quiet"
+          variant="text"
           onPress={() => router.push(`/lessons/${config.currentLesson}`)}
         />
       </View>
 
       <View style={s.bottom}>
         {/*
-          A fixed two column grid rather than a row of links left to wrap
-          wherever they run out of width. A wrapped row puts a different number
-          of items on each line depending on the lesson number, which is what
-          made this read as unfinished: the layout was an accident of the text.
+          A fixed grid rather than a row of links left to wrap wherever they run
+          out of width. A wrapped row puts a different number of items on each
+          line depending on the text, which is what made this read as
+          unfinished: the layout was an accident of the labels.
+
+          Three across, because there are three drills. Two columns left the
+          third sitting alone against the left edge, which looks like something
+          is missing rather than like a list of three.
         */}
         <View style={s.grid}>
           {(
@@ -199,10 +211,6 @@ export default function Today() {
               ["Speed drill", "/speed"],
               ["Flashcards", "/cards"],
               ["Case drill", "/cases"],
-              /* The slot the lesson left. Choosing lessons is the one thing
-                 here that changes what a review draws from, so it belongs
-                 beside the drills rather than buried in Settings. */
-              ["Choose lessons", "/choose"],
             ] as const
           ).map(([label, href]) => (
             <View key={href} style={s.gridItem}>
