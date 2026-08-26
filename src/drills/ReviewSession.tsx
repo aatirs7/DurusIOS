@@ -16,6 +16,7 @@ import { assembledCorrectly, type Tile } from "@/engine/letters";
 import { feedbackFor, gradeFor, modeLabel } from "@/engine/modes";
 import { haptics } from "@/lib/haptics";
 import { RADIUS, space } from "@/theme/layout";
+import { textStyles } from "@/theme/typography";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles((t) => ({
@@ -91,6 +92,26 @@ const useStyles = makeStyles((t) => ({
   },
 
   /*
+    The end of a session.
+
+    Centred, and built from the same pieces Today is: an eyebrow, one large
+    numeral, and a rule with facts under it. It used to be the word "Done." and
+    a count, left aligned against the edge of the screen, which read as an
+    error state rather than the end of a piece of work.
+
+    Facts only, and no praise. Spec section 1.1 point 6 - the app does not
+    editorialise on what you did - applies here more than anywhere, because
+    this is the one screen with something to congratulate you about.
+  */
+  summary: { flex: 1, alignItems: "center", justifyContent: "center", gap: space(2) },
+  summaryNumeral: { ...textStyles.numeral, fontSize: 64, lineHeight: 74, color: t.colors.ink },
+  summaryRule: { height: 1, backgroundColor: t.colors.rule, alignSelf: "stretch", marginVertical: space(1) },
+  summaryRow: { flexDirection: "row", justifyContent: "center", gap: space(5) },
+  summaryStat: { alignItems: "center", gap: space(0.25) },
+  summaryStatValue: { ...textStyles.numeral, fontSize: 22, color: t.colors.ink },
+  summaryNote: { textAlign: "center", maxWidth: 260 },
+
+  /*
     The verdict sits over everything, pinned to the bottom, and the whole screen
     becomes the tap target that advances. Overlaid rather than in the flow so
     the card above does not move when it appears.
@@ -162,6 +183,23 @@ function Reveal({
   );
 }
 
+/*
+  How much room the verdict needs at the foot of the screen.
+
+  The verdict is absolutely positioned so that showing it moves nothing - but
+  "moves nothing" and "covers nothing" are different promises, and only the
+  first was being kept. With four options on a phone the fourth one reached
+  into the same band, so the answer landed on top of it.
+
+  Reserved as padding on the scroll content, ALWAYS, whether or not there is a
+  verdict yet. Adding it only once answered would be the layout shift this
+  design exists to avoid.
+
+  Sized for the tallest case: a wrong answer, which stacks the correct answer,
+  the pill and the "tap anywhere" line.
+*/
+const VERDICT_SPACE = 148;
+
 type Result = {
   correct: boolean;
   close: boolean;
@@ -187,6 +225,14 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [answered, setAnswered] = useState(0);
+  /*
+    What the session is worth saying afterwards. Accumulated as it goes rather
+    than derived at the end, because the queue has been consumed by then and
+    the answers are not on this screen any more.
+  */
+  const [right, setRight] = useState(0);
+  const [cameBack, setCameBack] = useState(0);
+  const [times, setTimes] = useState<number[]>([]);
 
   /* Time to answer runs from the card appearing, not from the first keystroke.
      A ref, so reading it never renders and cannot be a frame stale. */
@@ -221,16 +267,76 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
       const grade = gradeFor(outcome);
       onAnswer(question, grade, msToAnswer);
       setAnswered((n) => n + 1);
+      if (correct) setRight((n) => n + 1);
+      if (grade === "again") setCameBack((n) => n + 1);
+      setTimes((all) => [...all, msToAnswer]);
       setResult({ correct, close, grade, message: feedbackFor(outcome, grade) });
     },
     [question, result, onAnswer],
   );
 
   if (!question) {
+    /*
+      The typical answer, not the average one. A single card where the phone
+      was put down mid-session drags a mean into meaninglessness, and the
+      median is what the stats screen already reports for the same reason.
+    */
+    const sorted = [...times].sort((a, b) => a - b);
+    const typical = sorted.length
+      ? sorted.length % 2
+        ? sorted[(sorted.length - 1) / 2]
+        : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : null;
+
     return (
-      <View style={[s.root, { justifyContent: "center", gap: space(2) }]}>
-        <Text variant="pageTitle">Done.</Text>
-        <Text color="inkSoft">{`${answered} ${answered === 1 ? "answer" : "answers"}.`}</Text>
+      <View style={s.root}>
+        <View style={s.summary}>
+          <Text variant="eyebrow" color="inkSoft">
+            Session
+          </Text>
+
+          <Text style={s.summaryNumeral}>{String(answered)}</Text>
+          <Text variant="eyebrow" color="inkSoft">
+            {answered === 1 ? "answer" : "answers"}
+          </Text>
+
+          {answered > 0 ? (
+            <>
+              <View style={s.summaryRule} />
+
+              <View style={s.summaryRow}>
+                <View style={s.summaryStat}>
+                  <Text style={s.summaryStatValue}>{`${Math.round((right / answered) * 100)}%`}</Text>
+                  <Text variant="eyebrow" color="inkSoft">
+                    right
+                  </Text>
+                </View>
+
+                {typical !== null ? (
+                  <View style={s.summaryStat}>
+                    <Text style={s.summaryStatValue}>{`${(typical / 1000).toFixed(1)}s`}</Text>
+                    <Text variant="eyebrow" color="inkSoft">
+                      typical
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/*
+                Stated as a fact about the words rather than about the reader.
+                "3 came back" is what happened; "you got 3 wrong" is a verdict,
+                and a word you missed today is the whole point of the app
+                rather than a failure of it.
+              */}
+              {cameBack > 0 ? (
+                <Text variant="label" color="inkFaint" style={s.summaryNote}>
+                  {`${cameBack} ${cameBack === 1 ? "word" : "words"} came back for another go, and ${cameBack === 1 ? "is" : "are"} due again soon.`}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+        </View>
+
         <Button label="Back to today" onPress={onDone} />
       </View>
     );
@@ -242,7 +348,7 @@ export function ReviewSession({ questions, onAnswer, onDone, showHarakat }: Revi
   return (
     <View style={s.root}>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: VERDICT_SPACE }}
         keyboardShouldPersistTaps="handled"
         scrollEnabled={!done}
       >

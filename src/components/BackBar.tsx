@@ -8,15 +8,28 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles(() => ({
   bar: {
-    height: 40,
+    height: 44,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: space(1),
   },
-  /* The chevron is small; the tap target must not be. */
-  hit: { width: 44, height: 40, justifyContent: "center" },
-  right: { minWidth: 44, alignItems: "flex-end", justifyContent: "center" },
+  /*
+    A chevron AND the word, in the link colour.
+
+    On its own, at inkSoft, in the top corner, it was a grey mark most people
+    never saw - it read as part of the frame rather than as the way out. The
+    word is what makes it a control, and lapis is what the rest of the app uses
+    for "this is tappable".
+  */
+  hit: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space(0.5),
+    height: 44,
+    paddingRight: space(1),
+  },
+  right: { minWidth: 60, alignItems: "flex-end", justifyContent: "center" },
   title: { flex: 1, textAlign: "center" },
 }));
 
@@ -57,15 +70,16 @@ export function BackBar({
           router.canGoBack() ? router.back() : router.replace(fallback as never)
         }
       >
-        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
           <Path
             d="M15 5l-7 7 7 7"
-            stroke={theme.colors.inkSoft}
-            strokeWidth={1.6}
+            stroke={theme.colors.lapis}
+            strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </Svg>
+        <Text color="lapis">Back</Text>
       </Pressable>
 
       {title ? (
