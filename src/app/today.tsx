@@ -130,17 +130,38 @@ export default function Today() {
           <View />
         )}
 
+        {/*
+          The number is the SESSION, not the scheduler's backlog.
+
+          It used to be the due count with "due" under it and "N new to learn"
+          below that - two numbers, neither explained, and the larger of the
+          two usually the one in small text. "Due" is a word about the
+          scheduler's internals: it means a word you have met before whose turn
+          has come round again, and nothing on the screen said so.
+
+          So the headline is what you will actually sit down and do, and the
+          line under it says what it is made of, in words that explain
+          themselves. "Coming back" is a fact about the word rather than a term
+          of art.
+        */}
         <View style={s.count}>
-          <Text style={s.numeral}>{String(due)}</Text>
+          <Text style={s.numeral}>{String(due + newToday)}</Text>
           <Text variant="eyebrow" color="inkSoft">
-            due
+            {due + newToday === 1 ? "word today" : "words today"}
           </Text>
-          {newToday > 0 ? (
-            <Text color="inkSoft">{`${newToday} new to learn`}</Text>
+          {due + newToday > 0 ? (
+            <Text color="inkSoft">
+              {[
+                newToday > 0 ? `${newToday} new` : null,
+                due > 0 ? `${due} coming back` : null,
+              ]
+                .filter(Boolean)
+                .join("  ·  ")}
+            </Text>
           ) : null}
           {clear ? (
             <Text variant="bodySoft" color="inkFaint" style={{ textAlign: "center" }}>
-              {`Nothing scheduled. Review goes over Lessons 1 to ${config.currentLesson}.`}
+              {`Nothing is waiting. A review now goes back over Lessons 1 to ${config.currentLesson} without moving anything.`}
             </Text>
           ) : null}
         </View>
