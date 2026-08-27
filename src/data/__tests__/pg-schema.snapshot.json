@@ -1,0 +1,577 @@
+{
+  "tables": {
+    "card_hearts": {
+      "profile_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "card_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "created_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "updated_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "deleted_at": {
+        "kind": "instant",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "device_id": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "seq": {
+        "kind": "int",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      }
+    },
+    "card_states": {
+      "profile_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "card_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "direction": {
+        "kind": "enum",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false,
+        "values": [
+          "production",
+          "recognition"
+        ]
+      },
+      "ease": {
+        "kind": "real",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "interval_days": {
+        "kind": "real",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "repetitions": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "due_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "lapses": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "suspended": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      }
+    },
+    "card_suspensions": {
+      "profile_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "card_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "updated_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "deleted_at": {
+        "kind": "instant",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "device_id": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "seq": {
+        "kind": "int",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      }
+    },
+    "cards": {
+      "id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": true,
+        "hasDefault": true
+      },
+      "lesson_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "type": {
+        "kind": "enum",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true,
+        "values": [
+          "phrase",
+          "vocab"
+        ]
+      },
+      "arabic": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "english": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "transliteration": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "gender": {
+        "kind": "enum",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false,
+        "values": [
+          "f",
+          "m"
+        ]
+      },
+      "plural": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "note": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "created_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      }
+    },
+    "lessons": {
+      "id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": true,
+        "hasDefault": true
+      },
+      "number": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "title_ar": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "title_en": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "grammar_note": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "deck": {
+        "kind": "enum",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true,
+        "values": [
+          "book",
+          "numbers"
+        ]
+      },
+      "unlocked_at": {
+        "kind": "instant",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      }
+    },
+    "profile": {
+      "id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": true,
+        "hasDefault": true
+      },
+      "name": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "pin_hash": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "pin_salt": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "clerk_user_id": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "sync_seq": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "deleted_at": {
+        "kind": "instant",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "created_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      }
+    },
+    "push_subscriptions": {
+      "id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": true,
+        "hasDefault": true
+      },
+      "profile_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "endpoint": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "p256dh": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "auth": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "user_agent": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "created_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "last_seen_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "fail_count": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      }
+    },
+    "reviews": {
+      "id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": true,
+        "hasDefault": true
+      },
+      "profile_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "card_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "direction": {
+        "kind": "enum",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false,
+        "values": [
+          "production",
+          "recognition",
+          "speed"
+        ]
+      },
+      "grade": {
+        "kind": "enum",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false,
+        "values": [
+          "again",
+          "easy",
+          "good",
+          "hard"
+        ]
+      },
+      "ms_to_answer": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "reviewed_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "practice": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "capped": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "fuzz": {
+        "kind": "real",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "retracted_at": {
+        "kind": "instant",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "client_id": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "device_id": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "seq": {
+        "kind": "int",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      }
+    },
+    "settings": {
+      "profile_id": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": true,
+        "hasDefault": false
+      },
+      "current_book": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "current_lesson": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "new_per_day": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "max_reviews": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "show_harakat": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "speed_window_ms": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "reminders_on": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "reminder_hour": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "second_reminder_on": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "reminder_hour_2": {
+        "kind": "int",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "class_day_reminder": {
+        "kind": "bool",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "timezone": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "last_notified_on": {
+        "kind": "text",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "last_notified_hour": {
+        "kind": "int",
+        "notNull": false,
+        "primaryKey": false,
+        "hasDefault": false
+      },
+      "current_lesson_since": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "updated_at": {
+        "kind": "instant",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      },
+      "field_updated_at": {
+        "kind": "text",
+        "notNull": true,
+        "primaryKey": false,
+        "hasDefault": true
+      }
+    }
+  }
+}
