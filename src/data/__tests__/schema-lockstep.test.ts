@@ -179,6 +179,13 @@ const COLUMN_ONLY_IN_SQLITE: Record<string, string> = {
   */
   "settings.haptics_enabled": "device only, no haptics on the web",
   "settings.reduce_motion": "device only, mirrors an iOS accessibility setting",
+  /*
+    How to drill on THIS device, not what is scheduled. A phone and a browser
+    can reasonably want different answers and neither is a fact about progress,
+    so both are LOCAL_ONLY in src/sync/engine.ts and never cross the wire.
+  */
+  "settings.typing_only": "device only, a preference about the first rung",
+  "settings.drill_direction": "device only, filters the queue rather than the schedule",
   /* Per-field last-write-wins needs to know what is unsent and how fresh the
      server's copy was. */
   "settings.dirty": "per-field LWW, spec section 4.3",

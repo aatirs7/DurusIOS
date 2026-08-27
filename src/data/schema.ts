@@ -30,7 +30,7 @@ import {
 /* Bumped by hand whenever either schema changes. schema-lockstep.test.ts
    asserts this matches the Postgres side, so a change to one file that forgets
    the other fails here rather than as a 400 from the API three weeks later. */
-export const SCHEMA_REVISION = 3;
+export const SCHEMA_REVISION = 4;
 
 /*
   Two direction enums, kept separate for the reason the web schema gives:
@@ -56,6 +56,17 @@ const GENDER = ["m", "f"] as const;
   number.
 */
 const DECK = ["book", "numbers"] as const;
+
+/*
+  Which direction a drill asks in.
+
+  Both is the default and is what the scheduler wants: recognition and
+  production are scheduled independently because reading a word and recalling
+  it are different skills. Narrowing to one is a practice preference - "I want
+  to work on producing today" - and it filters what the queue draws rather than
+  changing what is scheduled, so nothing is lost by using it.
+*/
+const DRILL_DIRECTION = ["both", "recognition", "production"] as const;
 const STATE_DIRECTION = ["recognition", "production"] as const;
 const REVIEW_DIRECTION = ["recognition", "production", "speed"] as const;
 const GRADE = ["again", "hard", "good", "easy"] as const;
@@ -329,6 +340,15 @@ export const settings = sqliteTable("settings", {
 
   /* iOS only, spec sections 7.5 and 6.5. */
   hapticsEnabled: integer("haptics_enabled", { mode: "boolean" }).notNull().default(true),
+  /*
+    Device preferences about HOW to drill, not about what is scheduled. Local
+    only, like haptics and reduce motion: a phone and a browser can reasonably
+    want different answers, and neither is a fact about the learner's progress.
+  */
+  typingOnly: integer("typing_only", { mode: "boolean" }).notNull().default(false),
+  drillDirection: text("drill_direction", { enum: DRILL_DIRECTION })
+    .notNull()
+    .default("both"),
   reduceMotion: integer("reduce_motion", { mode: "boolean" }).notNull().default(false),
 
   /*

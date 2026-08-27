@@ -227,6 +227,10 @@ const LOCAL_ONLY = new Set([
      silently dropped, which is worse than not sending it, because the field
      would look synced. */
   "currentBook",
+  /* How to drill on THIS device. A phone and a browser can reasonably want
+     different answers, and neither is a fact about progress. */
+  "typingOnly",
+  "drillDirection",
 ]);
 
 function stripLocal(config: Record<string, unknown>): Record<string, unknown> {

@@ -164,6 +164,24 @@ export function buildQueue(
         : lte(lessons.number, config.currentLesson),
   );
 
+  /*
+    Which direction to ask in.
+
+    Both is the default and is what the scheduler wants: recognition and
+    production are scheduled apart because reading a word and recalling it are
+    different skills. Narrowing filters what the queue DRAWS and changes
+    nothing about what is scheduled - so a day spent on production only leaves
+    the recognition side exactly where it was, still due, waiting.
+
+    New cards are recognition by construction, so a production-only session
+    correctly offers none of them: a word you have never seen cannot be
+    produced.
+  */
+  const directionFilter =
+    config.drillDirection === "both"
+      ? undefined
+      : eq(cardStates.direction, config.drillDirection);
+
   const dueRows = db
     .select({
       cardId: cards.id,
@@ -190,13 +208,19 @@ export function buildQueue(
         lte(cardStates.dueAt, now),
         notSuspended(profileId),
         lessonFilter,
+        directionFilter,
       ),
     )
     .orderBy(asc(cardStates.dueAt))
     .limit(config.maxReviews)
     .all();
 
-  const newRows = db
+  /*
+    New cards are recognition only, so a production-only session skips them
+    entirely rather than introducing words in a direction they cannot be
+    answered in.
+  */
+  const newRows = config.drillDirection === "production" ? [] : db
     .select({
       cardId: cards.id,
       lessonNumber: lessons.number,
@@ -276,7 +300,14 @@ export function buildQueue(
     .from(cardStates)
     .innerJoin(cards, eq(cardStates.cardId, cards.id))
     .innerJoin(lessons, eq(cards.lessonId, lessons.id))
-    .where(and(eq(cardStates.profileId, profileId), notSuspended(profileId), lessonFilter))
+    .where(
+      and(
+        eq(cardStates.profileId, profileId),
+        notSuspended(profileId),
+        lessonFilter,
+        directionFilter,
+      ),
+    )
     .orderBy(asc(cardStates.dueAt))
     .limit(config.maxReviews)
     .all();
@@ -296,6 +327,9 @@ export function buildQuestions(
   queue: QueueItem[],
   lessonNumbers: number[],
   random: () => number = Math.random,
+  /* From settings. Skips the choice rung so a card is typed or assembled from
+     its first sighting. */
+  typingOnly = false,
 ): Question[] {
   if (queue.length === 0) return [];
 
@@ -307,7 +341,11 @@ export function buildQuestions(
     .all();
 
   return queue.map((item) => {
-    const mode = modeFor({ type: item.type, repetitions: item.repetitions }, item.direction);
+    const mode = modeFor(
+      { type: item.type, repetitions: item.repetitions },
+      item.direction,
+      { typingOnly },
+    );
 
     if (mode === "assemble") {
       return { ...item, mode, options: [], tiles: tilesFor(item.arabic, random) };

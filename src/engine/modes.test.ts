@@ -129,3 +129,40 @@ describe("feedbackFor", () => {
     );
   });
 });
+
+describe("typing only", () => {
+  /*
+    The choice rung exists to teach the shape of a word before asking anyone to
+    produce it. Somebody who already knows the words is only tapping through
+    it, so the setting removes it.
+  */
+  it("skips choice on a brand new word", () => {
+    expect(modeFor({ type: "vocab", repetitions: 0 }, "recognition", { typingOnly: true })).toBe(
+      "written",
+    );
+    expect(modeFor({ type: "vocab", repetitions: 0 }, "production", { typingOnly: true })).toBe(
+      "assemble",
+    );
+  });
+
+  it("changes nothing once the ladder is past choice anyway", () => {
+    expect(modeFor({ type: "vocab", repetitions: 5 }, "recognition", { typingOnly: true })).toBe(
+      modeFor({ type: "vocab", repetitions: 5 }, "recognition"),
+    );
+  });
+
+  /* A preference about the first rung is not a licence to make a drill
+     unusable: typing out a whole sentence is a test of patience. */
+  it("leaves phrases on choice", () => {
+    expect(modeFor({ type: "phrase", repetitions: 0 }, "recognition", { typingOnly: true })).toBe(
+      "choice",
+    );
+    expect(modeFor({ type: "phrase", repetitions: 9 }, "production", { typingOnly: true })).toBe(
+      "choice",
+    );
+  });
+
+  it("is off by default", () => {
+    expect(modeFor({ type: "vocab", repetitions: 0 }, "recognition")).toBe("choice");
+  });
+});

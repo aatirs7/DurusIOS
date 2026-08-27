@@ -40,15 +40,29 @@ export type Direction = "recognition" | "production";
 export function modeFor(
   card: { type: "vocab" | "phrase"; repetitions: number },
   direction: Direction,
+  /*
+    Typing only, from settings.
+
+    The ladder exists because tapping one of four is the right first meeting
+    with a word - it teaches the shape before asking you to produce it. Some
+    people do not want that: they already know the words and the choice rung is
+    a formality they tap through. So this skips it, and a card is typed or
+    assembled from its very first sighting.
+
+    It does NOT touch scheduling. A harder first question means more wrong
+    answers at first, and the scheduler already knows what to do with those.
+  */
+  options: { typingOnly?: boolean } = {},
 ): Mode {
   /*
-    Phrases stay on choice in both directions. Typing out "where is the
-    boy? he is in the mosque" is a test of patience, and assembling it
-    letter by letter is worse.
+    Phrases stay on choice in both directions, EVEN in typing only mode. Typing
+    out "where is the boy? he is in the mosque" is a test of patience, and
+    assembling it letter by letter is worse. Typing only is a preference about
+    the first rung, not a licence to make a drill unusable.
   */
   if (card.type === "phrase") return "choice";
 
-  if (card.repetitions < 2) return "choice";
+  if (card.repetitions < 2 && !options.typingOnly) return "choice";
 
   return direction === "recognition" ? "written" : "assemble";
 }

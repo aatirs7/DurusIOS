@@ -62,7 +62,13 @@ export default function Review() {
     const lessonNumbers = chosen.length
       ? chosen
       : Array.from({ length: config.currentLesson }, (_, i) => i + 1);
-    const questions: Question[] = buildQuestions(db, queue, lessonNumbers);
+    const questions: Question[] = buildQuestions(
+      db,
+      queue,
+      lessonNumbers,
+      Math.random,
+      config.typingOnly,
+    );
     return { questions, showHarakat: config.showHarakat };
   }, [profileId, chosen, params.deck]);
 

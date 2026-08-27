@@ -155,6 +155,38 @@ export default function SettingsScreen() {
             />
           </Field>
 
+          {/*
+            Skips the choice rung, so a card is typed or assembled from its
+            first sighting rather than after two correct taps.
+
+            Phrases stay on choice regardless - typing out a whole sentence is
+            a test of patience - which is why the hint says words.
+          */}
+          <Field label="Typing only" hint="Skip multiple choice; type or build every word">
+            <Switch
+              value={config.typingOnly}
+              onValueChange={(typingOnly) => patch({ typingOnly })}
+              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+            />
+          </Field>
+
+          {/*
+            Filters what the queue draws, and changes nothing about what is
+            scheduled - so a week of production only leaves the recognition
+            side exactly where it was, still due.
+          */}
+          <Field label="Ask me" hint="Which direction to drill in">
+            <Segmented<"both" | "recognition" | "production">
+              value={config.drillDirection}
+              options={[
+                { value: "both", label: "Both" },
+                { value: "recognition", label: "Arabic" },
+                { value: "production", label: "English" },
+              ]}
+              onChange={(drillDirection) => patch({ drillDirection })}
+            />
+          </Field>
+
           <Field label="New cards per day" hint="How fast new words arrive">
             <Stepper
               value={config.newPerDay}
