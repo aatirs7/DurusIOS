@@ -60,6 +60,16 @@ export function seedContent(db: Db): SeedResult {
           titleAr: l.titleAr,
           titleEn: l.titleEn,
           grammarNote: l.grammarNote,
+          /*
+            Never allowed to fall back to the column default. That default is
+            "book", so a stage lesson seeded without it becomes a book lesson
+            and appears in the lessons list.
+
+            Cast because a JSON import widens every string literal to `string`.
+            The generator writes the column verbatim out of Postgres, where it
+            is an enum, so the value is one of the two by construction.
+          */
+          deck: l.deck as "book" | "numbers",
         })
         .onConflictDoUpdate({
           target: lessons.id,
@@ -68,6 +78,7 @@ export function seedContent(db: Db): SeedResult {
             titleAr: l.titleAr,
             titleEn: l.titleEn,
             grammarNote: l.grammarNote,
+            deck: l.deck as "book" | "numbers",
           },
         })
         .run();

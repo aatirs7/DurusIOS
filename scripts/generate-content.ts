@@ -56,6 +56,10 @@ function databaseUrl(): string {
 type LessonRow = {
   id: number;
   number: number;
+  /* Which deck the lesson belongs to. MUST travel: without it the device seed
+     inserts a stage lesson with the column's default, which is "book", and the
+     numbers trainer's stages turn up in the lessons list. */
+  deck: "book" | "numbers";
   title_ar: string;
   title_en: string;
   grammar_note: string | null;
@@ -77,7 +81,7 @@ async function main() {
   const sql = neon(databaseUrl());
 
   const lessons = (await sql.query(
-    `select id, number, title_ar, title_en, grammar_note
+    `select id, number, title_ar, title_en, grammar_note, deck
        from lessons order by number`,
   )) as LessonRow[];
 
@@ -124,6 +128,7 @@ async function main() {
     lessons: lessons.map((l) => ({
       id: l.id,
       number: l.number,
+      deck: l.deck,
       titleAr: l.title_ar,
       titleEn: l.title_en,
       grammarNote: l.grammar_note,

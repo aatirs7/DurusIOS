@@ -1,11 +1,12 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-26T19:26:36.194Z",
+  "generatedAt": "2026-08-27T05:48:15.392Z",
   "source": "neon",
   "lessons": [
     {
       "id": 1,
       "number": 1,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الأَوَّلُ",
       "titleEn": "Lesson one",
       "grammarNote": "هٰذَا \"this\". Arabic has no copula, so هٰذَا بَيْتٌ is a complete sentence. Tanwin (the -n ending) is the indefinite article. The particle أ at the front turns a statement into a question."
@@ -13,6 +14,7 @@
     {
       "id": 2,
       "number": 2,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّانِي",
       "titleEn": "Lesson two",
       "grammarNote": "ذٰلِكَ \"that\", and وَ \"and\". ذٰلِكَ is pronounced dhalika but written without the alif, same pattern as هٰذَا. The وَ is written joined to the word that follows it."
@@ -20,6 +22,7 @@
     {
       "id": 3,
       "number": 3,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّالِثُ",
       "titleEn": "Lesson three",
       "grammarNote": "The definite article ال. When ال is prefixed, the tanwin drops: بَيْتٌ becomes البَيْتُ. Of the 28 letters, 14 are Solar and 14 are Lunar. Before a Solar letter the ل assimilates in pronunciation, marked by shadda on the following letter, so الشَّمْسُ is read ash-shamsu. Lunar letters do not assimilate, so القَمَرُ is read al-qamaru. The alif of ال is dropped in pronunciation when preceded by another word, marked with wasla, so وَالبَيْتُ is read wa l-baitu. Adjectives with tanwin are not translated with \"a\", so مَفْتُوحٌ is just \"open\"."
@@ -27,6 +30,7 @@
     {
       "id": 4,
       "number": 4,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الرَّابِعُ",
       "titleEn": "Lesson four",
       "grammarNote": "Prepositions and case. The normal noun ending is -u, called مَرْفُوعٌ (nominative). After a preposition it changes to -i, called مَجْرُورٌ (genitive). So البَيْتُ becomes فِي البَيْتِ. Also the pronouns هُوَ and هِيَ. Every noun is masculine or feminine, and هُوَ or هِيَ is used regardless of whether the noun is a person, animal, or thing. Most feminine nouns end in ة but not all. Proper nouns take no tanwin, and feminine proper nouns never do."
@@ -34,6 +38,7 @@
     {
       "id": 5,
       "number": 5,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الخَامِسُ",
       "titleEn": "Lesson five",
       "grammarNote": "idafah. The mudaf takes neither ال nor tanwin and is definite by position. The mudaf ilaihi is genitive, with tanwin or with ال. يَا is the vocative particle and the noun after it has only one dammah. اِسْم and اِبْن begin with hamzatu l-wasl."
@@ -41,6 +46,7 @@
     {
       "id": 6,
       "number": 6,
+      "deck": "book",
       "titleAr": "الدَّرْسُ السَّادِسُ",
       "titleEn": "Lesson six",
       "grammarNote": "هٰذِهِ feminine of هٰذَا. Feminine formed with ة, the letter before it taking fathah. Double body parts are feminine, single ones masculine. لِ means belongs to. لِمَنْ whose. أَيْضًا also. جِدًّا very. اللّٰهِ drops its alif after لِ giving لِلّٰهِ."
@@ -48,6 +54,7 @@
     {
       "id": 7,
       "number": 7,
+      "deck": "book",
       "titleAr": "الدَّرْسُ السَّابِعُ",
       "titleEn": "Lesson seven",
       "grammarNote": "تِلْكَ, feminine of ذٰلِكَ."
@@ -55,6 +62,7 @@
     {
       "id": 8,
       "number": 8,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّامِنُ",
       "titleEn": "Lesson eight",
       "grammarNote": "هٰذَا الكِتَابُ means this book, not a sentence by itself. Nouns ending in long alif (أَمْرِيكَا, المُسْتَشْفَى) never change ending. خَلْفَ behind and أَمَامَ in front of take genitive. جَلَسَ he sat."
@@ -62,6 +70,7 @@
     {
       "id": 9,
       "number": 9,
+      "deck": "book",
       "titleAr": "الدَّرْسُ التَّاسِعُ",
       "titleEn": "Lesson nine",
       "grammarNote": "the adjective (na't) follows its noun and agrees in gender, definiteness, and case. Adjectives ending in -aan (جَوْعَانُ) have no tanwin. Part B: relative pronoun الَّذِي. لِ plus ال noun drops the alif (لِلْإِمَامِ). عِنْدَ with, genitive after it."
@@ -69,6 +78,7 @@
     {
       "id": 10,
       "number": 10,
+      "deck": "book",
       "titleAr": "الدَّرْسُ العَاشِرُ",
       "titleEn": "Lesson ten",
       "grammarNote": "possessive pronoun suffixes. كِتَابُكَ your book, كِتَابُهُ his, كِتَابُهَا her, كِتَابِي my. أَبٌ and أَخٌ take a waw as mudaf: أَبُوكَ, أَخُوكَ, but أَبِي and أَخِي with no waw. عِنْدَ conveys to have. لِ with pronouns takes fathah (لَكَ, لَهُ, لَهَا) except لِي. مَعَ with, genitive after it. مَا as negative: مَا عِنْدِي no I do not have. Masculine proper nouns ending in ة (حَمْزَةُ) have no tanwin."
@@ -76,6 +86,7 @@
     {
       "id": 11,
       "number": 11,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الحَادِيَ عَشَرَ",
       "titleEn": "Lesson eleven",
       "grammarNote": "revision lesson. The object of a verb is accusative (mansub), taking -a, but it does not appear before the first person possessive."
@@ -83,6 +94,7 @@
     {
       "id": 12,
       "number": 12,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّانِيَ عَشَرَ",
       "titleEn": "Lesson twelve",
       "grammarNote": "أَنْتِ you feminine singular, possessive كِ. ذَهَبَتْ she went, sukun on the ت, becoming kasrah before ال. الَّتِي feminine relative."
@@ -90,6 +102,7 @@
     {
       "id": 13,
       "number": 13,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّالِثَ عَشَرَ",
       "titleEn": "Lesson thirteen",
       "grammarNote": "plurals. Sound masculine -uuna, sound feminine -aatun. Broken plurals follow many patterns and each noun's plural must be memorized. هٰؤُلَاءِ plural of هٰذَا and هٰذِهِ, mostly for humans. هُمْ they and their (masculine), هُنَّ (feminine). ذَهَبُوا they went, ذَهَبْنَ feminine. بَعْضٌ some."
@@ -97,6 +110,7 @@
     {
       "id": 14,
       "number": 14,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الرَّابِعَ عَشَرَ",
       "titleEn": "Lesson fourteen",
       "grammarNote": "أَنْتُمْ you plural, كُمْ your. نَحْنُ we, نَا our. ذَهَبْتُمْ, ذَهَبْنَا. Non-Arabic proper nouns have no tanwin (لَنْدَنُ, بَاكِسْتَانُ, most prophets' names) unless three letters and masculine (نُوحٌ, لُوطٌ). The mudaf with an adjective: بَيْتُ الإِمَامِ الجَدِيدُ the imam's new house versus بَيْتُ الإِمَامِ الجَدِيدِ the new imam's house, case of the adjective decides. أَيُّ which, used as mudaf."
@@ -104,6 +118,7 @@
     {
       "id": 15,
       "number": 15,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الخَامِسَ عَشَرَ",
       "titleEn": "Lesson fifteen",
       "grammarNote": "أَنْتُنَّ you feminine plural, كُنَّ your, ذَهَبْتُنَّ. قَبْلَ before and بَعْدَ after are always mudaf, genitive follows. رَجَعَ he returned."
@@ -111,6 +126,7 @@
     {
       "id": 16,
       "number": 16,
+      "deck": "book",
       "titleAr": "الدَّرْسُ السَّادِسَ عَشَرَ",
       "titleEn": "Lesson sixteen",
       "grammarNote": "rational versus irrational nouns. Plurals of irrational nouns (things, animals) are treated as feminine singular: هٰذِهِ كُتُبٌ, هِيَ صَغِيرَةٌ. Plurals of rational nouns take plural pronouns. New broken plural pattern مَفَاعِلُ with no tanwin."
@@ -118,6 +134,7 @@
     {
       "id": 17,
       "number": 17,
+      "deck": "book",
       "titleAr": "الدَّرْسُ السَّابِعَ عَشَرَ",
       "titleEn": "Lesson seventeen",
       "grammarNote": "continuation of Lesson 16, no new constructions."
@@ -125,6 +142,7 @@
     {
       "id": 18,
       "number": 18,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّامِنَ عَشَرَ",
       "titleEn": "Lesson eighteen",
       "grammarNote": "the dual, ending -aani. هٰذَانِ dual of هٰذَا, هَاتَانِ of هٰذِهِ, هُمَا of هُوَ and هِيَ. Adjectives qualifying a dual are dual. كَمْ how many, followed by a singular accusative noun; with tanwin it takes an unpronounced alif (كَمْ كِتَابًا) except after round ta."
@@ -132,6 +150,7 @@
     {
       "id": 19,
       "number": 19,
+      "deck": "book",
       "titleAr": "الدَّرْسُ التَّاسِعَ عَشَرَ",
       "titleEn": "Lesson nineteen",
       "grammarNote": "numbers 3 to 10 with a masculine noun. The number is mudaf, the counted noun (madud) is plural genitive. وَاحِدٌ and اِثْنَانِ follow the noun as adjectives."
@@ -139,6 +158,7 @@
     {
       "id": 20,
       "number": 20,
+      "deck": "book",
       "titleAr": "الدَّرْسُ العِشْرُونَ",
       "titleEn": "Lesson twenty",
       "grammarNote": "numbers 3 to 10 with a feminine madud drop the round ta: ثَلَاثُ بَنَاتٍ. ثَمَانِي has sukun on the last letter. Feminine of وَاحِدٌ is وَاحِدَةٌ, of اِثْنَانِ is اِثْنَتَانِ."
@@ -146,6 +166,7 @@
     {
       "id": 21,
       "number": 21,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الحَادِي وَالعِشْرُونَ",
       "titleEn": "Lesson twenty one",
       "grammarNote": "test lesson, no new constructions."
@@ -153,6 +174,7 @@
     {
       "id": 22,
       "number": 22,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّانِي وَالعِشْرُونَ",
       "titleEn": "Lesson twenty two",
       "grammarNote": "diptotes, nouns and adjectives that never take tanwin and take one dammah: feminine proper nouns, masculine proper nouns in ة or -aan or the afal pattern, adjectives on falaan and afal patterns, non-Arabic proper nouns, and the broken plural patterns afilaau, fualaau, mafaailu, mafaaiilu."
@@ -160,9 +182,34 @@
     {
       "id": 23,
       "number": 23,
+      "deck": "book",
       "titleAr": "الدَّرْسُ الثَّالِثُ وَالعِشْرُونَ",
       "titleEn": "Lesson twenty three",
       "grammarNote": "a diptote in the genitive takes fathah instead of kasrah: مِنْ أَحْمَدَ, كِتَابُ إِبْرَاهِيمَ, ثَلَاثَةُ مَسَاجِدَ."
+    },
+    {
+      "id": 47,
+      "number": 101,
+      "deck": "numbers",
+      "titleAr": "المَرْحَلَةُ الأُولَى",
+      "titleEn": "One to ten",
+      "grammarNote": "The numbers one to ten, in the two forms they take when counting. Both are learnt here as vocabulary; why they swap is Stage 6."
+    },
+    {
+      "id": 48,
+      "number": 102,
+      "deck": "numbers",
+      "titleAr": "المَرْحَلَةُ الثَّانِيَةُ",
+      "titleEn": "Eleven to twenty",
+      "grammarNote": "Eleven to nineteen are two words and both parts move. Twenty has one form for both genders."
+    },
+    {
+      "id": 49,
+      "number": 103,
+      "deck": "numbers",
+      "titleAr": "المَرْحَلَةُ الثَّالِثَةُ",
+      "titleEn": "Tens, hundreds and thousands",
+      "grammarNote": "The tens, a hundred and a thousand. None of these change for gender, which is the first thing to notice about them."
     }
   ],
   "cards": [
@@ -5313,6 +5360,534 @@
       "gender": null,
       "plural": null,
       "note": "diptote madud takes fathah"
+    },
+    {
+      "id": 561,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "وَاحِدٌ",
+      "english": "one (with masculine nouns)",
+      "transliteration": "wahidun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 562,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "وَاحِدَةٌ",
+      "english": "one (with feminine nouns)",
+      "transliteration": "wahidatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 563,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "اثْنَانِ",
+      "english": "two (with masculine nouns)",
+      "transliteration": "thnani",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 564,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "اثْنَتَانِ",
+      "english": "two (with feminine nouns)",
+      "transliteration": "thnatani",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 565,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "ثَلَاثَةٌ",
+      "english": "three (with masculine nouns)",
+      "transliteration": "thalathatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 566,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "ثَلَاثٌ",
+      "english": "three (with feminine nouns)",
+      "transliteration": "thalathun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 567,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "أَرْبَعَةٌ",
+      "english": "four (with masculine nouns)",
+      "transliteration": "arbaatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 568,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "أَرْبَعٌ",
+      "english": "four (with feminine nouns)",
+      "transliteration": "arbaun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 569,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "خَمْسَةٌ",
+      "english": "five (with masculine nouns)",
+      "transliteration": "khamsatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 570,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "خَمْسٌ",
+      "english": "five (with feminine nouns)",
+      "transliteration": "khamsun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 571,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "سِتَّةٌ",
+      "english": "six (with masculine nouns)",
+      "transliteration": "sittatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 572,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "سِتٌّ",
+      "english": "six (with feminine nouns)",
+      "transliteration": "sittun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 573,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "سَبْعَةٌ",
+      "english": "seven (with masculine nouns)",
+      "transliteration": "sabatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 574,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "سَبْعٌ",
+      "english": "seven (with feminine nouns)",
+      "transliteration": "sabun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 575,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "ثَمَانِيَةٌ",
+      "english": "eight (with masculine nouns)",
+      "transliteration": "thamaniyatun",
+      "gender": null,
+      "plural": null,
+      "note": "Irregular. See the feminine form."
+    },
+    {
+      "id": 576,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "ثَمَانٍ",
+      "english": "eight (with feminine nouns)",
+      "transliteration": "thamanin",
+      "gender": null,
+      "plural": null,
+      "note": "Irregular, in the same class as غَالٍ. In the teens it is written ثَمَانِي with sukun."
+    },
+    {
+      "id": 577,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "تِسْعَةٌ",
+      "english": "nine (with masculine nouns)",
+      "transliteration": "tisatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 578,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "تِسْعٌ",
+      "english": "nine (with feminine nouns)",
+      "transliteration": "tisun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 579,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "عَشَرَةٌ",
+      "english": "ten (with masculine nouns)",
+      "transliteration": "asharatun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 580,
+      "lessonId": 47,
+      "type": "vocab",
+      "arabic": "عَشْرٌ",
+      "english": "ten (with feminine nouns)",
+      "transliteration": "ashrun",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 581,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "أَحَدَ عَشَرَ",
+      "english": "eleven (with masculine nouns)",
+      "transliteration": "ahada ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 582,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "إِحْدَى عَشْرَةَ",
+      "english": "eleven (with feminine nouns)",
+      "transliteration": "ihda ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 583,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "اثْنَا عَشَرَ",
+      "english": "twelve (with masculine nouns)",
+      "transliteration": "thna ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 584,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "اثْنَتَا عَشْرَةَ",
+      "english": "twelve (with feminine nouns)",
+      "transliteration": "thnata ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 585,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "ثَلَاثَةَ عَشَرَ",
+      "english": "thirteen (with masculine nouns)",
+      "transliteration": "thalathata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 586,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "ثَلَاثَ عَشْرَةَ",
+      "english": "thirteen (with feminine nouns)",
+      "transliteration": "thalatha ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 587,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "أَرْبَعَةَ عَشَرَ",
+      "english": "fourteen (with masculine nouns)",
+      "transliteration": "arbaata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 588,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "أَرْبَعَ عَشْرَةَ",
+      "english": "fourteen (with feminine nouns)",
+      "transliteration": "arbaa ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 589,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "خَمْسَةَ عَشَرَ",
+      "english": "fifteen (with masculine nouns)",
+      "transliteration": "khamsata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 590,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "خَمْسَ عَشْرَةَ",
+      "english": "fifteen (with feminine nouns)",
+      "transliteration": "khamsa ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 591,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "سِتَّةَ عَشَرَ",
+      "english": "sixteen (with masculine nouns)",
+      "transliteration": "sittata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 592,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "سِتَّ عَشْرَةَ",
+      "english": "sixteen (with feminine nouns)",
+      "transliteration": "sitta ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 593,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "سَبْعَةَ عَشَرَ",
+      "english": "seventeen (with masculine nouns)",
+      "transliteration": "sabata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 594,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "سَبْعَ عَشْرَةَ",
+      "english": "seventeen (with feminine nouns)",
+      "transliteration": "saba ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 595,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "ثَمَانِيَةَ عَشَرَ",
+      "english": "eighteen (with masculine nouns)",
+      "transliteration": "thamaniyata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 596,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "ثَمَانِيَ عَشْرَةَ",
+      "english": "eighteen (with feminine nouns)",
+      "transliteration": "thamaniya ashrata",
+      "gender": null,
+      "plural": null,
+      "note": "The ya keeps its sukun here, unlike the standalone ثَمَانٍ."
+    },
+    {
+      "id": 597,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "تِسْعَةَ عَشَرَ",
+      "english": "nineteen (with masculine nouns)",
+      "transliteration": "tisata ashara",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 598,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "تِسْعَ عَشْرَةَ",
+      "english": "nineteen (with feminine nouns)",
+      "transliteration": "tisa ashrata",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 599,
+      "lessonId": 48,
+      "type": "vocab",
+      "arabic": "عِشْرُونَ",
+      "english": "twenty",
+      "transliteration": "ishruna",
+      "gender": null,
+      "plural": null,
+      "note": "One form for both genders, like all the tens."
+    },
+    {
+      "id": 600,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "ثَلَاثُونَ",
+      "english": "thirty",
+      "transliteration": "thalathuna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 601,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "أَرْبَعُونَ",
+      "english": "forty",
+      "transliteration": "arbauna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 602,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "خَمْسُونَ",
+      "english": "fifty",
+      "transliteration": "khamsuna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 603,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "سِتُّونَ",
+      "english": "sixty",
+      "transliteration": "sittuna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 604,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "سَبْعُونَ",
+      "english": "seventy",
+      "transliteration": "sabuna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 605,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "ثَمَانُونَ",
+      "english": "eighty",
+      "transliteration": "thamanuna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 606,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "تِسْعُونَ",
+      "english": "ninety",
+      "transliteration": "tisuna",
+      "gender": null,
+      "plural": null,
+      "note": null
+    },
+    {
+      "id": 607,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "مِائَةٌ",
+      "english": "a hundred",
+      "transliteration": "miatun",
+      "gender": null,
+      "plural": null,
+      "note": "The alif is silent. Some printings write مِئَة."
+    },
+    {
+      "id": 608,
+      "lessonId": 49,
+      "type": "vocab",
+      "arabic": "أَلْفٌ",
+      "english": "a thousand",
+      "transliteration": "alfun",
+      "gender": null,
+      "plural": null,
+      "note": null
     }
   ]
 }
