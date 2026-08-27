@@ -4,7 +4,7 @@ import { Pressable, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
-import { ExitDrill } from "@/components/ExitDrill";
+import { BackBar } from "@/components/BackBar";
 import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -272,13 +272,20 @@ export default function Speed() {
 
   return (
     <Screen>
+      <BackBar
+        label="Leave"
+        right={<HelpButton onPress={help.show} />}
+        confirm={{
+          title: "Leave this run?",
+          message: "Your answers are saved. The run's result is not.",
+        }}
+      />
+
       <View style={s.head}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text variant="eyebrow" color="inkSoft">
             Speed drill
           </Text>
-          <HelpButton onPress={help.show} />
-          <ExitDrill confirm label="Leave" />
         </View>
         {/* Keyed to the card, so a remount can never leave a half finished
             drain attached to the next word. */}

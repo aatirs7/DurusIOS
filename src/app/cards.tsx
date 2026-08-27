@@ -12,7 +12,7 @@ import Svg, { Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
-import { ExitDrill } from "@/components/ExitDrill";
+import { BackBar } from "@/components/BackBar";
 import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -208,11 +208,14 @@ export default function Flashcards() {
 
   return (
     <Screen>
+      {/* No confirmation: flashcards score nothing, so leaving discards
+          nothing. */}
+      <BackBar label="Leave" right={<HelpButton onPress={help.show} />} />
+
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Text variant="eyebrow" color="inkSoft">
           Flashcards
         </Text>
-        <HelpButton onPress={help.show} />
       </View>
 
       <Pressable style={s.scene} onPress={flip} accessibilityRole="button">
@@ -263,9 +266,6 @@ export default function Flashcards() {
         <Button label="Next" variant="quiet" onPress={() => move(1)} />
       </View>
 
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingTop: space(1) }}>
-        <ExitDrill />
-      </View>
       <Help topic="cards" open={help.open} onClose={help.close} />
     </Screen>
   );

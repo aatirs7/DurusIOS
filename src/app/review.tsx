@@ -1,10 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useRef } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { KeyboardAvoidingView, Platform } from "react-native";
 
+import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
-import { Help, useHelp } from "@/components/Help";
+import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
@@ -17,26 +17,8 @@ import { ReviewSession } from "@/drills/ReviewSession";
 import { haptics } from "@/lib/haptics";
 import { useSession } from "@/state/session";
 import { space } from "@/theme/layout";
-import { makeStyles, useTheme } from "@/theme/useTheme";
-
-const useStyles = makeStyles(() => ({
-  /*
-    A back chevron and a "?" on their own row, the way the web sets it. The mode
-    eyebrow belongs with the card below rather than up here competing with the
-    controls.
-  */
-  header: {
-    height: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  hit: { width: 44, height: 40, justifyContent: "center" },
-}));
 
 export default function Review() {
-  const s = useStyles();
-  const theme = useTheme();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
   const deviceId = useRef(bootOnce()).current;
@@ -105,39 +87,7 @@ export default function Review() {
 
   return (
     <Screen>
-      <View style={s.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Leave this session"
-          hitSlop={12}
-          style={s.hit}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace("/today"))}
-        >
-          {/* A chevron, not the word "Done". Leaving costs nothing: every
-              answer was written the moment it was given. */}
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M15 5l-7 7 7 7"
-              stroke={theme.colors.inkSoft}
-              strokeWidth={1.6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="How this drill works"
-          hitSlop={12}
-          style={[s.hit, { alignItems: "flex-end" }]}
-          onPress={help.show}
-        >
-          <Text color="inkFaint" style={{ fontSize: 20 }}>
-            ?
-          </Text>
-        </Pressable>
-      </View>
+      <BackBar label="Leave" right={<HelpButton onPress={help.show} />} />
 
       {/*
         The card, the input and the result all have to stay visible with the

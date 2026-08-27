@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { Text } from "@/components/Text";
@@ -51,28 +51,60 @@ const useStyles = makeStyles(() => ({
 
   There is no title. Every screen that uses this has its own heading a line
   below, and a second smaller one up here only competed with it.
+
+  It is also the way out of every DRILL, which is why it takes a label and a
+  confirmation. Before this, review had a faint chevron in the top left, speed
+  and the case drill had a "Leave" at the bottom of the page, and flashcards
+  had a "Done" - three placements and three words for one action, none of them
+  where the rest of the app puts it.
 */
 export function BackBar({
   fallback = "/today",
   right,
+  label = "Back",
+  confirm,
 }: {
   fallback?: string;
   right?: React.ReactNode;
+  /* "Leave" inside a drill, "Back" everywhere else. Same control, and the word
+     is the only thing that changes. */
+  label?: string;
+  /*
+    Asks first, and only where something would actually be lost.
+
+    Answers are written to SQLite the moment they are given, so leaving a
+    review costs nothing and a confirmation would be theatre. A speed or case
+    run is scored as a run, so abandoning one does discard that result even
+    though every answer in it is already recorded.
+  */
+  confirm?: { title: string; message: string };
 }) {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
 
+  const leave = () =>
+    router.canGoBack() ? router.back() : router.replace(fallback as never);
+
+  const onPress = () => {
+    if (!confirm) {
+      leave();
+      return;
+    }
+    Alert.alert(confirm.title, confirm.message, [
+      { text: "Stay", style: "cancel" },
+      { text: "Leave", style: "destructive", onPress: leave },
+    ]);
+  };
+
   return (
     <View style={s.bar}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Go back"
+        accessibilityLabel={label === "Back" ? "Go back" : "Leave this drill"}
         hitSlop={12}
         style={s.hit}
-        onPress={() =>
-          router.canGoBack() ? router.back() : router.replace(fallback as never)
-        }
+        onPress={onPress}
       >
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
           <Path
@@ -83,7 +115,7 @@ export function BackBar({
             strokeLinejoin="round"
           />
         </Svg>
-        <Text color="lapis">Back</Text>
+        <Text color="lapis">{label}</Text>
       </Pressable>
 
       <View style={{ flex: 1 }} />

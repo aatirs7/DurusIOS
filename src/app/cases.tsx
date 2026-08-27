@@ -4,7 +4,7 @@ import { Pressable, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
-import { ExitDrill } from "@/components/ExitDrill";
+import { BackBar } from "@/components/BackBar";
 import { Help, HelpButton, useHelp } from "@/components/Help";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -117,13 +117,22 @@ export default function Cases() {
 
   return (
     <Screen>
+      {/* One way out, in the same corner as every other screen. It confirms,
+          because abandoning a run discards the run's result. */}
+      <BackBar
+        label="Leave"
+        right={<HelpButton onPress={help.show} />}
+        confirm={{
+          title: "Leave this run?",
+          message: "Your answers are saved. The run's result is not.",
+        }}
+      />
+
       <View style={s.head}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text variant="eyebrow" color="inkSoft">
             Which ending
           </Text>
-          <HelpButton onPress={help.show} />
-          <ExitDrill confirm label="Leave" />
         </View>
         <Text variant="label" color="inkFaint">
           {`${index + 1} / ${start.questions.length}`}
