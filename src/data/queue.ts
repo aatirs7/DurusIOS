@@ -115,7 +115,17 @@ export function countNewAvailable(db: Db, profileId: number, currentLesson: numb
 export function buildQueue(
   db: Db,
   profileId: number,
-  options: { lessonNumbers?: number[]; now?: Date; random?: () => number } = {},
+  options: {
+    lessonNumbers?: number[];
+    /*
+      Which deck to draw from. Defaults to the book, so every existing caller
+      means what it meant before and forgetting the argument can never
+      accidentally pull the numbers trainer into an ordinary review.
+    */
+    deck?: "book" | "numbers";
+    now?: Date;
+    random?: () => number;
+  } = {},
 ): QueueItem[] {
   const now = options.now ?? new Date();
   const random = options.random ?? Math.random;
@@ -129,6 +139,7 @@ export function buildQueue(
     simplest case of it. An empty array means the same as no array: the
     scheduler picks across everything open.
   */
+  const deck = options.deck ?? "book";
   const chosen = options.lessonNumbers?.filter((n) => Number.isInteger(n)) ?? [];
   /*
     The book's deck, and only the book's.
@@ -139,10 +150,18 @@ export function buildQueue(
     read lessons.number, so it costs nothing.
   */
   const lessonFilter = and(
-    eq(lessons.deck, "book"),
+    eq(lessons.deck, deck),
     chosen.length
       ? inArray(lessons.number, chosen)
-      : lte(lessons.number, config.currentLesson),
+      /*
+        currentLesson bounds the BOOK only. The trainer sits outside lesson
+        gating - its content is scattered across Book 1 lesson 20 and Book 2,
+        so gating it to the class would leave it half taught for most of the
+        course - and its own stage unlocking is what orders it instead.
+      */
+      : deck === "numbers"
+        ? undefined
+        : lte(lessons.number, config.currentLesson),
   );
 
   const dueRows = db

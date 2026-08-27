@@ -41,7 +41,7 @@ export default function Review() {
   const profileId = useSession((st) => st.activeProfileId);
   const deviceId = useRef(bootOnce()).current;
   const help = useHelp("review");
-  const params = useLocalSearchParams<{ lesson?: string; lessons?: string }>();
+  const params = useLocalSearchParams<{ lesson?: string; lessons?: string; deck?: string }>();
 
   /*
     Which lessons this run draws from. Absent means the scheduler picks across
@@ -71,7 +71,10 @@ export default function Review() {
   const start = useMemo(() => {
     if (profileId === null) return null;
     const config = getSettingsFor(db, profileId);
-    const queue = buildQueue(db, profileId, { lessonNumbers: chosen });
+    /* The numbers trainer drills through this same screen: same ladder, same
+       grading, same writes. Only the deck it draws from differs. */
+    const deck = params.deck === "numbers" ? "numbers" : "book";
+    const queue = buildQueue(db, profileId, { lessonNumbers: chosen, deck });
     /* The distractor pool follows the queue: a lesson-only run should not offer
        options from lessons the drill never asks about. */
     const lessonNumbers = chosen.length
@@ -79,7 +82,7 @@ export default function Review() {
       : Array.from({ length: config.currentLesson }, (_, i) => i + 1);
     const questions: Question[] = buildQuestions(db, queue, lessonNumbers);
     return { questions, showHarakat: config.showHarakat };
-  }, [profileId, chosen]);
+  }, [profileId, chosen, params.deck]);
 
   if (profileId === null || !start) return null;
 

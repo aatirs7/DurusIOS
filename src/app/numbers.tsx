@@ -1,275 +1,186 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import {
-  COUNTED_NOUNS,
-  NUMBERS,
-  buildCountingQuestion,
-  buildWordQuestion,
-  countedPhrase,
-  easternDigits,
-  type CountedNoun,
-  type NumberQuestion,
-  type NumberStage,
-} from "@/engine/numbers";
-import { haptics } from "@/lib/haptics";
+import { db } from "@/data/client";
+import { listStages, type Stage } from "@/data/numbers";
+import { useSession } from "@/state/session";
 import { RADIUS, space } from "@/theme/layout";
 import { textStyles } from "@/theme/typography";
-import { makeStyles, useTheme } from "@/theme/useTheme";
+import { makeStyles } from "@/theme/useTheme";
 
 /*
-  The numbers drill.
+  The numbers trainer's stage list.
 
-  Two stages, and you choose. Stage one is the ten words; stage two is what
-  happens when one goes in front of a noun, which is what Book 1 lessons 19 to
-  21 are actually about. Somebody who cannot yet say "seven" has no business
-  being asked whether it keeps its ta.
+  Thirteen stages eventually; three have content today. Each is an ordinary
+  lesson row with deck = "numbers", so what is drilled here goes through the
+  same scheduler, the same fold and the same sync as everything else - the only
+  thing that differs is which deck the queue draws from.
 
-  It touches NOTHING. No card states, no reviews, no schedule - like the case
-  drill, this is a drill for one piece of grammar rather than part of the
-  ladder, and the numbers are not cards. That is why it writes nothing at all.
+  No percentages, no streak, no badges. A stage says how many of its items are
+  solid and whether anything is due, and that is the whole of it.
+
+  WHERE "TAUGHT" IS STORED
+
+  In AsyncStorage, per profile, not in a table. The spec asked for a
+  number_stage_progress table; what "taught" actually records is that a person
+  has read a screen once on this phone, which is the same kind of fact as the
+  help sheet's seen flag and is stored the same way. Putting it in the synced
+  schema would have meant a migration on a live database to carry one bit that
+  nothing else reads. If it ever needs to follow an account between devices,
+  that is the moment to promote it.
 */
 
-const RUN_LENGTH = 12;
+const taughtKey = (profileId: number, stage: number) => `durus.numbers.taught.${profileId}.${stage}`;
 
 const useStyles = makeStyles((t) => ({
-  body: { flex: 1, justifyContent: "center", gap: space(3) },
+  head: { gap: space(1), paddingBottom: space(2) },
 
-  /* Stage picker. */
-  choice: {
+  row: {
     borderWidth: 1.5,
     borderColor: t.colors.rule,
     borderRadius: RADIUS.field,
     backgroundColor: t.colors.surface,
-    paddingHorizontal: space(3),
-    paddingVertical: space(2.5),
-    gap: space(0.5),
-    alignItems: "center",
-  },
-
-  prompt: { alignItems: "center", gap: space(0.5) },
-  digits: { ...textStyles.numeral, fontSize: 64, lineHeight: 74, color: t.colors.ink },
-  eastern: { ...textStyles.numeral, fontSize: 28, color: t.colors.inkFaint },
-
-  options: { gap: space(1.5) },
-  option: {
-    backgroundColor: t.colors.surface,
-    borderRadius: RADIUS.button,
-    borderWidth: 1,
-    borderColor: t.colors.rule,
+    paddingHorizontal: space(2.5),
     paddingVertical: space(2),
-    alignItems: "center",
+    marginBottom: space(1.5),
+    gap: space(0.5),
   },
-  optionRight: { borderColor: t.colors.verdigris },
-  optionWrong: { borderColor: t.colors.clay },
+  /*
+    An unlocked but untaught stage carries a thin saffron rule. It is the only
+    colour on the screen, and it is doing the job a badge would otherwise do:
+    saying "this one is ready" without counting anything.
+  */
+  ready: { borderColor: t.colors.saffron },
+  locked: { opacity: 0.45 },
 
-  /* Reserved so revealing the rule does not move the options. */
-  reveal: { minHeight: 96, alignItems: "center", justifyContent: "center", gap: space(1) },
-  note: { textAlign: "center", maxWidth: 300 },
-
-  summary: { flex: 1, alignItems: "center", justifyContent: "center", gap: space(2) },
-  score: { ...textStyles.numeral, fontSize: 56, lineHeight: 66, color: t.colors.ink },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space(2) },
+  due: { ...textStyles.numeral, fontSize: 17, color: t.colors.lapis },
+  meta: { flexDirection: "row", alignItems: "center", gap: space(1) },
 }));
-
-type Round = { question: NumberQuestion; noun: CountedNoun | null; value: number };
-
-function buildRun(stage: NumberStage): Round[] {
-  const rounds: Round[] = [];
-
-  for (let i = 0; i < RUN_LENGTH; i += 1) {
-    if (stage === "words") {
-      const value = NUMBERS[Math.floor(Math.random() * NUMBERS.length)].value;
-      rounds.push({ question: buildWordQuestion(value, Math.random), noun: null, value });
-    } else {
-      /* Three to ten only: one and two are adjectives that follow the noun,
-         which is a different rule. */
-      const value = 3 + Math.floor(Math.random() * 8);
-      const noun = COUNTED_NOUNS[Math.floor(Math.random() * COUNTED_NOUNS.length)];
-      rounds.push({ question: buildCountingQuestion(value, noun, Math.random), noun, value });
-    }
-  }
-
-  return rounds;
-}
 
 export default function Numbers() {
   const s = useStyles();
-  const theme = useTheme();
   const router = useRouter();
+  const profileId = useSession((st) => st.activeProfileId);
 
-  const [stage, setStage] = useState<NumberStage | null>(null);
-  const [rounds, setRounds] = useState<Round[]>([]);
-  const [index, setIndex] = useState(0);
-  const [picked, setPicked] = useState<string | null>(null);
-  const [right, setRight] = useState(0);
+  const [taught, setTaught] = useState<Record<number, boolean>>({});
+  const [tick, setTick] = useState(0);
 
-  const begin = useCallback((next: NumberStage) => {
-    setStage(next);
-    setRounds(buildRun(next));
-    setIndex(0);
-    setPicked(null);
-    setRight(0);
-  }, []);
-
-  const round = rounds[index];
-  const answered = picked !== null;
-
-  const advance = useCallback(() => {
-    setPicked(null);
-    setIndex((i) => i + 1);
-  }, []);
-
-  const counted = useMemo(
-    () => (round?.noun ? countedPhrase(round.value, round.noun) : null),
-    [round],
+  const stages = useMemo(
+    () => (profileId === null ? [] : listStages(db, profileId)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [profileId, tick],
   );
 
-  /* ------------------------------------------------------------- the picker */
-  if (stage === null) {
-    return (
-      <Screen>
-        <BackBar title="Numbers" />
-        <View style={s.body}>
-          <View style={{ alignItems: "center", gap: space(1) }}>
-            <Text variant="pageTitle" style={{ textAlign: "center" }}>
-              Which part?
-            </Text>
-            <Text color="inkSoft" style={{ textAlign: "center" }}>
-              Learn the ten words first. The grammar of counting only makes
-              sense once you have them.
-            </Text>
-          </View>
+  useEffect(() => {
+    if (profileId === null || stages.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      stages.map(async (stage) => [stage.stage, await AsyncStorage.getItem(taughtKey(profileId, stage.stage))] as const),
+    )
+      .then((entries) => {
+        if (cancelled) return;
+        setTaught(Object.fromEntries(entries.map(([n, v]) => [n, v === "1"])));
+      })
+      .catch(() => {
+        /* Storage failing means the teach screen is offered again, which is a
+           great deal better than a stage that cannot be reached. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profileId, stages]);
 
-          <View style={{ gap: space(1.5) }}>
-            <Pressable style={s.choice} onPress={() => begin("words")}>
-              <Text variant="pageTitle" style={{ fontSize: 20 }}>
-                The numbers
-              </Text>
-              <Text variant="label" color="inkSoft">
-                One to ten, as words
-              </Text>
-            </Pressable>
+  const open = useCallback(
+    (stage: Stage) => {
+      if (stage.state === "locked") return;
+      /*
+        Untaught goes to the teach screen; taught goes straight to the drill.
+        Nothing auto-starts: this is a tap on a row that says what it will do.
+      */
+      if (!taught[stage.stage]) {
+        router.push(`/numbers/teach?stage=${stage.number}`);
+        return;
+      }
+      router.push(`/review?deck=numbers&lessons=${stage.number}`);
+    },
+    [router, taught],
+  );
 
-            <Pressable style={s.choice} onPress={() => begin("counting")}>
-              <Text variant="pageTitle" style={{ fontSize: 20 }}>
-                Counting things
-              </Text>
-              <Text variant="label" color="inkSoft">
-                Three to ten, and the ta that behaves backwards
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Screen>
-    );
-  }
+  if (profileId === null) return null;
 
-  /* ------------------------------------------------------------ the summary */
-  if (!round) {
-    return (
-      <Screen>
-        <BackBar title="Numbers" />
-        <View style={s.summary}>
-          <Text variant="eyebrow" color="inkSoft">
-            {stage === "words" ? "The numbers" : "Counting things"}
-          </Text>
-          <Text style={s.score}>{`${right}/${rounds.length}`}</Text>
-          <Text variant="label" color="inkFaint" style={s.note}>
-            Nothing here touches your schedule.
-          </Text>
-        </View>
-        <View style={{ gap: space(1), paddingBottom: space(1) }}>
-          <Button label="Go again" onPress={() => begin(stage)} />
-          <Button label="Back to today" variant="text" onPress={() => router.replace("/today")} />
-        </View>
-      </Screen>
-    );
-  }
-
-  /* -------------------------------------------------------------- the drill */
-  const { question } = round;
+  const totalDue = stages.reduce((n, stage) => n + stage.due, 0);
 
   return (
     <Screen>
-      <BackBar title={stage === "words" ? "The numbers" : "Counting things"} />
+      <BackBar />
 
-      <View style={s.body}>
-        <View style={s.prompt}>
-          <Text variant="eyebrow" color="inkSoft">
-            {stage === "words" ? "Which word is this?" : "Which form goes here?"}
-          </Text>
-          <Text style={s.digits}>{String(round.value)}</Text>
-          <Text style={s.eastern}>{easternDigits(round.value)}</Text>
-          {round.noun ? (
-            <Text color="inkSoft">{round.noun.english}</Text>
-          ) : null}
-        </View>
+      <View style={s.head}>
+        <Text variant="pageTitle" style={{ textAlign: "center" }}>
+          Numbers
+        </Text>
+        <Text color="inkSoft" style={{ textAlign: "center" }}>
+          {totalDue > 0
+            ? `${totalDue} ${totalDue === 1 ? "card" : "cards"} due.`
+            : "Nothing due."}
+        </Text>
+      </View>
 
-        <View style={s.options}>
-          {question.options.map((option) => {
-            const isAnswer = option === question.answer;
-            const isPicked = option === picked;
-            return (
-              <Pressable
-                key={option}
-                disabled={answered}
-                onPress={() => {
-                  haptics.select();
-                  setPicked(option);
-                  if (isAnswer) setRight((n) => n + 1);
-                }}
-                style={[
-                  s.option,
-                  /* Once answered the right one is marked whichever was
-                     chosen. Seeing only your own mistake teaches nothing. */
-                  answered && isAnswer && s.optionRight,
-                  answered && !isAnswer && isPicked && s.optionWrong,
-                ]}
-              >
-                <Arabic variant="tile">{option}</Arabic>
-              </Pressable>
-            );
-          })}
-        </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {stages.map((stage) => {
+          const isTaught = taught[stage.stage] === true;
+          const ready = stage.state !== "locked" && !isTaught;
 
-        {/* Height reserved, so the rule appearing does not move the options. */}
-        <View style={s.reveal}>
-          {answered ? (
-            <Animated.View
-              entering={FadeIn.duration(200)}
-              style={{ alignItems: "center", gap: space(1) }}
+          return (
+            <Pressable
+              key={stage.number}
+              disabled={stage.state === "locked"}
+              onPress={() => open(stage)}
+              style={[s.row, ready && s.ready, stage.state === "locked" && s.locked]}
             >
-              {counted ? <Arabic variant="title">{counted}</Arabic> : null}
-              {question.note ? (
-                <Text
-                  variant="label"
-                  style={[
-                    s.note,
-                    { color: picked === question.answer ? theme.colors.verdigris : theme.colors.clay },
-                  ]}
-                >
-                  {question.note}
+              <View style={s.titleRow}>
+                <Text variant="pageTitle" style={{ fontSize: 19, flex: 1 }}>
+                  {stage.titleEn}
                 </Text>
-              ) : null}
-            </Animated.View>
-          ) : null}
-        </View>
-      </View>
+                {stage.due > 0 ? <Text style={s.due}>{String(stage.due)}</Text> : null}
+              </View>
 
-      <View style={{ paddingBottom: space(1) }}>
-        <Button
-          label={index === rounds.length - 1 ? "Finish" : "Next"}
-          disabled={!answered}
-          onPress={advance}
-        />
-      </View>
+              <View style={s.meta}>
+                <Arabic variant="inline" color="inkSoft">
+                  {stage.titleAr}
+                </Arabic>
+              </View>
+
+              <Text variant="label" color="inkFaint">
+                {stage.state === "locked"
+                  ? "Finish the stage before this one first."
+                  : !isTaught
+                    ? `${stage.items} to learn`
+                    : `${stage.learned} of ${stage.items} solid`}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {totalDue > 0 ? (
+        <View style={{ paddingBottom: space(1) }}>
+          <Button
+            label="Review what is due"
+            onPress={() => {
+              router.push("/review?deck=numbers");
+              setTick((n) => n + 1);
+            }}
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }

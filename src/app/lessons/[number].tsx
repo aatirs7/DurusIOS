@@ -155,7 +155,7 @@ export default function LessonDetail() {
 
   return (
     <Screen>
-      <BackBar title={`Lesson ${lesson.number}`} fallback="/lessons" />
+      <BackBar fallback="/lessons" />
 
       {/*
         The lesson number is in the bar above and nowhere else. It used to be

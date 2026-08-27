@@ -7,6 +7,14 @@ import { space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const useStyles = makeStyles(() => ({
+  /*
+    Back on the left, and nothing in the middle.
+
+    It used to centre a title between the chevron and the right corner, which
+    fought with the screen's own heading directly underneath - two titles, one
+    of them small and off to the side, and the control that matters reading as
+    a label rather than a way out. The bar does one job now.
+  */
   bar: {
     height: 44,
     flexDirection: "row",
@@ -30,7 +38,6 @@ const useStyles = makeStyles(() => ({
     paddingRight: space(1),
   },
   right: { minWidth: 60, alignItems: "flex-end", justifyContent: "center" },
-  title: { flex: 1, textAlign: "center" },
 }));
 
 /*
@@ -42,16 +49,13 @@ const useStyles = makeStyles(() => ({
   replace rather than a push. Hence the fallback to Today rather than a bare
   router.back().
 
-  The title is optional and centred between the two corners, which reserve equal
-  width so it sits on the screen's true centre whether or not anything is on the
-  right.
+  There is no title. Every screen that uses this has its own heading a line
+  below, and a second smaller one up here only competed with it.
 */
 export function BackBar({
-  title,
   fallback = "/today",
   right,
 }: {
-  title?: string;
   fallback?: string;
   right?: React.ReactNode;
 }) {
@@ -82,13 +86,7 @@ export function BackBar({
         <Text color="lapis">Back</Text>
       </Pressable>
 
-      {title ? (
-        <Text variant="eyebrow" color="inkSoft" style={s.title}>
-          {title}
-        </Text>
-      ) : (
-        <View style={{ flex: 1 }} />
-      )}
+      <View style={{ flex: 1 }} />
 
       <View style={s.right}>{right}</View>
     </View>
