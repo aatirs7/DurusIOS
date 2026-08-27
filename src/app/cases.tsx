@@ -136,18 +136,31 @@ export default function Cases() {
           string, so the blank can be styled without splitting a text node that
           bidi would then reorder.
         */}
+        {/*
+          BEFORE first, because the row is row-reverse.
+
+          `before` is the words earlier in the sentence, and Arabic reads right
+          to left, so they belong on the RIGHT - which under row-reverse means
+          they are the first child. Rendering `after` first put the end of the
+          sentence on the right and the beginning on the left, so
+          "لَا، هٰذَا مَسْجِدٌ" read out as masjid, la, hadha: every word correct,
+          every word in the wrong place.
+
+          The spaces go on the inner edges of the outer two, which under
+          row-reverse is the side facing the blank in both cases.
+        */}
         <View style={s.phrase}>
-          {q.after ? (
+          {q.before ? (
             <Arabic variant="title" showHarakat={start.showHarakat}>
-              {`${q.after} `}
+              {`${q.before} `}
             </Arabic>
           ) : null}
           <Arabic variant="title" color="lapis" showHarakat={start.showHarakat}>
             {`${q.stem}${settled ? CASE_MARKS[q.answer] : BLANK}${q.punct}`}
           </Arabic>
-          {q.before ? (
+          {q.after ? (
             <Arabic variant="title" showHarakat={start.showHarakat}>
-              {` ${q.before}`}
+              {` ${q.after}`}
             </Arabic>
           ) : null}
         </View>
