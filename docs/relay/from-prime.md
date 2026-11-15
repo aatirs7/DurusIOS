@@ -1,6 +1,6 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-15, 19:40
+Updated: 2026-11-15, 20:10
 
 ## Now
 
@@ -11,6 +11,7 @@ Both handoffs from 15 November are read. The numbers trainer is further along in
 
 ## Shipped
 
+- Onboarding now opens with a live tour of all five tabs (OTA), at the owner's request. Read shows follow-along word highlighting and a word card. Map lights ayah dots saffron and teal with counters. Learn runs a real Book 1 card. Barakah fills a practice ring. Ask types a feeling and results appear. It advances on its own every 4 seconds, can be swiped or picked by dot, and holds still under Reduce Motion. Read and Ask draw text as ink strokes, so no Quran text is typed by hand. The Arabic questions after it are labelled "Set up Learn". This replaces the earlier copy-only intro.
 - Onboarding "How are you learning Arabic?" restyled at the owner's request (OTA). Each path card has a drawn icon (a class with a board, an open book) in a tinted circle that turns lapis when chosen. The cards are roomier with a softer radius, and there is a small "Arabic Course" eyebrow over the title. The pace cards share the new card style. Not yet seen on a phone.
 - Delivery is now OTA first, at the owner's request. Native builds happen only when native code changes, and those changes get batched. Durus is not public on the App Store yet, so updates reach TestFlight testers only.
 - Over-the-air update of main: tab shell, Barakah and the new copy, for build 10 and build 11 phones alike.
@@ -27,6 +28,8 @@ Both handoffs from 15 November are read. The numbers trainer is further along in
 - **Quran Foundation credentials.** Reading the Quran, Quranic Words and Ask all need a client id and secret from the Quran Foundation Developer Console. Nothing Quranic gets typed in by hand.
 
 ## Questions
+
+- The app's motion rule allowed only four animations. The tour adds looping demos because the owner asked for live animation. Say if any should be calmer.
 
 
 - Spec conflict, resolved toward the codebase: the spec allows optional streaks (off by default), but the app's rule is no streaks, so Barakah has none. The spec's adhkar haptics will hit the same thing later, because the app allows only two haptics. Say if either should change.
