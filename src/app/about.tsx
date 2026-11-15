@@ -81,8 +81,8 @@ export default function About() {
 
         <View style={s.group}>
           <Text color="inkSoft" style={s.centred}>
-            Durus keeps the vocabulary from Madinah Arabic Book 1 in working
-            memory, alongside a class that meets weekly.
+            Durus keeps the vocabulary from Book 1 of the Arabic Course in
+            working memory, alongside a class that meets weekly.
           </Text>
           <Text color="inkSoft" style={s.centred}>
             It grades you from your answer and how long it took, so there is

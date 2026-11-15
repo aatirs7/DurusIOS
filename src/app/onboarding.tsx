@@ -132,14 +132,14 @@ const PACES: { label: string; hint: string; newPerDay: number }[] = [
   rather than being hidden - someone on Book 2 should be able to see that the
   app knows Book 2 exists.
 
-  Named in full. "Book 1" on its own is only unambiguous to somebody who already
-  knows which series this is, which is exactly the reader this screen cannot
-  assume it has.
+  Labelled "Book 1", "Book 2" and "Book 3". The app is now a Quran app with an
+  Arabic course inside it, and the series name is kept for the credit on the
+  About screen rather than repeated in every label.
 */
 const BOOKS = [
-  { number: 1, label: "Madinah Book 1", available: true },
-  { number: 2, label: "Madinah Book 2", available: false },
-  { number: 3, label: "Madinah Book 3", available: false },
+  { number: 1, label: "Book 1", available: true },
+  { number: 2, label: "Book 2", available: false },
+  { number: 3, label: "Book 3", available: false },
 ];
 
 const useStyles = makeStyles((t) => ({
@@ -500,13 +500,12 @@ export default function Onboarding() {
                       sets up the question on the next screen.
                     */}
                     <Text variant="pageTitle" style={s.h1}>
-                      Learn the Madinah vocabulary, and keep it
+                      Read, memorize, and understand the Quran
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      Durus drills the words the Madinah books teach and brings
-                      each one back just before you would forget it. Follow a
-                      class lesson by lesson, or start at the beginning on your
-                      own.
+                      Read with translation, track what you have memorized, learn
+                      the Arabic behind it, and keep a calm daily practice. Learn
+                      Arabic with a class, or on your own.
                     </Text>
                   </View>
                   <View style={s.ticks}>
@@ -521,7 +520,7 @@ export default function Onboarding() {
                 <>
                   <View style={s.heads}>
                     <Text variant="pageTitle" style={s.h1}>
-                      How are you learning?
+                      How are you learning Arabic?
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
                       This decides what Durus asks you next.
@@ -726,8 +725,8 @@ export default function Onboarding() {
                       One last thing
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      An account is what keeps your progress if you lose this
-                      phone.
+                      An account keeps your reading, memorization and lessons if
+                      you lose this phone.
                     </Text>
                   </View>
                   <SignInPanel onSignedIn={finish} />
@@ -809,7 +808,7 @@ export default function Onboarding() {
           <Button label="Continue" onPress={() => void leaveReminders()} />
         ) : null}
         {step === "done" ? (
-          <Button label="Start reviewing" onPress={() => router.replace("/today")} />
+          <Button label="Open Durus" onPress={() => router.replace("/today")} />
         ) : null}
       </View>
     </Screen>
