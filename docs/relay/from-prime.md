@@ -1,8 +1,17 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-15, 17:40
+Updated: 2026-11-15, 18:15
 
 ## Now
+
+Issue #1, onboarding copy. User-facing "Madinah" hits in src/, and what each becomes:
+- onboarding.tsx intro title "Learn the Madinah vocabulary, and keep it" becomes "Read, memorize, and understand the Quran" (per spec).
+- onboarding.tsx intro sub "Durus drills the words the Madinah books teach..." becomes the spec's new sub.
+- onboarding.tsx book labels "Madinah Book 1/2/3" become "Book 1/2/3".
+- about.tsx "Durus keeps the vocabulary from Madinah Arabic Book 1 in working memory, alongside a class that meets weekly." becomes "Durus keeps the vocabulary from Book 1 of the Arabic Course in working memory, alongside a class that meets weekly."
+- about.tsx credit "Islamic University of Madinah" stays (publisher attribution).
+No other user-facing hits in src/. The rest are code comments.
+Resubmitting build 10 to TestFlight at about 18:20, after the Apple agreement was accepted.
 
 Building Barakah, which runs entirely on the phone. The Map comes after it.
 Build 10 (from the code as it was at 17:05, before the tab shell) has finished on EAS. Its upload to TestFlight waits on the Apple agreement below.
