@@ -1,6 +1,6 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-15, 18:20
+Updated: 2026-11-15, 18:35
 
 ## Now
 
@@ -13,6 +13,7 @@ Both handoffs from 15 November are read. The numbers trainer is further along in
 
 ## Shipped
 
+- About blurb and App Store copy rewritten for the Quran app. About now reads: "Durus is for reading, memorizing and understanding the Quran. Read with translation, mark what you have memorized, learn the Arabic behind it, and keep a calm daily practice." App Store: name "Durus: Quran and Arabic", subtitle "Read, memorize, understand", new promo, description and keywords, all inside Apple's limits. There are also interim versions to use until Read, Map, Barakah and Ask actually work, because Apple rejects copy that promises missing features. Em dashes removed from that file.
 - Issue #1, onboarding copy, closed. Changed strings: intro title "Read, memorize, and understand the Quran"; intro sub "Read with translation, track what you have memorized, learn the Arabic behind it, and keep a calm daily practice. Learn Arabic with a class, or on your own."; path title "How are you learning Arabic?"; book labels "Book 1", "Book 2", "Book 3"; sign in sub "An account keeps your reading, memorization and lessons if you lose this phone."; done button "Open Durus" (still opens /today); About blurb "Durus keeps the vocabulary from Book 1 of the Arabic Course in working memory, alongside a class that meets weekly." The publisher credit "Islamic University of Madinah" stays. Every string matched the spec. No layout, step or behavior changes. Preflight passes. No test checked the old strings.
 - Tab shell: Read, Map, Learn, Barakah, Ask, using the native iOS tab bar (Liquid Glass on iOS 26). Today's app now lives under Learn, unchanged. Ask sits in its own circle beside the bar. Read, Map, Barakah and Ask show a short line saying what is coming. Typecheck, lint, 214 tests and the iOS bundle all pass. Not yet seen on a phone.
 - Chat bridge on. The connector can read this relay and the task queue.
@@ -24,8 +25,6 @@ Both handoffs from 15 November are read. The numbers trainer is further along in
 
 ## Questions
 
-- Outside src/, docs/app-store-metadata.md still says "Madinah Arabic vocabulary" (App Store subtitle and description). The issue was scoped to src/, so it is unchanged. Rewrite it for the Quran app?
-- The About blurb still describes only the vocabulary drill. Rewrite it for the full app?
 
 - Where is the backend repo behind durus.space, and may Prime deploy to it? The planned /api/qf/sync and /api/ask routes would live there.
 - Is version 1.0.0 already live on the App Store? If it is, the expansion build needs a version bump.
