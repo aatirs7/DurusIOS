@@ -30,9 +30,11 @@ export function AyahField({
   const theme = useTheme();
   const layout = useMemo(() => layoutField(width, height, JUZ_STARTS, TOTAL_AYAHS), [width, height]);
 
+  /* Every dot, unlit, built once per size. The lit ones are drawn over it, and
+     they are few, so a re-render on every animation beat stays cheap. */
+  const base = useMemo(() => dotsPath(layout, () => true), [layout]);
   const m = memorized ?? (() => false);
   const u = understood ?? (() => false);
-  const base = dotsPath(layout, (i) => !m(i) && !u(i));
   const saffron = dotsPath(layout, (i) => m(i) && !u(i));
   const teal = dotsPath(layout, (i) => u(i));
 

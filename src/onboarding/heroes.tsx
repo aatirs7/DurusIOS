@@ -50,11 +50,12 @@ function useBeat(active: boolean, ms: number, still: boolean, end = 1000, paused
     if (!active) setN(0);
     else if (still) setN(end);
   }, [active, still, end]);
+  const finished = n >= end;
   useEffect(() => {
-    if (!active || still || paused) return;
+    if (!active || still || paused || finished) return;
     const id = setInterval(() => setN((x) => x + 1), ms);
     return () => clearInterval(id);
-  }, [active, ms, still, paused]);
+  }, [active, ms, still, paused, finished]);
   return n;
 }
 
@@ -172,13 +173,17 @@ export function ReadHero({ width, active, still, paused }: HeroProps) {
                 <Text
                   key={i}
                   selectable={false}
-                  style={
+                  /* Each span restates the ayah style: the app's Text stamps the
+                     body face on every node, which would override the parent's
+                     Amiri. */
+                  style={[
+                    s.ayah,
                     lit
                       ? { color: theme.colors.lapis, backgroundColor: theme.colors.lapisWash }
                       : lifted
                         ? { color: theme.colors.lapis }
-                        : undefined
-                  }
+                        : null,
+                  ]}
                 >
                   {i > 0 ? ` ${w}` : w}
                 </Text>
@@ -227,7 +232,7 @@ export function MapHero({ width, height, active, still, paused }: HeroProps) {
 
   /* Saffron rises through Juz Amma from the last ayah backwards, then teal
      follows surah by surah from An-Nas. */
-  const beat = useBeat(active, 50, still, 400, paused);
+  const beat = useBeat(active, 50, still, 90, paused);
   const rise = Math.min(1, beat / 40);
   const lit = Math.round(ammaSize * rise);
   const understoodCount = still ? 12 : Math.max(0, Math.min(12, Math.floor((beat - 40) / 4)));

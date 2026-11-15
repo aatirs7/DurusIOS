@@ -1,7 +1,17 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Switch, View, useWindowDimensions } from "react-native";
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  TouchableWithoutFeedback,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import Animated, {
   Easing,
   FadeIn,
@@ -27,7 +37,11 @@ import { syncReminders } from "@/data/reminders";
 import { updateSettings } from "@/data/settings";
 import { haptics } from "@/lib/haptics";
 import { requestPermission } from "@/lib/notifications";
-import { afterReminders, saveOnboarding, shouldAskPermission } from "@/onboarding/save";
+import {
+  afterReminders,
+  saveOnboarding,
+  shouldAskPermission,
+} from "@/onboarding/save";
 import { Story } from "@/onboarding/Story";
 import { SURAHS, TOTAL_AYAHS } from "@/onboarding/tanzil";
 import { usePrefs } from "@/state/prefs";
@@ -67,8 +81,18 @@ const HIFZ_CHOICES = [1, ...Array.from({ length: 37 }, (_, i) => 78 + i)];
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   pad: { flex: 1, paddingHorizontal: MARGIN },
-  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 48 },
-  corner: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  top: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    height: 48,
+  },
+  corner: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   heads: { alignItems: "center", gap: space(1), paddingTop: space(1) },
   h1: { fontSize: 34, lineHeight: 40, textAlign: "center" },
   sub: { fontSize: 17, lineHeight: 24, textAlign: "center", maxWidth: 320 },
@@ -76,11 +100,27 @@ const useStyles = makeStyles((t) => ({
   textButton: { alignSelf: "center", paddingVertical: space(1) },
 
   /* Open */
-  openCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: space(2) },
-  openTitle: { fontSize: 44, lineHeight: 50, letterSpacing: -0.6, textAlign: "center" },
+  openCenter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space(2),
+  },
+  openTitle: {
+    fontSize: 44,
+    lineHeight: 50,
+    letterSpacing: -0.6,
+    textAlign: "center",
+  },
 
   /* Hifz */
-  chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1), paddingVertical: space(2) },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: space(1),
+    paddingVertical: space(2),
+  },
   chip: {
     width: 104,
     borderRadius: RADIUS.field,
@@ -105,7 +145,12 @@ const useStyles = makeStyles((t) => ({
   signCard: { borderRadius: 24, padding: space(2.5), overflow: "hidden" },
 
   /* Map */
-  counters: { flexDirection: "row", justifyContent: "center", gap: space(5), paddingTop: space(2) },
+  counters: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: space(5),
+    paddingTop: space(2),
+  },
   counter: { alignItems: "center" },
   numeral: { fontSize: 56, lineHeight: 62 },
 }));
@@ -114,7 +159,14 @@ function Chevron() {
   const theme = useTheme();
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24">
-      <Path d="M15 6l-6 6 6 6" stroke={theme.colors.ink} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path
+        d="M15 6l-6 6 6 6"
+        stroke={theme.colors.ink}
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </Svg>
   );
 }
@@ -126,7 +178,12 @@ function TopBar({ onBack }: { onBack?: () => void }) {
     <View style={s.top}>
       <View style={s.corner}>
         {onBack ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={onBack}
+            hitSlop={8}
+          >
             <Chevron />
           </Pressable>
         ) : null}
@@ -142,7 +199,17 @@ function TopBar({ onBack }: { onBack?: () => void }) {
 
 const OPEN_MS = 1200;
 
-function FlyingWord({ index, width, height, progress }: { index: number; width: number; height: number; progress: { value: number } }) {
+function FlyingWord({
+  index,
+  width,
+  height,
+  progress,
+}: {
+  index: number;
+  width: number;
+  height: number;
+  progress: { value: number };
+}) {
   const theme = useTheme();
   const w = FIELD[index];
   const x = (parseFloat(w.left) / 100) * width;
@@ -151,18 +218,36 @@ function FlyingWord({ index, width, height, progress }: { index: number; width: 
   const dy = height / 2 - y - w.size;
   const style = useAnimatedStyle(() => ({
     opacity: (theme.dark ? 0.1 : 0.14) * (1 - progress.value),
-    transform: [{ translateX: dx * progress.value }, { translateY: dy * progress.value }, { scale: 1 - 0.4 * progress.value }],
+    transform: [
+      { translateX: dx * progress.value },
+      { translateY: dy * progress.value },
+      { scale: 1 - 0.4 * progress.value },
+    ],
   }));
   return (
-    <Animated.View style={[{ position: "absolute", left: x, top: y }, style]} pointerEvents="none">
-      <Arabic variant="inline" color="lapis" showHarakat={false} style={{ fontSize: w.size, lineHeight: Math.round(w.size * 1.6) }}>
+    <Animated.View
+      style={[{ position: "absolute", left: x, top: y }, style]}
+      pointerEvents="none"
+    >
+      <Arabic
+        variant="inline"
+        color="lapis"
+        showHarakat={false}
+        style={{ fontSize: w.size, lineHeight: Math.round(w.size * 1.6) }}
+      >
         {w.word}
       </Arabic>
     </Animated.View>
   );
 }
 
-function Open({ onBegin, onAccount }: { onBegin: () => void; onAccount: () => void }) {
+function Open({
+  onBegin,
+  onAccount,
+}: {
+  onBegin: () => void;
+  onAccount: () => void;
+}) {
   const s = useStyles();
   const still = useReducedMotion();
   const { width, height } = useWindowDimensions();
@@ -171,7 +256,13 @@ function Open({ onBegin, onAccount }: { onBegin: () => void; onAccount: () => vo
   /* The scattered words drift together and resolve into the mark, once. */
   useEffect(() => {
     if (still) return;
-    progress.value = withDelay(350, withTiming(1, { duration: OPEN_MS, easing: Easing.bezier(0.4, 0, 0.2, 1) }));
+    progress.value = withDelay(
+      350,
+      withTiming(1, {
+        duration: OPEN_MS,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+      }),
+    );
   }, [still, progress]);
 
   const mark = useAnimatedStyle(() => ({
@@ -181,9 +272,18 @@ function Open({ onBegin, onAccount }: { onBegin: () => void; onAccount: () => vo
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+      <View
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        pointerEvents="none"
+      >
         {FIELD.map((_, i) => (
-          <FlyingWord key={i} index={i} width={width} height={height} progress={progress} />
+          <FlyingWord
+            key={i}
+            index={i}
+            width={width}
+            height={height}
+            progress={progress}
+          />
         ))}
       </View>
       <SafeAreaView style={s.pad} edges={["top", "bottom"]}>
@@ -193,7 +293,12 @@ function Open({ onBegin, onAccount }: { onBegin: () => void; onAccount: () => vo
               دُرُوس
             </Arabic>
           </Animated.View>
-          <Animated.View entering={still ? undefined : FadeIn.delay(OPEN_MS + 200).duration(500)} style={{ alignItems: "center", gap: space(1) }}>
+          <Animated.View
+            entering={
+              still ? undefined : FadeIn.delay(OPEN_MS + 200).duration(500)
+            }
+            style={{ alignItems: "center", gap: space(1) }}
+          >
             <Text variant="pageTitle" style={s.openTitle}>
               Read. Memorize. Understand.
             </Text>
@@ -202,9 +307,18 @@ function Open({ onBegin, onAccount }: { onBegin: () => void; onAccount: () => vo
             </Text>
           </Animated.View>
         </View>
-        <Animated.View entering={still ? undefined : FadeIn.delay(OPEN_MS + 500).duration(400)} style={s.actions}>
+        <Animated.View
+          entering={
+            still ? undefined : FadeIn.delay(OPEN_MS + 500).duration(400)
+          }
+          style={s.actions}
+        >
           <GlassButton label="Begin" primary onPress={onBegin} />
-          <Pressable accessibilityRole="button" onPress={onAccount} style={s.textButton}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onAccount}
+            style={s.textButton}
+          >
             <Text color="lapis">I have an account</Text>
           </Pressable>
         </Animated.View>
@@ -226,14 +340,23 @@ function useMask(surahs: Set<number>): Uint8Array {
   }, [surahs]);
 }
 
-function Hifz({ chosen, toggle }: { chosen: Set<number>; toggle: (n: number) => void }) {
+function Hifz({
+  chosen,
+  toggle,
+}: {
+  chosen: Set<number>;
+  toggle: (n: number) => void;
+}) {
   const s = useStyles();
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const mask = useMask(chosen);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: space(2) }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: space(2) }}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={s.heads}>
         <Text variant="pageTitle" style={s.h1}>
           What have you memorized?
@@ -243,7 +366,11 @@ function Hifz({ chosen, toggle }: { chosen: Set<number>; toggle: (n: number) => 
         </Text>
       </View>
       <View style={{ alignItems: "center", paddingTop: space(2.5) }}>
-        <AyahField width={width - MARGIN * 2} height={120} memorized={(i) => mask[i] === 1} />
+        <AyahField
+          width={width - MARGIN * 2}
+          height={120}
+          memorized={(i) => mask[i] === 1}
+        />
       </View>
       <View style={s.chips}>
         {HIFZ_CHOICES.map((n) => {
@@ -257,11 +384,19 @@ function Hifz({ chosen, toggle }: { chosen: Set<number>; toggle: (n: number) => 
               accessibilityLabel={x.en}
               onPress={() => toggle(n)}
             >
-              <Glass interactive style={s.chip} tint={on ? theme.colors.saffron : undefined}>
+              <Glass
+                interactive
+                style={s.chip}
+                tint={on ? theme.colors.saffron : undefined}
+              >
                 <Arabic variant="inline" color={on ? "paper" : "ink"}>
                   {x.ar}
                 </Arabic>
-                <Text variant="label" color={on ? "paper" : "inkSoft"} numberOfLines={1}>
+                <Text
+                  variant="label"
+                  color={on ? "paper" : "inkSoft"}
+                  numberOfLines={1}
+                >
                   {x.en}
                 </Text>
               </Glass>
@@ -296,8 +431,19 @@ function YourMap({ chosen }: { chosen: Set<number> }) {
   }, [still]);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: space(2) }}>
-      <AyahField width={width - MARGIN * 2} height={height * 0.5} memorized={(i) => mask[i] === 1 && i < reach} />
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: space(2),
+      }}
+    >
+      <AyahField
+        width={width - MARGIN * 2}
+        height={height * 0.5}
+        memorized={(i) => mask[i] === 1 && i < reach}
+      />
       {chosen.size > 0 ? (
         <View style={s.counters}>
           <View style={s.counter}>
@@ -356,21 +502,45 @@ export default function Onboarding() {
     Everything the flow collected, written in one go once there is an account.
     See src/onboarding/save.ts for the rules, which are tested there.
   */
-  const finish = useCallback(async () => {
-    if (profileId !== null) {
-      await saveOnboarding(
-        { hifz: [...chosen].sort((a, b) => a - b), adhkar, review, notify },
-        {
-          updateSettings: (patch) => updateSettings(db, profileId, patch),
-          setAdhkarReminder,
-          markSurahs: (surahs) => markSurahs(surahs, true),
-          syncReminders: () => syncReminders(db, profileId),
-        },
-      );
-    }
-    completeOnboarding();
-    setStep("map");
-  }, [profileId, chosen, adhkar, review, notify, setAdhkarReminder, markSurahs, completeOnboarding]);
+  const finish = useCallback(
+    async (opts?: { returning?: boolean; notifyNow?: boolean; from?: Step }) => {
+      if (profileId !== null) {
+        await saveOnboarding(
+          {
+            hifz: [...chosen].sort((a, b) => a - b),
+            adhkar,
+            review,
+            /* Passed straight through on the keychain path, where the state
+             update from leaving reminders has not landed yet. */
+            notify: opts?.notifyNow ?? notify,
+            returning: opts?.returning ?? (opts?.from ?? signinFrom) === "open",
+            /* `from` is passed on the keychain path, where setSigninFrom has
+               not landed yet either. */
+            askedReminders: (opts?.from ?? signinFrom) !== "open",
+          },
+          {
+            updateSettings: (patch) => updateSettings(db, profileId, patch),
+            setAdhkarReminder,
+            markSurahs: (surahs) => markSurahs(surahs, true),
+            syncReminders: () => syncReminders(db, profileId),
+          },
+        );
+      }
+      completeOnboarding();
+      setStep("map");
+    },
+    [
+      profileId,
+      chosen,
+      adhkar,
+      review,
+      notify,
+      signinFrom,
+      setAdhkarReminder,
+      markSurahs,
+      completeOnboarding,
+    ],
+  );
 
   /*
     A keychain restored session (the iOS keychain survives deleting the app) has
@@ -378,12 +548,12 @@ export default function Onboarding() {
     would ask to be set up on every launch.
   */
   const toSignin = useCallback(
-    (from: Step) => {
+    (from: Step, notifyNow?: boolean) => {
+      setSigninFrom(from);
       if (afterReminders(!!isSignedIn) === "finish") {
-        void finish();
+        void finish({ returning: true, notifyNow, from });
         return;
       }
-      setSigninFrom(from);
       setStep("signin");
     },
     [isSignedIn, finish],
@@ -391,14 +561,20 @@ export default function Onboarding() {
 
   /* Permission is asked as this step is LEFT, next to the question that motivates it. */
   const leaveReminders = useCallback(async () => {
-    setNotify(shouldAskPermission({ adhkar, review }) ? await requestPermission() : false);
-    toSignin("reminders");
+    const granted = shouldAskPermission({ adhkar, review })
+      ? await requestPermission()
+      : false;
+    setNotify(granted);
+    toSignin("reminders", granted);
   }, [adhkar, review, toSignin]);
 
   if (step === "open") {
     return (
       <View style={s.safe}>
-        <Open onBegin={() => setStep("story")} onAccount={() => toSignin("open")} />
+        <Open
+          onBegin={() => setStep("story")}
+          onAccount={() => toSignin("open")}
+        />
       </View>
     );
   }
@@ -427,7 +603,12 @@ export default function Onboarding() {
           }
         />
 
-        <Animated.View key={step} entering={FadeIn.duration(240)} exiting={FadeOut.duration(120)} style={{ flex: 1 }}>
+        <Animated.View
+          key={step}
+          entering={FadeIn.duration(240)}
+          exiting={FadeOut.duration(120)}
+          style={{ flex: 1 }}
+        >
           {step === "hifz" ? <Hifz chosen={chosen} toggle={toggle} /> : null}
 
           {step === "reminders" ? (
@@ -439,8 +620,18 @@ export default function Onboarding() {
               </View>
               <View style={{ gap: space(1.5) }}>
                 {[
-                  { label: "Morning adhkar", time: "6:00 AM", value: adhkar, set: setAdhkar },
-                  { label: "Daily review", time: "9:00 AM", value: review, set: setReview },
+                  {
+                    label: "Morning adhkar",
+                    time: "6:00 AM",
+                    value: adhkar,
+                    set: setAdhkar,
+                  },
+                  {
+                    label: "Daily review",
+                    time: "9:00 AM",
+                    value: review,
+                    set: setReview,
+                  },
                 ].map((r) => (
                   <Glass key={r.label} style={s.row}>
                     <View style={{ gap: 2 }}>
@@ -453,7 +644,10 @@ export default function Onboarding() {
                       accessibilityLabel={r.label}
                       value={r.value}
                       onValueChange={r.set}
-                      trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+                      trackColor={{
+                        true: theme.colors.lapis,
+                        false: theme.colors.rule,
+                      }}
                     />
                   </Glass>
                 ))}
@@ -462,19 +656,34 @@ export default function Onboarding() {
           ) : null}
 
           {step === "signin" ? (
-            <View style={{ flex: 1, justifyContent: "center", gap: space(3) }}>
-              <View style={s.heads}>
-                <Text variant="pageTitle" style={s.h1}>
-                  Keep your progress
-                </Text>
-                <Text color="inkSoft" style={s.sub}>
-                  Your map, lessons and practice, saved if you change phones.
-                </Text>
-              </View>
-              <Glass style={s.signCard}>
-                <SignInPanel onSignedIn={finish} />
-              </Glass>
-            </View>
+            /* The keyboard must never cover the panel, and tapping past the
+               field puts it away: this is the gate, so it cannot feel stuck. */
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <TouchableWithoutFeedback
+                onPress={Keyboard.dismiss}
+                accessible={false}
+              >
+                <View
+                  style={{ flex: 1, justifyContent: "center", gap: space(3) }}
+                >
+                  <View style={s.heads}>
+                    <Text variant="pageTitle" style={s.h1}>
+                      Keep your progress
+                    </Text>
+                    <Text color="inkSoft" style={s.sub}>
+                      Your map, lessons and practice, saved if you change
+                      phones.
+                    </Text>
+                  </View>
+                  <Glass style={s.signCard}>
+                    <SignInPanel onSignedIn={() => void finish()} />
+                  </Glass>
+                </View>
+              </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
           ) : null}
 
           {step === "map" ? <YourMap chosen={chosen} /> : null}
@@ -485,7 +694,11 @@ export default function Onboarding() {
         <View style={s.actions}>
           {step === "hifz" ? (
             <>
-              <GlassButton label="Continue" primary onPress={() => setStep("reminders")} />
+              <GlassButton
+                label="Continue"
+                primary
+                onPress={() => setStep("reminders")}
+              />
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
@@ -498,9 +711,19 @@ export default function Onboarding() {
               </Pressable>
             </>
           ) : null}
-          {step === "reminders" ? <GlassButton label="Continue" primary onPress={() => void leaveReminders()} /> : null}
+          {step === "reminders" ? (
+            <GlassButton
+              label="Continue"
+              primary
+              onPress={() => void leaveReminders()}
+            />
+          ) : null}
           {step === "map" ? (
-            <GlassButton label="Open Durus" primary onPress={() => router.replace(chosen.size > 0 ? "/map" : "/read")} />
+            <GlassButton
+              label="Open Durus"
+              primary
+              onPress={() => router.replace(chosen.size > 0 ? "/map" : "/read")}
+            />
           ) : null}
         </View>
       </View>

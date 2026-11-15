@@ -22,6 +22,8 @@ import {
   requestPermission,
   sendTestReminder,
 } from "@/lib/notifications";
+import { clearDeviceStores } from "@/state/clear";
+import { usePrefs } from "@/state/prefs";
 import { useSession } from "@/state/session";
 import { useThemeChoice, type ThemeChoice } from "@/state/theme";
 import { deleteAccount } from "@/sync/deleteAccount";
@@ -55,6 +57,8 @@ export default function SettingsScreen() {
   const resetSession = useSession((st) => st.reset);
   const restartOnboarding = useSession((st) => st.restartOnboarding);
   const themeChoice = useThemeChoice((st) => st.choice);
+  const adhkarReminder = usePrefs((st) => st.adhkarReminder);
+  const setAdhkarReminder = usePrefs((st) => st.setAdhkarReminder);
   const setThemeChoice = useThemeChoice((st) => st.setChoice);
 
   const [config, setConfig] = useState(() =>
@@ -101,6 +105,7 @@ export default function SettingsScreen() {
            path on the next launch. */
       }
       resetSession();
+      clearDeviceStores();
       router.replace("/onboarding");
     } finally {
       setDeleting(false);
@@ -238,6 +243,30 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="Reminders">
+
+          {/* Set in onboarding, so it needs a way off here. Lives in the prefs
+              store until the settings table next changes. */}
+          <Field label="Morning adhkar" hint="Every day at 6:00 AM">
+            <Switch
+              value={adhkarReminder}
+              disabled={!remindersAvailable()}
+              onValueChange={async (on) => {
+                if (on) {
+                  const granted = await requestPermission();
+                  if (!granted) {
+                    Alert.alert(
+                      "Notifications are off",
+                      "Durus cannot schedule reminders until notifications are allowed for it in iOS Settings.",
+                    );
+                    return;
+                  }
+                }
+                setAdhkarReminder(on);
+                if (profileId !== null) void syncReminders(db, profileId);
+              }}
+              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+            />
+          </Field>
 
           <Field
             label="Daily reminders"

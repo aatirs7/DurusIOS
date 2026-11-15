@@ -18,9 +18,18 @@ export type OnboardingAnswers = {
   review: boolean;
   /* The permission answer, captured when the reminders step was left. */
   notify: boolean;
+  /*
+    A returning account: "I have an account", or a keychain session. Settings
+    writes are stamped with the current time and win the field level merge
+    with the server, so writing the course defaults here would reset a
+    returning learner's lesson and pace. Those are skipped for them.
+  */
+  returning: boolean;
+  /* False when the reminders step was never shown ("I have an account"). */
+  askedReminders: boolean;
 };
 
-export type SettingsPatch = {
+export type SettingsPatch = Partial<{
   currentBook: number;
   currentLesson: number;
   newPerDay: number;
@@ -28,7 +37,7 @@ export type SettingsPatch = {
   remindersOn: boolean;
   reminderHour: number;
   secondReminderOn: boolean;
-};
+}>;
 
 export type SaveEffects = {
   updateSettings: (patch: SettingsPatch) => void;
@@ -47,15 +56,14 @@ export const ONBOARDING_DEFAULTS = {
 export const REVIEW_HOUR = 9;
 
 export async function saveOnboarding(a: OnboardingAnswers, fx: SaveEffects): Promise<void> {
-  fx.updateSettings({
-    ...ONBOARDING_DEFAULTS,
-    remindersOn: a.notify && a.review,
-    reminderHour: REVIEW_HOUR,
-    secondReminderOn: false,
-  });
-  fx.setAdhkarReminder(a.notify && a.adhkar);
+  const patch: SettingsPatch = {
+    ...(a.returning ? null : ONBOARDING_DEFAULTS),
+    ...(a.askedReminders ? { remindersOn: a.notify && a.review, reminderHour: REVIEW_HOUR, secondReminderOn: false } : null),
+  };
+  if (Object.keys(patch).length > 0) fx.updateSettings(patch);
+  if (a.askedReminders) fx.setAdhkarReminder(a.notify && a.adhkar);
   if (a.hifz.length > 0) fx.markSurahs(a.hifz);
-  if (a.notify && (a.adhkar || a.review)) await fx.syncReminders();
+  if (a.askedReminders && a.notify && (a.adhkar || a.review)) await fx.syncReminders();
 }
 
 /* Where leaving the reminders step goes. A keychain session has nothing to sign in to. */
