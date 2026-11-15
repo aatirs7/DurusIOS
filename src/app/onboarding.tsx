@@ -16,6 +16,7 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
 import { OnboardingChrome, WordField } from "@/components/OnboardingChrome";
+import { Tour } from "@/components/Tour";
 import { Screen } from "@/components/Screen";
 import { SignInPanel } from "@/components/SignIn";
 import { Text } from "@/components/Text";
@@ -553,50 +554,26 @@ export default function Onboarding() {
           >
             <View style={s.body}>
               {step === "intro" ? (
-                <View style={s.hero}>
-                  <Arabic variant="card" color="lapis">
-                    دُرُوس
-                  </Arabic>
-                  <View style={s.heads}>
-                    {/*
-                      This screen comes BEFORE the flow forks, so it has to be
-                      true for both people who see it. It used to say "the
-                      vocabulary you have been taught", which quietly assumed a
-                      class and told somebody arriving with no Arabic at all
-                      that they were in the wrong place.
-
-                      So it says what the app does rather than who it assumes
-                      you are, and the last line names both ways in - which also
-                      sets up the question on the next screen.
-                    */}
-                    <Text variant="pageTitle" style={s.h1}>
-                      Read, memorize, and understand the Quran
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      Read with translation, track what you have memorized, learn
-                      the Arabic behind it, and keep a calm daily practice. Learn
-                      Arabic with a class, or on your own.
-                    </Text>
-                  </View>
-                  <View style={s.ticks}>
-                    {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
-                      <View key={i} style={s.tick} />
-                    ))}
-                  </View>
-                </View>
+                /*
+                  The intro is a tour of the whole app, not a pitch for one
+                  feature. Durus is a Quran app with five tabs; the Arabic
+                  course is Learn, and the questions after this set it up.
+                */
+                <Tour />
               ) : null}
 
               {step === "path" ? (
                 <>
                   <View style={s.heads}>
                     <Text variant="eyebrow" color="lapis" style={s.eyebrow}>
-                      Arabic Course
+                      Set up Learn
                     </Text>
                     <Text variant="pageTitle" style={s.h1}>
                       How are you learning Arabic?
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      This decides what Durus asks you next.
+                      This sets up the Arabic course in Learn. Reading and
+                      everything else work either way.
                     </Text>
                   </View>
                   <View style={{ gap: space(1.5) }}>
