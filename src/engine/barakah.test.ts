@@ -100,6 +100,6 @@ describe("barakah catalogue", () => {
   });
 
   it("never uses an em dash", () => {
-    for (const p of PRACTICES) expect(`${p.title}${p.line}`).not.toMatch(/—/);
+    for (const p of PRACTICES) expect(`${p.title}${p.line}`).not.toMatch(/\u2014/);
   });
 });

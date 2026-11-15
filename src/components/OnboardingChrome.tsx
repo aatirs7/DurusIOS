@@ -21,7 +21,7 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   that must stay readable. Unvowelled, because at this opacity harakat turn into
   noise rather than reading.
 */
-const FIELD: { word: string; top: string; left: string; size: number }[] = [
+export const FIELD: { word: string; top: string; left: string; size: number }[] = [
   { word: "بيت", top: "8%", left: "6%", size: 34 },
   { word: "مسجد", top: "14%", left: "62%", size: 40 },
   { word: "طالب", top: "30%", left: "72%", size: 32 },

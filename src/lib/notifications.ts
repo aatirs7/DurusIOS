@@ -105,6 +105,8 @@ export type SlotPlan = {
   body: string;
   /* Set only for the weekly class nudge; absent means every day. */
   weekday?: number;
+  /* Keeps the adhkar nudge's identifier apart from a review slot at the same hour. */
+  kind?: "adhkar";
 };
 
 /*
@@ -120,7 +122,12 @@ export type ReminderSettings = {
   reminderHour2: number;
   classDayReminder: boolean;
   currentLesson: number;
+  /* The morning adhkar nudge. Independent of the review reminders. */
+  adhkarReminder?: boolean;
 };
+
+/* Until prayer times exist, the adhkar nudge sits at a fixed early hour. */
+export const ADHKAR_HOUR = 6;
 
 /*
   Turns the settings into a small set of repeating triggers.
@@ -136,7 +143,8 @@ export type ReminderSettings = {
   Pure, so it is testable without the native module.
 */
 export function planReminders(config: ReminderSettings): SlotPlan[] {
-  if (!config.remindersOn) return [];
+  const adhkar: SlotPlan[] = config.adhkarReminder ? [{ hour: ADHKAR_HOUR, body: "Morning adhkar.", kind: "adhkar" }] : [];
+  if (!config.remindersOn) return adhkar;
 
   const slots = activeSlots({ ...config, lastNotifiedOn: null, lastNotifiedHour: null });
 
@@ -162,7 +170,7 @@ export function planReminders(config: ReminderSettings): SlotPlan[] {
     });
   }
 
-  return plans;
+  return [...adhkar, ...plans];
 }
 
 const PREFIX = "durus-slot-";
@@ -187,7 +195,7 @@ export async function applyReminders(plans: SlotPlan[]): Promise<boolean> {
 
     for (const plan of plans) {
       await N.scheduleNotificationAsync({
-        identifier: `${PREFIX}${plan.weekday ?? "d"}-${plan.hour}`,
+        identifier: `${PREFIX}${plan.kind ?? ""}${plan.weekday ?? "d"}-${plan.hour}`,
         content: {
           title: "Durus",
           body: plan.body,

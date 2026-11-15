@@ -1,12 +1,13 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { ScrollView, View } from "react-native";
+import { Linking, Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
 import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { TANZIL_CREDIT } from "@/onboarding/tanzil";
 import { space } from "@/theme/layout";
 import { FONTS_ARE_PLACEHOLDERS } from "@/theme/typography";
 import { makeStyles } from "@/theme/useTheme";
@@ -111,6 +112,32 @@ export default function About() {
               claim authorship of the material, and nothing here implies
               endorsement by its author or publisher.
             </Text>
+          </View>
+        </View>
+
+        {/*
+          Tanzil's terms: credit the source clearly and link to tanzil.net so
+          users can track changes. Remove with src/onboarding/tanzil.ts when
+          Quran Foundation sync replaces it.
+        */}
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Quran text
+          </Text>
+          <View style={s.credit}>
+            <Text>{TANZIL_CREDIT.name}</Text>
+            <Text variant="label" color="inkSoft">
+              {TANZIL_CREDIT.version}
+            </Text>
+            <Text variant="label" color="inkFaint" style={s.centred}>
+              The Quran text in the introduction is the Tanzil Uthmani text,
+              copied verbatim, under the Creative Commons Attribution 3.0
+              licence. Surah names and ayah counts are from Tanzil&apos;s
+              metadata.
+            </Text>
+            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(TANZIL_CREDIT.url)}>
+              <Text color="lapis">tanzil.net</Text>
+            </Pressable>
           </View>
         </View>
 

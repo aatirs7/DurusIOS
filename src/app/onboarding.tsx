@@ -1,381 +1,328 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Switch,
-  TouchableWithoutFeedback,
-  View,
-} from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import Svg, { Circle, Path } from "react-native-svg";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, ScrollView, Switch, View, useWindowDimensions } from "react-native";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
-import { Button } from "@/components/Button";
-import { OnboardingChrome, WordField } from "@/components/OnboardingChrome";
-import { Tour } from "@/components/Tour";
-import { Screen } from "@/components/Screen";
+import { AyahField } from "@/components/AyahField";
+import { Glass, GlassButton } from "@/components/Glass";
+import { FIELD, WordField } from "@/components/OnboardingChrome";
 import { SignInPanel } from "@/components/SignIn";
 import { Text } from "@/components/Text";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { db } from "@/data/client";
-import { countNewAvailable } from "@/data/queue";
 import { syncReminders } from "@/data/reminders";
 import { updateSettings } from "@/data/settings";
-import { TOTAL_LESSONS } from "@/engine/constants";
+import { haptics } from "@/lib/haptics";
 import { requestPermission } from "@/lib/notifications";
+import { afterReminders, saveOnboarding, shouldAskPermission } from "@/onboarding/save";
+import { Story } from "@/onboarding/Story";
+import { SURAHS, TOTAL_AYAHS } from "@/onboarding/tanzil";
+import { usePrefs } from "@/state/prefs";
+import { useQuranStatus } from "@/state/quranStatus";
 import { useSession } from "@/state/session";
-import { RADIUS, TICK, space } from "@/theme/layout";
-import { textStyles } from "@/theme/typography";
+import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 /*
-  The order is deliberate, and it is not the order these questions were first
-  written in.
+  Onboarding v3 (issue #2).
 
-  It opens by saying what the app is, because a stranger who has just tapped an
-  icon has been told nothing yet, and "what should we call you?" as a first
-  screen reads as a form rather than as an introduction. Then the two questions
-  that decide what the app will actually show - the book and the lesson - then
-  the schedule.
+    open -> story (5 pages) -> your hifz -> reminders -> sign in -> your map
 
-  There is no "what should we call you?". It was asked, saved, overwritten by
-  the Clerk name seconds later at the sign in step, and read by nothing: the
-  screen promised it was "only used to greet you" and nothing greets. A
-  question that buys nothing is worse than one fewer screen.
+  One real question, what you have memorized, because it is the one that pays
+  off visually. Everything the old flow asked about the Arabic course (class or
+  self, book, lesson, pace) is gone; save writes the self path's defaults and
+  book and lesson live in Settings.
 
-  Sign in is last and is the only step with no way past it. Everything before it
-  is held in component state and thrown away if the app is closed early:
-  nothing is written until there is an account to attach it to, so quitting
-  halfway starts again rather than dropping someone into a half configured app.
+  Kept from the old flow, deliberately:
+  - Nothing is written before sign in succeeds. Answers live in this
+    component's state, so quitting at any point starts again from Open.
+  - A keychain restored session skips sign in and goes straight to finish().
+  - Notification permission is asked as the reminders step is left, and only
+    if a reminder is on.
+  - Back exists on hifz, reminders and sign in only.
+  - index.tsx's gating is unchanged.
+
+  Onboarding is exempt from the four animation rule (owner's answer, issue #2).
+  Everything here still honours Reduce Motion.
 */
-/*
-  Two kinds of learner, and they are not the same product.
 
-  Someone in a class does not choose what to study next: the syllabus does, and
-  the app's job is to stay exactly level with it - which lesson the class is on,
-  and nothing beyond it. Someone teaching themselves has the opposite problem.
-  Nobody is telling them where to be, so what they need is a place to start and
-  a pace to go at, and the app moves when they say so.
+type Step = "open" | "story" | "hifz" | "reminders" | "signin" | "map";
 
-  Asking one question at the top and branching is cheaper than trying to write
-  copy that is true for both. "Which lesson is your class on?" is meaningless to
-  a self-teacher, and "how fast do you want to go?" is not a self-teacher's
-  question when a teacher is already answering it.
-*/
-type LearnerPath = "class" | "self";
-
-const CLASS_STEPS = [
-  "intro",
-  "path",
-  "book",
-  "lesson",
-  "reminders",
-  "signin",
-  "done",
-] as const;
-
-/*
-  The self path asks neither which book nor which lesson, and that is the point.
-
-  Both are questions only a student in a class can answer. Somebody who wants to
-  read Fusha and has never heard of the Madinah series cannot tell you which of
-  its three volumes they are on, and asking them to pick a starting lesson is
-  asking them to guess at the shape of a syllabus they have not seen. They also
-  cannot meaningfully skip ahead: the books teach in order and Book 2 assumes
-  Book 1, so the honest answer is the only correct one - start at the beginning
-  and go in order.
-
-  What they DO have to decide is how fast, because no teacher is deciding it for
-  them. That is the one question a syllabus answers for everybody else, so it is
-  the one question this path asks.
-*/
-const SELF_STEPS = ["intro", "path", "pace", "reminders", "signin", "done"] as const;
-
-type Step = (typeof CLASS_STEPS)[number] | (typeof SELF_STEPS)[number];
-
-/* Until the question is answered both lists agree, so the progress track does
-   not jump when it is. */
-function stepsFor(path: LearnerPath | null): readonly Step[] {
-  return path === "self" ? SELF_STEPS : CLASS_STEPS;
-}
-
-const PATHS: { value: LearnerPath; label: string; hint: string }[] = [
-  {
-    value: "class",
-    label: "I am taking a class",
-    hint: "Keep level with the lesson your teacher is on",
-  },
-  {
-    value: "self",
-    label: "I am learning on my own",
-    hint: "Start at the beginning and go at your own pace",
-  },
-];
-
-/*
-  How many new words a day, offered as three plain choices rather than a number.
-
-  A self-teacher has to answer this and has no way to judge it in the abstract,
-  so it is framed as an amount of time rather than a count - the count is what
-  it writes, but "ten words" tells you nothing about your evening.
-*/
-const PACES: { label: string; hint: string; newPerDay: number }[] = [
-  { label: "Steady", hint: "5 new words a day", newPerDay: 5 },
-  { label: "Normal", hint: "10 new words a day", newPerDay: 10 },
-  { label: "Quick", hint: "20 new words a day", newPerDay: 20 },
-];
-
-/*
-  Three books eventually. Only the first has content, and the other two say so
-  rather than being hidden - someone on Book 2 should be able to see that the
-  app knows Book 2 exists.
-
-  Labelled "Book 1", "Book 2" and "Book 3". The app is now a Quran app with an
-  Arabic course inside it, and the series name is kept for the credit on the
-  About screen rather than repeated in every label.
-*/
-const BOOKS = [
-  { number: 1, label: "Book 1", available: true },
-  { number: 2, label: "Book 2", available: false },
-  { number: 3, label: "Book 3", available: false },
-];
+/* Al-Fatiha, then Juz Amma (78 to 114). */
+const HIFZ_CHOICES = [1, ...Array.from({ length: 37 }, (_, i) => 78 + i)];
 
 const useStyles = makeStyles((t) => ({
-  body: { flex: 1, justifyContent: "center", gap: space(3) },
-  heads: { alignItems: "center", gap: space(1) },
-  h1: { fontSize: 30, lineHeight: 38, textAlign: "center" },
-  sub: { textAlign: "center", maxWidth: 320 },
+  safe: { flex: 1, backgroundColor: t.colors.paper },
+  pad: { flex: 1, paddingHorizontal: MARGIN },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 48 },
+  corner: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  heads: { alignItems: "center", gap: space(1), paddingTop: space(1) },
+  h1: { fontSize: 34, lineHeight: 40, textAlign: "center" },
+  sub: { fontSize: 17, lineHeight: 24, textAlign: "center", maxWidth: 320 },
+  actions: { gap: space(1.5), paddingBottom: space(1), alignItems: "stretch" },
+  textButton: { alignSelf: "center", paddingVertical: space(1) },
 
-  actions: { gap: space(1), paddingBottom: space(1) },
+  /* Open */
+  openCenter: { flex: 1, alignItems: "center", justifyContent: "center", gap: space(2) },
+  openTitle: { fontSize: 44, lineHeight: 50, letterSpacing: -0.6, textAlign: "center" },
 
-  /* Intro. */
-  hero: { alignItems: "center", gap: space(4) },
-  ticks: { flexDirection: "row", justifyContent: "center", gap: TICK.gap },
-  tick: {
-    width: TICK.width,
-    height: TICK.height,
-    borderRadius: 999,
-    backgroundColor: t.colors.rule,
-  },
-
-  /*
-    Book cards. A selectable surface, not a button: softer radius, and the
-    selected state is a border plus a tick rather than a fill.
-
-    The label is centred in the card and the tick is absolutely positioned over
-    it, so the title sits on the card's true centre line rather than on the
-    centre of whatever space the tick left behind - which is what made the
-    selected row look shunted left against the two below it.
-  */
-  book: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: t.colors.rule,
+  /* Hifz */
+  chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1), paddingVertical: space(2) },
+  chip: {
+    width: 104,
     borderRadius: RADIUS.field,
-    backgroundColor: t.colors.surface,
-    paddingHorizontal: space(6),
-    paddingVertical: space(2),
-    minHeight: 64,
-  },
-  bookOn: { borderColor: t.colors.lapis, backgroundColor: t.colors.lapisWash },
-  bookOff: { opacity: 0.55 },
-  bookLabel: { fontSize: 20, textAlign: "center" },
-  /* A card that carries a line of explanation under its title. */
-  cardStack: { alignItems: "center", gap: space(0.5) },
-  cardHint: { textAlign: "center" },
-
-  /*
-    The richer choice card: an icon in a tinted circle above the title, more
-    room, and the spec's softer radius. The circle fills with lapis when the
-    card is chosen, so the selected state reads from across the screen rather
-    than only from a thin border.
-  */
-  choice: {
+    paddingVertical: space(1),
+    paddingHorizontal: space(0.5),
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: t.colors.rule,
-    borderRadius: 20,
-    backgroundColor: t.colors.surface,
-    paddingHorizontal: space(3),
-    paddingTop: space(2.5),
-    paddingBottom: space(2.5),
-    gap: space(1.25),
-  },
-  choiceOn: { borderColor: t.colors.lapis, backgroundColor: t.colors.lapisWash },
-  choiceIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: t.colors.lapisWash,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  choiceIconOn: { backgroundColor: t.colors.lapis },
-  choiceHint: { textAlign: "center", maxWidth: 260 },
-  eyebrow: { textAlign: "center" },
-  bookMark: {
-    position: "absolute",
-    right: space(2.5),
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-  },
-  soon: {
-    borderWidth: 1,
-    borderColor: t.colors.rule,
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: space(1.25),
-    paddingVertical: 2,
+    overflow: "hidden",
   },
 
-  /* Lesson picker. */
-  stripWrap: { alignItems: "center", gap: space(2) },
-  strip: { flexDirection: "row", justifyContent: "center", gap: 4, alignItems: "flex-end" },
-  bar: { width: 3, height: 28, borderRadius: 999 },
-  stepper: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space(3),
-  },
-  round: {
-    width: 48,
-    height: 48,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: t.colors.rule,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  /*
-    lineHeight has to be restated wherever fontSize is.
-
-    textStyles.numeral carries a lineHeight computed for its own 40pt size, so
-    overriding the size alone leaves the line box too short for the glyph and
-    the digit is clipped off at the waist. Any resize of a shared text style
-    moves both numbers together.
-  */
-  big: {
-    ...textStyles.numeral,
-    fontSize: 72,
-    lineHeight: 84,
-    color: t.colors.ink,
-    textAlign: "center",
-    minWidth: 120,
-  },
-
-  /* Reminder rows. */
+  /* Reminders */
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderWidth: 1.5,
-    borderColor: t.colors.rule,
-    borderRadius: RADIUS.field,
-    backgroundColor: t.colors.surface,
+    borderRadius: 20,
+    paddingVertical: space(2),
     paddingHorizontal: space(2.5),
-    paddingVertical: space(1.75),
-    gap: space(2),
+    overflow: "hidden",
   },
-  time: { ...textStyles.numeral, fontSize: 17, color: t.colors.inkSoft },
 
-  /* Done. */
-  ring: { alignItems: "center", justifyContent: "center", height: 200 },
-  ringMark: { position: "absolute" },
-  bullets: { gap: space(1), alignSelf: "center" },
-  bullet: { flexDirection: "row", alignItems: "center", gap: space(1.5) },
-  dot: { width: 5, height: 5, borderRadius: 999, backgroundColor: t.colors.lapis },
+  /* Sign in */
+  signCard: { borderRadius: 24, padding: space(2.5), overflow: "hidden" },
+
+  /* Map */
+  counters: { flexDirection: "row", justifyContent: "center", gap: space(5), paddingTop: space(2) },
+  counter: { alignItems: "center" },
+  numeral: { fontSize: 56, lineHeight: 62 },
 }));
 
-/*
-  A selectable card with a title and a line under it.
-
-  The same shape as the book cards, because these are the same kind of
-  question - one of a short list, chosen once - and giving each its own
-  treatment would make three consecutive screens look like three different
-  apps.
-*/
-/* Line icons for the two paths, drawn rather than imported so they need no
-   native module and can ship over the air. */
-function PathIcon({ kind, color }: { kind: LearnerPath; color: string }) {
-  const stroke = { stroke: color, strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+function Chevron() {
+  const theme = useTheme();
   return (
-    <Svg width={26} height={26} viewBox="0 0 24 24">
-      {kind === "class" ? (
-        <>
-          <Path d="M3.5 3.5h17v9h-17z" {...stroke} />
-          <Path d="M7 7h6M7 9.5h4" {...stroke} />
-          <Circle cx={8} cy={16} r={1.9} {...stroke} />
-          <Circle cx={16} cy={16} r={1.9} {...stroke} />
-          <Path d="M4.5 21.5c0-1.9 1.6-3 3.5-3s3.5 1.1 3.5 3M12.5 21.5c0-1.9 1.6-3 3.5-3s3.5 1.1 3.5 3" {...stroke} />
-        </>
-      ) : (
-        <>
-          <Path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z" {...stroke} />
-          <Path d="M12 6.5v13" {...stroke} />
-        </>
-      )}
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path d="M15 6l-6 6 6 6" stroke={theme.colors.ink} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
 }
 
-function ChoiceCard({
-  label,
-  hint,
-  selected,
-  onPress,
-  styles,
-  tick,
-  icon,
-}: {
-  label: string;
-  hint: string;
-  selected: boolean;
-  onPress: () => void;
-  styles: ReturnType<typeof useStyles>;
-  tick: React.ReactNode;
-  /* Given the colour to draw in, which flips to paper when the card is chosen. */
-  icon?: (color: string) => React.ReactNode;
-}) {
-  const theme = useTheme();
+/* Back on the left, theme on the right. Only on the question steps. */
+function TopBar({ onBack }: { onBack?: () => void }) {
+  const s = useStyles();
   return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[styles.choice, selected && styles.choiceOn]}
-    >
-      {icon ? (
-        <View style={[styles.choiceIcon, selected && styles.choiceIconOn]}>
-          {icon(selected ? theme.colors.paper : theme.colors.lapis)}
-        </View>
-      ) : null}
-      <View style={styles.cardStack}>
-        <Text variant="pageTitle" style={styles.bookLabel}>
-          {label}
-        </Text>
-        <Text color="inkSoft" style={styles.choiceHint}>
-          {hint}
-        </Text>
+    <View style={s.top}>
+      <View style={s.corner}>
+        {onBack ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onBack} hitSlop={8}>
+            <Chevron />
+          </Pressable>
+        ) : null}
       </View>
-      {icon ? null : (
-        <View style={styles.bookMark} pointerEvents="none">
-          {selected ? tick : null}
-        </View>
-      )}
-    </Pressable>
+      <View style={s.corner}>
+        <ThemeToggle />
+      </View>
+    </View>
   );
 }
 
-function hourLabel(h: number): string {
-  const suffix = h < 12 ? "AM" : "PM";
-  const twelve = h % 12 === 0 ? 12 : h % 12;
-  return `${twelve}:00 ${suffix}`;
+/* ---------- Open ---------- */
+
+const OPEN_MS = 1200;
+
+function FlyingWord({ index, width, height, progress }: { index: number; width: number; height: number; progress: { value: number } }) {
+  const theme = useTheme();
+  const w = FIELD[index];
+  const x = (parseFloat(w.left) / 100) * width;
+  const y = (parseFloat(w.top) / 100) * height;
+  const dx = width / 2 - x - w.size;
+  const dy = height / 2 - y - w.size;
+  const style = useAnimatedStyle(() => ({
+    opacity: (theme.dark ? 0.1 : 0.14) * (1 - progress.value),
+    transform: [{ translateX: dx * progress.value }, { translateY: dy * progress.value }, { scale: 1 - 0.4 * progress.value }],
+  }));
+  return (
+    <Animated.View style={[{ position: "absolute", left: x, top: y }, style]} pointerEvents="none">
+      <Arabic variant="inline" color="lapis" showHarakat={false} style={{ fontSize: w.size, lineHeight: Math.round(w.size * 1.6) }}>
+        {w.word}
+      </Arabic>
+    </Animated.View>
+  );
 }
+
+function Open({ onBegin, onAccount }: { onBegin: () => void; onAccount: () => void }) {
+  const s = useStyles();
+  const still = useReducedMotion();
+  const { width, height } = useWindowDimensions();
+  const progress = useSharedValue(still ? 1 : 0);
+
+  /* The scattered words drift together and resolve into the mark, once. */
+  useEffect(() => {
+    if (still) return;
+    progress.value = withDelay(350, withTiming(1, { duration: OPEN_MS, easing: Easing.bezier(0.4, 0, 0.2, 1) }));
+  }, [still, progress]);
+
+  const mark = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: 0.86 + 0.14 * progress.value }],
+  }));
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+        {FIELD.map((_, i) => (
+          <FlyingWord key={i} index={i} width={width} height={height} progress={progress} />
+        ))}
+      </View>
+      <SafeAreaView style={s.pad} edges={["top", "bottom"]}>
+        <View style={s.openCenter}>
+          <Animated.View style={mark}>
+            <Arabic variant="card" color="lapis">
+              دُرُوس
+            </Arabic>
+          </Animated.View>
+          <Animated.View entering={still ? undefined : FadeIn.delay(OPEN_MS + 200).duration(500)} style={{ alignItems: "center", gap: space(1) }}>
+            <Text variant="pageTitle" style={s.openTitle}>
+              Read. Memorize. Understand.
+            </Text>
+            <Text color="inkSoft" style={s.sub}>
+              The Quran, and the Arabic to understand it.
+            </Text>
+          </Animated.View>
+        </View>
+        <Animated.View entering={still ? undefined : FadeIn.delay(OPEN_MS + 500).duration(400)} style={s.actions}>
+          <GlassButton label="Begin" primary onPress={onBegin} />
+          <Pressable accessibilityRole="button" onPress={onAccount} style={s.textButton}>
+            <Text color="lapis">I have an account</Text>
+          </Pressable>
+        </Animated.View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+/* ---------- Hifz ---------- */
+
+function useMask(surahs: Set<number>): Uint8Array {
+  return useMemo(() => {
+    const mask = new Uint8Array(TOTAL_AYAHS);
+    for (const n of surahs) {
+      const x = SURAHS[n - 1];
+      mask.fill(1, x.start, x.start + x.ayahs);
+    }
+    return mask;
+  }, [surahs]);
+}
+
+function Hifz({ chosen, toggle }: { chosen: Set<number>; toggle: (n: number) => void }) {
+  const s = useStyles();
+  const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const mask = useMask(chosen);
+
+  return (
+    <ScrollView contentContainerStyle={{ paddingBottom: space(2) }} showsVerticalScrollIndicator={false}>
+      <View style={s.heads}>
+        <Text variant="pageTitle" style={s.h1}>
+          What have you memorized?
+        </Text>
+        <Text color="inkSoft" style={s.sub}>
+          Tap any you know. You can add more on the Map.
+        </Text>
+      </View>
+      <View style={{ alignItems: "center", paddingTop: space(2.5) }}>
+        <AyahField width={width - MARGIN * 2} height={120} memorized={(i) => mask[i] === 1} />
+      </View>
+      <View style={s.chips}>
+        {HIFZ_CHOICES.map((n) => {
+          const on = chosen.has(n);
+          const x = SURAHS[n - 1];
+          return (
+            <Pressable
+              key={n}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: on }}
+              accessibilityLabel={x.en}
+              onPress={() => toggle(n)}
+            >
+              <Glass interactive style={s.chip} tint={on ? theme.colors.saffron : undefined}>
+                <Arabic variant="inline" color={on ? "paper" : "ink"}>
+                  {x.ar}
+                </Arabic>
+                <Text variant="label" color={on ? "paper" : "inkSoft"} numberOfLines={1}>
+                  {x.en}
+                </Text>
+              </Glass>
+            </Pressable>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}
+
+/* ---------- Your map ---------- */
+
+function YourMap({ chosen }: { chosen: Set<number> }) {
+  const s = useStyles();
+  const still = useReducedMotion();
+  const { width, height } = useWindowDimensions();
+  const mask = useMask(chosen);
+  const ayahs = useMemo(() => mask.reduce((n, v) => n + v, 0), [mask]);
+
+  /* A slow sweep through the mushaf that lights what they marked as it passes. */
+  const [reach, setReach] = useState(still ? TOTAL_AYAHS : 0);
+  useEffect(() => {
+    if (still) return;
+    const startAt = Date.now();
+    const id = setInterval(() => {
+      const f = Math.min(1, (Date.now() - startAt) / 1600);
+      setReach(Math.round(TOTAL_AYAHS * f));
+      if (f >= 1) clearInterval(id);
+    }, 40);
+    return () => clearInterval(id);
+  }, [still]);
+
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: space(2) }}>
+      <AyahField width={width - MARGIN * 2} height={height * 0.5} memorized={(i) => mask[i] === 1 && i < reach} />
+      {chosen.size > 0 ? (
+        <View style={s.counters}>
+          <View style={s.counter}>
+            <Text variant="numeral" style={s.numeral}>{`${chosen.size}`}</Text>
+            <Text variant="label" color="inkSoft">
+              {chosen.size === 1 ? "Surah memorized" : "Surahs memorized"}
+            </Text>
+          </View>
+          <View style={s.counter}>
+            <Text variant="numeral" style={s.numeral}>{`${ayahs}`}</Text>
+            <Text variant="label" color="inkSoft">
+              Ayahs memorized
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <Text color="inkSoft" style={s.sub}>
+          Your map starts here.
+        </Text>
+      )}
+    </View>
+  );
+}
+
+/* ---------- the flow ---------- */
 
 export default function Onboarding() {
   const s = useStyles();
@@ -383,485 +330,180 @@ export default function Onboarding() {
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
   const completeOnboarding = useSession((st) => st.completeOnboarding);
+  const setAdhkarReminder = usePrefs((st) => st.setAdhkarReminder);
+  const markSurahs = useQuranStatus((st) => st.markSurahs);
   const { isSignedIn } = useAuth();
 
-  const [step, setStep] = useState<Step>("intro");
-  const [path, setPath] = useState<LearnerPath | null>(null);
-  const [pace, setPace] = useState(10);
-  const [book, setBook] = useState(1);
-  const [lesson, setLesson] = useState(1);
-  const [morning, setMorning] = useState(true);
-  const [evening, setEvening] = useState(false);
+  const [step, setStep] = useState<Step>("open");
+  const [chosen, setChosen] = useState<Set<number>>(new Set());
+  const [adhkar, setAdhkar] = useState(true);
+  const [review, setReview] = useState(true);
+  const [notify, setNotify] = useState(false);
+  /* Where Back from sign in goes: reminders, or Open for "I have an account". */
+  const [signinFrom, setSigninFrom] = useState<Step>("reminders");
 
-  const steps = stepsFor(path);
-  const index = steps.indexOf(step);
-
-  /* One tick mark, shared by every card on every step. */
-  const tick = (
-    <Svg width={22} height={22} viewBox="0 0 24 24">
-      <Circle cx={12} cy={12} r={11} fill={theme.colors.lapis} />
-      <Path
-        d="M7 12.5l3.2 3.2L17 9"
-        stroke={theme.colors.paper}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </Svg>
-  );
-
-  const go = useCallback((next: Step) => {
-    Keyboard.dismiss();
-    setStep(next);
+  const toggle = useCallback((n: number) => {
+    haptics.select();
+    setChosen((prev) => {
+      const next = new Set(prev);
+      if (next.has(n)) next.delete(n);
+      else next.add(n);
+      return next;
+    });
   }, []);
 
   /*
-    Back is available on every step that is still a question, and nowhere else.
-
-    Not on the intro, because there is nothing behind it. Not on the last
-    screen, because by then the account exists and the answers have been
-    written, so stepping back would offer to redo something that has already
-    taken effect.
+    Everything the flow collected, written in one go once there is an account.
+    See src/onboarding/save.ts for the rules, which are tested there.
   */
-  const canGoBack = index > 0 && step !== "done";
-  const back = useCallback(() => {
-    Keyboard.dismiss();
-    setStep((current) => {
-      const list = stepsFor(path);
-      return list[Math.max(0, list.indexOf(current) - 1)];
-    });
-  }, [path]);
-
-  /* Read from the content rather than written into the copy, so a new lesson
-     never leaves a number stale on this screen. */
-  const waiting = useMemo(() => {
-    if (profileId === null) return 0;
-    return countNewAvailable(db, profileId, lesson);
-  }, [profileId, lesson]);
+  const finish = useCallback(async () => {
+    if (profileId !== null) {
+      await saveOnboarding(
+        { hifz: [...chosen].sort((a, b) => a - b), adhkar, review, notify },
+        {
+          updateSettings: (patch) => updateSettings(db, profileId, patch),
+          setAdhkarReminder,
+          markSurahs: (surahs) => markSurahs(surahs, true),
+          syncReminders: () => syncReminders(db, profileId),
+        },
+      );
+    }
+    completeOnboarding();
+    setStep("map");
+  }, [profileId, chosen, adhkar, review, notify, setAdhkarReminder, markSurahs, completeOnboarding]);
 
   /*
-    Everything the flow collected, written in one go once there is an account.
-
-    Deferring the write is what makes quitting halfway a clean restart: until
-    this runs there is no record that onboarding was ever begun, so the next
-    launch asks again from the top instead of resuming into a partly configured
-    app.
+    A keychain restored session (the iOS keychain survives deleting the app) has
+    nothing to sign in to, so it skips the gate and saves. Without this the app
+    would ask to be set up on every launch.
   */
-  const save = useCallback(
-    async (withReminders: boolean) => {
-      if (profileId === null) return;
-      updateSettings(db, profileId, {
-        /*
-          For the self path these are never asked and stay at their defaults of
-          Book 1, Lesson 1 - which is the only correct answer for somebody
-          starting from the beginning, and is why the questions are not asked.
-        */
-        currentBook: book,
-        currentLesson: lesson,
-        remindersOn: withReminders,
-        secondReminderOn: evening,
-        /*
-          Both of these are what the path actually decides.
-
-          The Wednesday nudge is about a class, so a self-teacher must not get
-          it. The pace is the self-teacher's answer to a question a syllabus
-          answers for everyone else, so the class path leaves newPerDay at
-          whatever it already was.
-        */
-        classDayReminder: path === "class",
-        ...(path === "self" ? { newPerDay: pace } : null),
-      });
-      if (withReminders) await syncReminders(db, profileId);
+  const toSignin = useCallback(
+    (from: Step) => {
+      if (afterReminders(!!isSignedIn) === "finish") {
+        void finish();
+        return;
+      }
+      setSigninFrom(from);
+      setStep("signin");
     },
-    [profileId, book, lesson, evening, path, pace],
+    [isSignedIn, finish],
   );
 
-  /*
-    Permission is asked as this step is LEFT, not later when everything is
-    saved.
-
-    iOS gives exactly one chance at the prompt, and it only makes sense next to
-    the question that motivates it. Asking at the end instead meant the system
-    dialog appeared moments after signing in, with nothing on screen to explain
-    what it was for. The answer is carried to the save rather than re-asked.
-  */
-  const [notify, setNotify] = useState(false);
-  const finish = useCallback(async () => {
-    await save(notify);
-    completeOnboarding();
-    go("done");
-  }, [notify, save, completeOnboarding, go]);
-
-  /*
-    Leaving the name step. Two ways out, and BOTH have to end up saving.
-
-    Being already signed in on a first launch is not the edge case it looks
-    like: expo-secure-store keeps Clerk's token in the iOS keychain, and the
-    keychain survives deleting the app. So a reinstall comes back already
-    authenticated, the sign in step has nothing to ask, and the flow skips it.
-
-    That skip used to go straight to "done" without calling finish(), which
-    meant onboarding never recorded itself and never wrote the book, the lesson
-    or the reminders. The symptom was not a missing save - it was the app
-    asking every single launch to be set up again, because onboardedAt was
-    still null, and never showing a sign in screen, because there was nothing
-    to sign in to.
-  */
-  const leaveSetup = useCallback(() => {
-    if (isSignedIn) {
-      void finish();
-      return;
-    }
-    go("signin");
-  }, [isSignedIn, finish, go]);
-
-  /* Declared after leaveSetup because it calls it: the permission prompt is the
-     last thing this step does, and where it goes next is that decision. */
+  /* Permission is asked as this step is LEFT, next to the question that motivates it. */
   const leaveReminders = useCallback(async () => {
-    setNotify(morning || evening ? await requestPermission() : false);
-    leaveSetup();
-  }, [morning, evening, leaveSetup]);
+    setNotify(shouldAskPermission({ adhkar, review }) ? await requestPermission() : false);
+    toSignin("reminders");
+  }, [adhkar, review, toSignin]);
+
+  if (step === "open") {
+    return (
+      <View style={s.safe}>
+        <Open onBegin={() => setStep("story")} onAccount={() => toSignin("open")} />
+      </View>
+    );
+  }
+
+  if (step === "story") {
+    return (
+      <View style={s.safe}>
+        <Story onDone={() => setStep("hifz")} />
+      </View>
+    );
+  }
 
   return (
-    <Screen>
-      <WordField />
-      <OnboardingChrome step={index} total={steps.length} onBack={canGoBack ? back : undefined} />
+    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+      {step === "hifz" ? <WordField /> : null}
+      <View style={s.pad}>
+        <TopBar
+          onBack={
+            step === "hifz"
+              ? () => setStep("story")
+              : step === "reminders"
+                ? () => setStep("hifz")
+                : step === "signin"
+                  ? () => setStep(signinFrom)
+                  : undefined
+          }
+        />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        {/*
-          Tapping the background puts the keyboard away.
+        <Animated.View key={step} entering={FadeIn.duration(240)} exiting={FadeOut.duration(120)} style={{ flex: 1 }}>
+          {step === "hifz" ? <Hifz chosen={chosen} toggle={toggle} /> : null}
 
-          Without it the only way out of the name field is the keyboard's own
-          return key, which leaves the field looking stuck to anyone who taps
-          past it - and the keyboard is covering the button they are reaching
-          for.
-        */}
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          {/*
-            Each step crossfades in place rather than sliding the whole screen.
-            The wordmark and the progress track never move, so the frame reads
-            as one screen asking successive questions rather than seven screens.
-          */}
-          <Animated.View
-            key={step}
-            entering={FadeIn.duration(220)}
-            exiting={FadeOut.duration(120)}
-            style={{ flex: 1 }}
-          >
-            <View style={s.body}>
-              {step === "intro" ? (
-                /*
-                  The intro is a tour of the whole app, not a pitch for one
-                  feature. Durus is a Quran app with five tabs; the Arabic
-                  course is Learn, and the questions after this set it up.
-                */
-                <Tour />
-              ) : null}
-
-              {step === "path" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="eyebrow" color="lapis" style={s.eyebrow}>
-                      Set up Learn
-                    </Text>
-                    <Text variant="pageTitle" style={s.h1}>
-                      How are you learning Arabic?
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      This sets up the Arabic course in Learn. Reading and
-                      everything else work either way.
-                    </Text>
-                  </View>
-                  <View style={{ gap: space(1.5) }}>
-                    {PATHS.map((option) => (
-                      <ChoiceCard
-                        key={option.value}
-                        label={option.label}
-                        hint={option.hint}
-                        selected={path === option.value}
-                        onPress={() => setPath(option.value)}
-                        styles={s}
-                        tick={tick}
-                        icon={(color) => <PathIcon kind={option.value} color={color} />}
-                      />
-                    ))}
-                  </View>
-                </>
-              ) : null}
-
-              {step === "pace" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      How fast do you want to go?
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      How many new words arrive each day. You can change this
-                      later.
-                    </Text>
-                  </View>
-                  <View style={{ gap: space(1.5) }}>
-                    {PACES.map((option) => (
-                      <ChoiceCard
-                        key={option.label}
-                        label={option.label}
-                        hint={option.hint}
-                        selected={pace === option.newPerDay}
-                        onPress={() => setPace(option.newPerDay)}
-                        styles={s}
-                        tick={tick}
-                      />
-                    ))}
-                  </View>
-                </>
-              ) : null}
-
-              {step === "book" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      Which book are you on?
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      You can change this later.
-                    </Text>
-                  </View>
-                  <View style={{ gap: space(1.5) }}>
-                    {BOOKS.map((b) => (
-                      <Pressable
-                        key={b.number}
-                        disabled={!b.available}
-                        onPress={() => setBook(b.number)}
-                        style={[
-                          s.book,
-                          b.number === book && b.available && s.bookOn,
-                          !b.available && s.bookOff,
-                        ]}
-                      >
-                        <Text variant="pageTitle" style={s.bookLabel}>
-                          {b.label}
-                        </Text>
-                        <View style={s.bookMark} pointerEvents="none">
-                          {b.available ? (
-                            b.number === book ? tick : null
-                          ) : (
-                            <View style={s.soon}>
-                              <Text variant="eyebrow" color="inkFaint">
-                                Soon
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              ) : null}
-
-              {step === "lesson" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      Which lesson is your class on?
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      Nothing appears before you have been taught it.
-                    </Text>
-                  </View>
-
-                  <View style={s.stripWrap}>
-                    {/* The same ticks Today uses, so the shape of the book is
-                        familiar before it is ever seen. */}
-                    <View style={s.strip}>
-                      {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
-                        <View
-                          key={i}
-                          /*
-                            One height for every tick. Growing the filled ones
-                            makes the strip lurch as the number changes, and it
-                            reads as two different scales rather than as one
-                            scale being filled in. Colour carries the state.
-                          */
-                          style={[
-                            s.bar,
-                            {
-                              backgroundColor:
-                                i < lesson ? theme.colors.lapis : theme.colors.rule,
-                            },
-                          ]}
-                        />
-                      ))}
-                    </View>
-
-                    <View style={{ alignItems: "center" }}>
-                      <Text variant="eyebrow" color="inkSoft">
-                        Lesson
+          {step === "reminders" ? (
+            <View style={{ flex: 1, justifyContent: "center", gap: space(4) }}>
+              <View style={s.heads}>
+                <Text variant="pageTitle" style={s.h1}>
+                  Two gentle reminders
+                </Text>
+              </View>
+              <View style={{ gap: space(1.5) }}>
+                {[
+                  { label: "Morning adhkar", time: "6:00 AM", value: adhkar, set: setAdhkar },
+                  { label: "Daily review", time: "9:00 AM", value: review, set: setReview },
+                ].map((r) => (
+                  <Glass key={r.label} style={s.row}>
+                    <View style={{ gap: 2 }}>
+                      <Text>{r.label}</Text>
+                      <Text variant="label" color="inkSoft">
+                        {r.time}
                       </Text>
-                      <View style={s.stepper}>
-                        <Pressable
-                          style={s.round}
-                          accessibilityRole="button"
-                          accessibilityLabel="Previous lesson"
-                          onPress={() => setLesson((n) => Math.max(1, n - 1))}
-                        >
-                          <Text style={{ fontSize: 22 }}>−</Text>
-                        </Pressable>
-                        <Text style={s.big}>{String(lesson)}</Text>
-                        <Pressable
-                          style={s.round}
-                          accessibilityRole="button"
-                          accessibilityLabel="Next lesson"
-                          onPress={() => setLesson((n) => Math.min(TOTAL_LESSONS, n + 1))}
-                        >
-                          <Text style={{ fontSize: 22 }}>+</Text>
-                        </Pressable>
-                      </View>
                     </View>
-                  </View>
-                </>
-              ) : null}
-
-              {step === "reminders" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      When should we remind you?
-                    </Text>
-                    {/*
-                      A reminder is a time to sit down, not a report on the
-                      queue. This says what it will do and makes no promise
-                      about staying quiet, because it no longer does.
-                    */}
-                    <Text color="inkSoft" style={s.sub}>
-                      Pick one or two times a day. You can change these later.
-                    </Text>
-                  </View>
-
-                  <View style={{ gap: space(1.5) }}>
-                    <View style={s.row}>
-                      <Text>Morning</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: space(2) }}>
-                        <Text style={s.time}>{hourLabel(9)}</Text>
-                        <Switch
-                          value={morning}
-                          onValueChange={setMorning}
-                          trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={s.row}>
-                      <Text>Evening</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: space(2) }}>
-                        <Text style={s.time}>{hourLabel(20)}</Text>
-                        <Switch
-                          value={evening}
-                          onValueChange={setEvening}
-                          trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                </>
-              ) : null}
-
-              {step === "signin" ? (
-                <>
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      One last thing
-                    </Text>
-                    <Text color="inkSoft" style={s.sub}>
-                      An account keeps your reading, memorization and lessons if
-                      you lose this phone.
-                    </Text>
-                  </View>
-                  <SignInPanel onSignedIn={finish} />
-                </>
-              ) : null}
-
-              {step === "done" ? (
-                <>
-                  <View style={s.ring}>
-                    <Svg width={200} height={200}>
-                      <Circle
-                        cx={100}
-                        cy={100}
-                        r={92}
-                        stroke={theme.colors.lapis}
-                        strokeWidth={1.5}
-                        fill="none"
-                        opacity={0.55}
-                      />
-                    </Svg>
-                    <View style={s.ringMark}>
-                      <Arabic variant="card" color="lapis">
-                        دُرُوس
-                      </Arabic>
-                    </View>
-                  </View>
-
-                  <View style={s.heads}>
-                    <Text variant="pageTitle" style={s.h1}>
-                      You&apos;re set
-                    </Text>
-                  </View>
-
-                  <View style={s.bullets}>
-                    {[
-                      waiting > 0
-                        ? `${waiting} ${waiting === 1 ? "word" : "words"} from Lesson ${lesson} and earlier`
-                        : `Lesson ${lesson} and everything before it`,
-                      "Reviews start today",
-                      path === "self"
-                        ? "Move to the next lesson when you are ready"
-                        : "Add new words after class",
-                    ].map((line) => (
-                      <View key={line} style={s.bullet}>
-                        <View style={s.dot} />
-                        <Text color="inkSoft">{line}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              ) : null}
+                    <Switch
+                      accessibilityLabel={r.label}
+                      value={r.value}
+                      onValueChange={r.set}
+                      trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+                    />
+                  </Glass>
+                ))}
+              </View>
             </View>
-          </Animated.View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+          ) : null}
 
-      {/*
-        One button per step, and no way to skip any of them.
+          {step === "signin" ? (
+            <View style={{ flex: 1, justifyContent: "center", gap: space(3) }}>
+              <View style={s.heads}>
+                <Text variant="pageTitle" style={s.h1}>
+                  Keep your progress
+                </Text>
+                <Text color="inkSoft" style={s.sub}>
+                  Your map, lessons and practice, saved if you change phones.
+                </Text>
+              </View>
+              <Glass style={s.signCard}>
+                <SignInPanel onSignedIn={finish} />
+              </Glass>
+            </View>
+          ) : null}
 
-        The sign in step deliberately has nothing here: its only ways forward
-        are the three in the panel above, which is what makes it a gate rather
-        than a suggestion.
-      */}
-      <View style={s.actions}>
-        {step === "intro" ? <Button label="Get started" onPress={() => go("path")} /> : null}
-        {step === "path" ? (
-          /* Disabled rather than defaulted. Guessing which of the two somebody
-             is would send half of them down the wrong flow silently. */
-          <Button
-            label="Continue"
-            disabled={path === null}
-            onPress={() => go(path === "self" ? "pace" : "book")}
-          />
-        ) : null}
-        {step === "book" ? <Button label="Continue" onPress={() => go("lesson")} /> : null}
-        {step === "pace" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
-        {step === "lesson" ? <Button label="Continue" onPress={() => go("reminders")} /> : null}
-        {step === "reminders" ? (
-          <Button label="Continue" onPress={() => void leaveReminders()} />
-        ) : null}
-        {step === "done" ? (
-          <Button label="Open Durus" onPress={() => router.replace("/today")} />
-        ) : null}
+          {step === "map" ? <YourMap chosen={chosen} /> : null}
+        </Animated.View>
+
+        {/* The sign in step has nothing here: its only ways forward are in the
+            panel, which is what makes it a gate. */}
+        <View style={s.actions}>
+          {step === "hifz" ? (
+            <>
+              <GlassButton label="Continue" primary onPress={() => setStep("reminders")} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setChosen(new Set());
+                  setStep("reminders");
+                }}
+                style={s.textButton}
+              >
+                <Text color="lapis">Skip</Text>
+              </Pressable>
+            </>
+          ) : null}
+          {step === "reminders" ? <GlassButton label="Continue" primary onPress={() => void leaveReminders()} /> : null}
+          {step === "map" ? (
+            <GlassButton label="Open Durus" primary onPress={() => router.replace(chosen.size > 0 ? "/map" : "/read")} />
+          ) : null}
+        </View>
       </View>
-    </Screen>
+    </SafeAreaView>
   );
 }

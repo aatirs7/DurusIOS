@@ -52,6 +52,7 @@ jest.mock('react-native-reanimated', () => {
     FadeIn: builder(),
     FadeOut: builder(),
     FadeInDown: builder(),
+    FadeInUp: builder(),
 
     // Shared values are read synchronously in tests, so a plain object with a
     // mutable .value is enough and keeps assertions honest.
@@ -65,7 +66,8 @@ jest.mock('react-native-reanimated', () => {
     },
     useDerivedValue: (fn) => ({ value: fn() }),
     useAnimatedRef: () => ({ current: null }),
-    useReducedMotion: () => false,
+    // Overridable per test: set globalThis.__reducedMotion = true.
+    useReducedMotion: () => globalThis.__reducedMotion === true,
 
     withTiming: (to) => to,
     withSpring: (to) => to,
@@ -81,6 +83,7 @@ jest.mock('react-native-reanimated', () => {
     Easing: {
       ease: (t) => t,
       linear: (t) => t,
+      quad: (t) => t,
       out: (fn) => fn,
       in: (fn) => fn,
       inOut: (fn) => fn,

@@ -1,4 +1,5 @@
 import { applyReminders, planReminders } from "@/lib/notifications";
+import { usePrefs } from "@/state/prefs";
 
 import type { Db } from "./client";
 import { getSettingsFor } from "./settings";
@@ -23,6 +24,7 @@ export async function syncReminders(db: Db, profileId: number) {
       reminderHour2: config.reminderHour2,
       classDayReminder: config.classDayReminder,
       currentLesson: config.currentLesson,
+      adhkarReminder: usePrefs.getState().adhkarReminder,
     }),
   );
 }

@@ -146,7 +146,17 @@ export default function SettingsScreen() {
         <Section title="Study" defaultOpen>
           {/* The app never unlocks a lesson on its own. Moving this restamps
               currentLessonSince, which starts the 14 day interval cap. */}
-          <Field label="Current lesson" hint="What the class has covered">
+          {/*
+            Book and lesson moved here from onboarding (issue #2), which now
+            writes Book 1, Lesson 1 for everyone. Only Book 1 has content, so
+            the book is shown rather than offered: a picker whose other two
+            choices lead to an empty deck would be worse than none. It becomes
+            a picker when Book 2 is seeded.
+          */}
+          <Field label="Book" hint="Books 2 and 3 are on the way">
+            <Text color="inkSoft">{`Book ${config.currentBook}`}</Text>
+          </Field>
+          <Field label="Current lesson" hint="Where you are in the book">
             <Stepper
               value={config.currentLesson}
               min={1}

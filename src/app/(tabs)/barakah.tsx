@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import Svg, { Circle, Path } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 
+import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Screen } from "@/components/Screen";
 import { Section } from "@/components/Section";
 import { Text } from "@/components/Text";
@@ -33,9 +34,6 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   neither is "ticked a practice". No streaks and no praise, so the screen
   reports what was done and stops there.
 */
-
-const RING = 184;
-const STROKE = 12;
 
 const useStyles = makeStyles((t) => ({
   scroll: { paddingBottom: space(6), gap: space(3) },
@@ -88,9 +86,6 @@ const useStyles = makeStyles((t) => ({
 
   block: { alignItems: "center", gap: space(1.5) },
   grid: { flexDirection: "row", flexWrap: "wrap", width: 7 * 40 },
-  cell: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  cellFill: { position: "absolute", width: 32, height: 32, borderRadius: 10 },
-  cellToday: { borderWidth: 1, borderColor: t.colors.lapis },
 
   chooseRow: {
     flexDirection: "row",
@@ -104,71 +99,6 @@ const useStyles = makeStyles((t) => ({
 function localDate(day: string): Date {
   const { y, m, d } = parseDay(day);
   return new Date(y, m - 1, d, 12);
-}
-
-/* One arc of the ring, from fraction a to b of the circle, clockwise from the top. */
-function arc(a: number, b: number, r: number, c: number): string {
-  const p = (f: number) => {
-    const angle = f * 2 * Math.PI - Math.PI / 2;
-    return `${c + r * Math.cos(angle)} ${c + r * Math.sin(angle)}`;
-  };
-  const large = b - a > 0.5 ? 1 : 0;
-  return `M ${p(a)} A ${r} ${r} 0 ${large} 1 ${p(b)}`;
-}
-
-function Ring({ fills }: { fills: number[] }) {
-  const theme = useTheme();
-  const c = RING / 2;
-  const r = c - STROKE / 2;
-  const n = fills.length;
-
-  if (n === 0) {
-    return (
-      <Svg width={RING} height={RING}>
-        <Circle cx={c} cy={c} r={r} stroke={theme.colors.rule} strokeWidth={STROKE} fill="none" />
-      </Svg>
-    );
-  }
-
-  /* A small gap between segments, so each practice reads as its own piece. */
-  const gap = n === 1 ? 0 : Math.min(0.02, 0.25 / n);
-  const span = 1 / n;
-
-  return (
-    <Svg width={RING} height={RING}>
-      {fills.map((f, i) => {
-        const start = i * span + gap / 2;
-        const end = (i + 1) * span - gap / 2;
-        const full = n === 1;
-        return (
-          <Path
-            key={`t${i}`}
-            d={full ? arc(0, 0.9999, r, c) : arc(start, end, r, c)}
-            stroke={theme.colors.surfaceSunk}
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-            fill="none"
-          />
-        );
-      })}
-      {fills.map((f, i) => {
-        if (f <= 0) return null;
-        const start = i * span + gap / 2;
-        const end = start + (span - gap) * f;
-        const full = n === 1 && f >= 1;
-        return (
-          <Path
-            key={`f${i}`}
-            d={full ? arc(0, 0.9999, r, c) : arc(start, Math.max(start + 0.001, end), r, c)}
-            stroke={theme.colors.verdigris}
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-            fill="none"
-          />
-        );
-      })}
-    </Svg>
-  );
 }
 
 function PracticeCard({
@@ -353,7 +283,7 @@ export default function Barakah() {
         </View>
 
         <View style={s.ringWrap}>
-          <Ring fills={fills} />
+          <BarakahRing fills={fills} />
           <View style={s.ringCenter}>
             <Text variant="numeral">{`${summary.done}`}</Text>
             <Text variant="label" color="inkSoft">
@@ -388,7 +318,7 @@ export default function Barakah() {
           </Text>
           <View style={s.grid}>
             {Array.from({ length: month.firstWeekday }, (_, i) => (
-              <View key={`b${i}`} style={s.cell} />
+              <View key={`b${i}`} style={{ width: 40, height: 40 }} />
             ))}
             {month.days.map((d) => {
               const sum = summarise(values, tracked, d);
@@ -401,21 +331,8 @@ export default function Barakah() {
                   accessibilityLabel={`${d}, ${sum.done} of ${sum.applicable}`}
                   disabled={future}
                   onPress={() => setDay(d)}
-                  style={s.cell}
                 >
-                  {/* A calm wash that deepens with what was done. A day with
-                      nothing is just paper, never a red mark. */}
-                  <View
-                    style={[
-                      s.cellFill,
-                      { backgroundColor: ratio > 0 ? theme.colors.verdigris : theme.colors.surfaceSunk },
-                      { opacity: ratio > 0 ? 0.2 + 0.8 * ratio : future ? 0.25 : 0.6 },
-                      d === day && s.cellToday,
-                    ]}
-                  />
-                  <Text variant="label" color={ratio >= 0.6 ? "paper" : "inkSoft"}>
-                    {String(parseDay(d).d)}
-                  </Text>
+                  <DayCell ratio={ratio} label={String(parseDay(d).d)} selected={d === day} future={future} />
                 </Pressable>
               );
             })}
