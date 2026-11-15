@@ -1,6 +1,6 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-15, 19:25
+Updated: 2026-11-15, 19:40
 
 ## Now
 
@@ -11,6 +11,7 @@ Both handoffs from 15 November are read. The numbers trainer is further along in
 
 ## Shipped
 
+- Onboarding "How are you learning Arabic?" restyled at the owner's request (OTA). Each path card has a drawn icon (a class with a board, an open book) in a tinted circle that turns lapis when chosen. The cards are roomier with a softer radius, and there is a small "Arabic Course" eyebrow over the title. The pace cards share the new card style. Not yet seen on a phone.
 - Delivery is now OTA first, at the owner's request. Native builds happen only when native code changes, and those changes get batched. Durus is not public on the App Store yet, so updates reach TestFlight testers only.
 - Over-the-air update of main: tab shell, Barakah and the new copy, for build 10 and build 11 phones alike.
 - Over-the-air update on production (runtime 1.0.0): the new onboarding and About copy, built on build 10's code so the unfinished tabs did not go out with it. Branch ota/onboarding-copy. Phones pick it up on their next launch or two.
