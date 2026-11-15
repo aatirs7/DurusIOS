@@ -4,11 +4,9 @@ Updated: 2026-11-15, 18:45
 
 ## Now
 
-Barakah is paused: the logic and its tests are written but not committed. It resumes after the TestFlight upload.
+Back on Barakah, which runs entirely on the phone. The logic and its tests are written; the screen is next. The Map comes after it.
 Build 11 (tab shell and the new copy) is building on EAS and will go to TestFlight on its own when it finishes.
 
-Building Barakah, which runs entirely on the phone. The Map comes after it.
-Build 10 (from the code as it was at 17:05, before the tab shell) has finished on EAS. Its upload to TestFlight waits on the Apple agreement below.
 Both handoffs from 15 November are read. The numbers trainer is further along in the code than the handoff says (stage list and teach flow are committed).
 
 ## Shipped
