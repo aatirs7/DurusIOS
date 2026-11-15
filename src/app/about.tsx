@@ -81,12 +81,13 @@ export default function About() {
 
         <View style={s.group}>
           <Text color="inkSoft" style={s.centred}>
-            Durus keeps the vocabulary from Book 1 of the Arabic Course in
-            working memory, alongside a class that meets weekly.
+            Durus is for reading, memorizing and understanding the Quran.
+            Read with translation, mark what you have memorized, learn the
+            Arabic behind it, and keep a calm daily practice.
           </Text>
           <Text color="inkSoft" style={s.centred}>
-            It grades you from your answer and how long it took, so there is
-            nothing to rate and no score to keep.
+            The Arabic Course grades you from your answer and how long it
+            took, so there is nothing to rate and no score to keep.
           </Text>
         </View>
 
