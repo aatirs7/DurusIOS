@@ -186,6 +186,36 @@ const useStyles = makeStyles((t) => ({
   /* A card that carries a line of explanation under its title. */
   cardStack: { alignItems: "center", gap: space(0.5) },
   cardHint: { textAlign: "center" },
+
+  /*
+    The richer choice card: an icon in a tinted circle above the title, more
+    room, and the spec's softer radius. The circle fills with lapis when the
+    card is chosen, so the selected state reads from across the screen rather
+    than only from a thin border.
+  */
+  choice: {
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: t.colors.rule,
+    borderRadius: 20,
+    backgroundColor: t.colors.surface,
+    paddingHorizontal: space(3),
+    paddingTop: space(2.5),
+    paddingBottom: space(2.5),
+    gap: space(1.25),
+  },
+  choiceOn: { borderColor: t.colors.lapis, backgroundColor: t.colors.lapisWash },
+  choiceIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: t.colors.lapisWash,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  choiceIconOn: { backgroundColor: t.colors.lapis },
+  choiceHint: { textAlign: "center", maxWidth: 260 },
+  eyebrow: { textAlign: "center" },
   bookMark: {
     position: "absolute",
     right: space(2.5),
@@ -268,6 +298,30 @@ const useStyles = makeStyles((t) => ({
   treatment would make three consecutive screens look like three different
   apps.
 */
+/* Line icons for the two paths, drawn rather than imported so they need no
+   native module and can ship over the air. */
+function PathIcon({ kind, color }: { kind: LearnerPath; color: string }) {
+  const stroke = { stroke: color, strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+  return (
+    <Svg width={26} height={26} viewBox="0 0 24 24">
+      {kind === "class" ? (
+        <>
+          <Path d="M3.5 3.5h17v9h-17z" {...stroke} />
+          <Path d="M7 7h6M7 9.5h4" {...stroke} />
+          <Circle cx={8} cy={16} r={1.9} {...stroke} />
+          <Circle cx={16} cy={16} r={1.9} {...stroke} />
+          <Path d="M4.5 21.5c0-1.9 1.6-3 3.5-3s3.5 1.1 3.5 3M12.5 21.5c0-1.9 1.6-3 3.5-3s3.5 1.1 3.5 3" {...stroke} />
+        </>
+      ) : (
+        <>
+          <Path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z" {...stroke} />
+          <Path d="M12 6.5v13" {...stroke} />
+        </>
+      )}
+    </Svg>
+  );
+}
+
 function ChoiceCard({
   label,
   hint,
@@ -275,6 +329,7 @@ function ChoiceCard({
   onPress,
   styles,
   tick,
+  icon,
 }: {
   label: string;
   hint: string;
@@ -282,20 +337,35 @@ function ChoiceCard({
   onPress: () => void;
   styles: ReturnType<typeof useStyles>;
   tick: React.ReactNode;
+  /* Given the colour to draw in, which flips to paper when the card is chosen. */
+  icon?: (color: string) => React.ReactNode;
 }) {
+  const theme = useTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.book, selected && styles.bookOn]}>
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.choice, selected && styles.choiceOn]}
+    >
+      {icon ? (
+        <View style={[styles.choiceIcon, selected && styles.choiceIconOn]}>
+          {icon(selected ? theme.colors.paper : theme.colors.lapis)}
+        </View>
+      ) : null}
       <View style={styles.cardStack}>
         <Text variant="pageTitle" style={styles.bookLabel}>
           {label}
         </Text>
-        <Text variant="label" color="inkSoft" style={styles.cardHint}>
+        <Text color="inkSoft" style={styles.choiceHint}>
           {hint}
         </Text>
       </View>
-      <View style={styles.bookMark} pointerEvents="none">
-        {selected ? tick : null}
-      </View>
+      {icon ? null : (
+        <View style={styles.bookMark} pointerEvents="none">
+          {selected ? tick : null}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -519,6 +589,9 @@ export default function Onboarding() {
               {step === "path" ? (
                 <>
                   <View style={s.heads}>
+                    <Text variant="eyebrow" color="lapis" style={s.eyebrow}>
+                      Arabic Course
+                    </Text>
                     <Text variant="pageTitle" style={s.h1}>
                       How are you learning Arabic?
                     </Text>
@@ -536,6 +609,7 @@ export default function Onboarding() {
                         onPress={() => setPath(option.value)}
                         styles={s}
                         tick={tick}
+                        icon={(color) => <PathIcon kind={option.value} color={color} />}
                       />
                     ))}
                   </View>
