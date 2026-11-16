@@ -7,7 +7,7 @@ import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { TANZIL_CREDIT } from "@/onboarding/tanzil";
+import { TANZIL_CREDIT } from "@/quran/tanzil";
 import { space } from "@/theme/layout";
 import { FONTS_ARE_PLACEHOLDERS } from "@/theme/typography";
 import { makeStyles } from "@/theme/useTheme";

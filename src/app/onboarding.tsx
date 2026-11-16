@@ -42,7 +42,7 @@ import {
   shouldAskPermission,
 } from "@/onboarding/save";
 import { Story } from "@/onboarding/Story";
-import { SURAHS, TOTAL_AYAHS } from "@/onboarding/tanzil";
+import { SURAHS, TOTAL_AYAHS } from "@/quran/tanzil";
 import { usePrefs } from "@/state/prefs";
 import { useQuranStatus } from "@/state/quranStatus";
 import { useSession } from "@/state/session";

@@ -3,7 +3,7 @@ import { View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { dotsPath, layoutField } from "@/onboarding/field";
-import { JUZ_STARTS, TOTAL_AYAHS } from "@/onboarding/tanzil";
+import { JUZ_STARTS, TOTAL_AYAHS } from "@/quran/tanzil";
 import { useTheme } from "@/theme/useTheme";
 
 /*

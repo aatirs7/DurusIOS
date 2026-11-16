@@ -1,5 +1,5 @@
 import { dotsPath, juzSizes, layoutField } from "./field";
-import { AYAHS, JUZ_STARTS, SURAHS, TOTAL_AYAHS } from "./tanzil";
+import { AYAHS, JUZ_STARTS, SURAHS, TOTAL_AYAHS } from "@/quran/tanzil";
 
 describe("tanzil metadata", () => {
   it("has the whole mushaf", () => {

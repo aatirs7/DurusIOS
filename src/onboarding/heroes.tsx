@@ -21,7 +21,7 @@ import { arabicStyles } from "@/theme/typography";
 import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
-import { AYAHS, SURAHS } from "./tanzil";
+import { AYAHS, SURAHS } from "@/quran/tanzil";
 
 /*
   The five story heroes. Full bleed, drawn on paper, no container card.

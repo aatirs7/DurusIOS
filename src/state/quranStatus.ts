@@ -1,28 +1,26 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { StatusEvent } from "@/quran/status";
+
 import { jsonStorage, onRehydrate, type Hydratable } from "./storage";
 
 /*
   What the user has memorized and understood, as an append-only event log.
+  Folded into per-ayah maps by src/quran/status.ts.
 
-  The spec's `events` table, in miniature: `surah_status_set` events only for
-  now, written by onboarding's hifz step after sign in. Device only for v1, kept
-  out of SQLite for the same reason as Barakah (no migration, no lockstep
-  change); the events are already shaped as rows for when they sync.
+  Device only for v1, kept out of SQLite for the same reason as Barakah (no
+  migration, no lockstep change); the events are already shaped as rows for
+  when they sync.
 */
 
-export type SurahStatusEvent = {
-  type: "surah_status_set";
-  at: number;
-  surah: number;
-  memorized?: boolean;
-  understood?: boolean;
-};
+type Field = "memorized" | "understood";
 
 type QuranStatusState = Hydratable & {
-  events: SurahStatusEvent[];
+  events: StatusEvent[];
   markSurahs: (surahs: number[], memorized: boolean) => void;
+  setSurah: (surah: number, field: Field, on: boolean) => void;
+  setAyah: (index: number, field: Field, on: boolean) => void;
 };
 
 export const useQuranStatus = create<QuranStatusState>()(
@@ -37,6 +35,10 @@ export const useQuranStatus = create<QuranStatusState>()(
           events: [...get().events, ...surahs.map((surah) => ({ type: "surah_status_set" as const, at, surah, memorized }))],
         });
       },
+      setSurah: (surah, field, on) =>
+        set({ events: [...get().events, { type: "surah_status_set", at: Date.now(), surah, [field]: on }] }),
+      setAyah: (index, field, on) =>
+        set({ events: [...get().events, { type: "ayah_status_set", at: Date.now(), index, [field]: on }] }),
     }),
     {
       name: "durus:quran-status",
@@ -47,10 +49,3 @@ export const useQuranStatus = create<QuranStatusState>()(
     },
   ),
 );
-
-/* Surahs whose latest event says memorized. */
-export function memorizedSurahs(events: SurahStatusEvent[]): Set<number> {
-  const latest = new Map<number, boolean>();
-  for (const e of [...events].sort((a, b) => a.at - b.at)) if (e.memorized !== undefined) latest.set(e.surah, e.memorized);
-  return new Set([...latest].filter(([, v]) => v).map(([k]) => k));
-}
