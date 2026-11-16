@@ -1,6 +1,6 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-15, 22:05
+Updated: 2026-11-15, 22:40
 
 ## Now
 
@@ -9,6 +9,7 @@ Rollback if needed: republish update group e3d79cbb (the previous onboarding) wi
 
 ## Shipped
 
+- Fix (OTA group 008bcd4d): the owner could not get past Open because Begin was invisible. Liquid Glass does not draw inside a view whose opacity is animated, and Begin sat in a fade in. The same fault hid the glass behind the hifz chips, reminder rows, sign in card, Learn chips and Ask bar. All fades around glass are removed, the Open buttons appear on a timer in reserved space, and the primary button now has a solid lapis base so it cannot disappear. Rule for later: never put glass under an opacity animation.
 - Onboarding v3 (issue #2), OTA update group e676cf1b. Open (the word field drifts into the دُرُوس mark) leads to five full screen story pages with a story bar (tap, hold, swipe, 5 s each, still under Reduce Motion), then "What have you memorized?" (Al-Fatiha and Juz Amma as glass chips over a live Ayah Field), "Two gentle reminders" (morning adhkar 6:00, daily review 9:00), "Keep your progress" (sign in on a glass card), and your map with what was marked. The class, book, lesson and pace questions are gone; save writes Book 1, Lesson 1, 10 a day, no class nudge. Liquid Glass on buttons, chips, rows, the Ask bar and the sign in card, with the solid fallback. Tests cover the defaults, hifz written only on save, the keychain path, permission timing and story Reduce Motion. 245 tests pass. Not yet seen on a phone.
 - Real Quran text in onboarding (issue #3, closed). The Read hero shows Al-Fatiha 1:1 to 1:3 and the Ask hero shows 13:28 and 94:5, verbatim from Tanzil (source note above). Tanzil is credited in About with a link. Map and hifz use Tanzil's surah names and ayah counts.
 - Settings: a Morning adhkar switch, and the book shown above the lesson stepper.
