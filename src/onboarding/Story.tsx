@@ -32,12 +32,33 @@ const TICK_MS = 50;
 
 const useStyles = makeStyles((t) => ({
   root: { flex: 1 },
-  bar: { flexDirection: "row", gap: 4, paddingHorizontal: MARGIN, paddingTop: space(1) },
-  seg: { flex: 1, height: 3, borderRadius: 2, backgroundColor: t.colors.rule, overflow: "hidden" },
+  bar: {
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: MARGIN,
+    paddingTop: space(1),
+  },
+  seg: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: t.colors.rule,
+    overflow: "hidden",
+  },
   fill: { height: 3, borderRadius: 2, backgroundColor: t.colors.lapis },
-  skipRow: { flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: MARGIN, paddingTop: space(1) },
+  skipRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: MARGIN,
+    paddingTop: space(1),
+  },
   hero: { flex: 1 },
-  copy: { alignItems: "center", gap: space(1), paddingHorizontal: MARGIN, minHeight: 130 },
+  copy: {
+    alignItems: "center",
+    gap: space(1),
+    paddingHorizontal: MARGIN,
+    minHeight: 130,
+  },
   title: { fontSize: 34, lineHeight: 40, textAlign: "center" },
   line: { fontSize: 17, lineHeight: 24, textAlign: "center", maxWidth: 320 },
   actions: { paddingHorizontal: MARGIN, paddingBottom: space(1) },
@@ -47,7 +68,17 @@ const useStyles = makeStyles((t) => ({
   The bar owns the clock, so only the bar re-renders on each tick and the hero
   above it does not. It is remounted per page, which is what resets it.
 */
-function StoryBar({ page, paused, still, onEnd }: { page: number; paused: boolean; still: boolean; onEnd?: () => void }) {
+function StoryBar({
+  page,
+  paused,
+  still,
+  onEnd,
+}: {
+  page: number;
+  paused: boolean;
+  still: boolean;
+  onEnd?: () => void;
+}) {
   const s = useStyles();
   const [elapsed, setElapsed] = useState(0);
   const ended = useRef(false);
@@ -67,10 +98,19 @@ function StoryBar({ page, paused, still, onEnd }: { page: number; paused: boolea
 
   const fill = still ? 1 : Math.min(1, elapsed / PAGE_MS);
   return (
-    <View style={s.bar} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: STORY.length, now: page + 1 }}>
+    <View
+      style={s.bar}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 1, max: STORY.length, now: page + 1 }}
+    >
       {STORY.map((p, i) => (
         <View key={p.key} style={s.seg}>
-          <View style={[s.fill, { width: `${i < page ? 100 : i === page ? fill * 100 : 0}%` }]} />
+          <View
+            style={[
+              s.fill,
+              { width: `${i < page ? 100 : i === page ? fill * 100 : 0}%` },
+            ]}
+          />
         </View>
       ))}
     </View>
@@ -136,7 +176,9 @@ export function Story({ onDone }: { onDone: () => void }) {
   const Hero = item.Hero;
 
   return (
-    <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+    >
       <StoryBar
         key={`${page}-${restart}`}
         page={page}
@@ -156,14 +198,26 @@ export function Story({ onDone }: { onDone: () => void }) {
       <GestureDetector gesture={gesture}>
         <View style={s.hero} onLayout={onLayout} testID="story-stage">
           {size.width > 0 ? (
-            <Animated.View key={item.key} entering={FadeIn.duration(260)} style={{ flex: 1 }}>
-              <Hero width={size.width} height={size.height} active still={still} paused={paused} />
-            </Animated.View>
+            /* No fade here: the Learn and Ask heroes hold glass, which does not
+               draw under an animated opacity. Each hero animates itself. */
+            <View key={item.key} style={{ flex: 1 }}>
+              <Hero
+                width={size.width}
+                height={size.height}
+                active
+                still={still}
+                paused={paused}
+              />
+            </View>
           ) : null}
         </View>
       </GestureDetector>
 
-      <Animated.View key={`copy-${item.key}`} entering={FadeIn.duration(260)} style={s.copy}>
+      <Animated.View
+        key={`copy-${item.key}`}
+        entering={FadeIn.duration(260)}
+        style={s.copy}
+      >
         <Text variant="pageTitle" style={s.title}>
           {item.title}
         </Text>
@@ -173,7 +227,11 @@ export function Story({ onDone }: { onDone: () => void }) {
       </Animated.View>
 
       <View style={s.actions}>
-        <GlassButton label="Continue" primary onPress={() => go(page + 1 >= STORY.length ? STORY.length : page + 1)} />
+        <GlassButton
+          label="Continue"
+          primary
+          onPress={() => go(page + 1 >= STORY.length ? STORY.length : page + 1)}
+        />
       </View>
     </View>
   );

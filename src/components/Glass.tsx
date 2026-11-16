@@ -92,7 +92,9 @@ export function Glass({
     const { GlassView } = m;
     return (
       <GlassView
-        style={style}
+        /* The primary action also carries a solid lapis base, so it can never
+           vanish: Begin did once, when glass failed to draw under a fade. */
+        style={[style, primary ? { backgroundColor: theme.colors.lapis } : null]}
         glassEffectStyle="regular"
         isInteractive={interactive}
         tintColor={primary ? theme.colors.lapis : tint}

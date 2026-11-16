@@ -15,7 +15,6 @@ import {
 import Animated, {
   Easing,
   FadeIn,
-  FadeOut,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -265,6 +264,13 @@ function Open({
     );
   }, [still, progress]);
 
+  const [ready, setReady] = useState(still);
+  useEffect(() => {
+    if (still) return;
+    const id = setTimeout(() => setReady(true), OPEN_MS + 500);
+    return () => clearTimeout(id);
+  }, [still]);
+
   const mark = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [{ scale: 0.86 + 0.14 * progress.value }],
@@ -307,21 +313,26 @@ function Open({
             </Text>
           </Animated.View>
         </View>
-        <Animated.View
-          entering={
-            still ? undefined : FadeIn.delay(OPEN_MS + 500).duration(400)
-          }
-          style={s.actions}
-        >
-          <GlassButton label="Begin" primary onPress={onBegin} />
-          <Pressable
-            accessibilityRole="button"
-            onPress={onAccount}
-            style={s.textButton}
-          >
-            <Text color="lapis">I have an account</Text>
-          </Pressable>
-        </Animated.View>
+        {/*
+          No fade on this block: Liquid Glass does not draw inside a view whose
+          opacity is animated, which is how Begin went invisible. The buttons
+          appear on a timer instead, in space that is reserved from the start
+          so nothing shifts.
+        */}
+        <View style={[s.actions, { minHeight: 112 }]}>
+          {ready ? (
+            <>
+              <GlassButton label="Begin" primary onPress={onBegin} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={onAccount}
+                style={s.textButton}
+              >
+                <Text color="lapis">I have an account</Text>
+              </Pressable>
+            </>
+          ) : null}
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -503,7 +514,11 @@ export default function Onboarding() {
     See src/onboarding/save.ts for the rules, which are tested there.
   */
   const finish = useCallback(
-    async (opts?: { returning?: boolean; notifyNow?: boolean; from?: Step }) => {
+    async (opts?: {
+      returning?: boolean;
+      notifyNow?: boolean;
+      from?: Step;
+    }) => {
       if (profileId !== null) {
         await saveOnboarding(
           {
@@ -603,12 +618,9 @@ export default function Onboarding() {
           }
         />
 
-        <Animated.View
-          key={step}
-          entering={FadeIn.duration(240)}
-          exiting={FadeOut.duration(120)}
-          style={{ flex: 1 }}
-        >
+        {/* A plain view, not a fade: these steps hold glass, and glass does not
+            draw under an animated opacity. */}
+        <View key={step} style={{ flex: 1 }}>
           {step === "hifz" ? <Hifz chosen={chosen} toggle={toggle} /> : null}
 
           {step === "reminders" ? (
@@ -687,7 +699,7 @@ export default function Onboarding() {
           ) : null}
 
           {step === "map" ? <YourMap chosen={chosen} /> : null}
-        </Animated.View>
+        </View>
 
         {/* The sign in step has nothing here: its only ways forward are in the
             panel, which is what makes it a gate. */}

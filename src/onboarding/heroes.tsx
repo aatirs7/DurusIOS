@@ -41,10 +41,22 @@ import { AYAHS, SURAHS } from "./tanzil";
 */
 
 /* `paused` freezes a hero where it is (press and hold); `active` false resets it. */
-export type HeroProps = { width: number; height: number; active: boolean; still: boolean; paused?: boolean };
+export type HeroProps = {
+  width: number;
+  height: number;
+  active: boolean;
+  still: boolean;
+  paused?: boolean;
+};
 
 /* A beat counter that runs only while active. Under Reduce Motion it jumps to the end. */
-function useBeat(active: boolean, ms: number, still: boolean, end = 1000, paused = false): number {
+function useBeat(
+  active: boolean,
+  ms: number,
+  still: boolean,
+  end = 1000,
+  paused = false,
+): number {
   const [n, setN] = useState(0);
   useEffect(() => {
     if (!active) setN(0);
@@ -59,11 +71,17 @@ function useBeat(active: boolean, ms: number, still: boolean, end = 1000, paused
   return n;
 }
 
-const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
+const toArabicDigits = (n: number) =>
+  String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
 
 const useStyles = makeStyles((t) => ({
   center: { alignItems: "center", justifyContent: "center" },
-  ayahLine: { flexDirection: "row-reverse", alignItems: "center", justifyContent: "center", gap: space(1.25) },
+  ayahLine: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space(1.25),
+  },
   ayah: {
     ...arabicStyles.title,
     fontSize: 30,
@@ -97,11 +115,22 @@ const useStyles = makeStyles((t) => ({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
   },
-  counters: { flexDirection: "row", justifyContent: "center", gap: space(5), marginTop: space(2) },
+  counters: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: space(5),
+    marginTop: space(2),
+  },
   counter: { alignItems: "center" },
   numeral: { fontSize: 40, lineHeight: 46 },
   wave: { position: "absolute", borderWidth: 1.5, borderColor: t.colors.lapis },
-  chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1), maxWidth: 320 },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: space(1),
+    maxWidth: 320,
+  },
   chip: {
     minWidth: 130,
     alignItems: "center",
@@ -110,7 +139,11 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space(2),
     overflow: "hidden",
   },
-  week: { flexDirection: "row", justifyContent: "center", marginTop: space(2.5) },
+  week: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: space(2.5),
+  },
   inputBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -121,7 +154,14 @@ const useStyles = makeStyles((t) => ({
     gap: space(1),
     overflow: "hidden",
   },
-  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: t.colors.lapis, alignItems: "center", justifyContent: "center" },
+  send: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: t.colors.lapis,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   result: {
     backgroundColor: t.colors.surface,
     borderRadius: 18,
@@ -179,7 +219,10 @@ export function ReadHero({ width, active, still, paused }: HeroProps) {
                   style={[
                     s.ayah,
                     lit
-                      ? { color: theme.colors.lapis, backgroundColor: theme.colors.lapisWash }
+                      ? {
+                          color: theme.colors.lapis,
+                          backgroundColor: theme.colors.lapisWash,
+                        }
                       : lifted
                         ? { color: theme.colors.lapis }
                         : null,
@@ -199,17 +242,39 @@ export function ReadHero({ width, active, still, paused }: HeroProps) {
       ))}
 
       {showCard ? (
-        <Animated.View entering={FadeInUp.duration(260)} exiting={FadeOut.duration(160)} style={[s.card, { top: space(1) }]}>
-          <Text selectable={false} style={[s.ayah, { fontSize: 34, lineHeight: 56, color: theme.colors.lapis }]}>
+        <Animated.View
+          entering={FadeInUp.duration(260)}
+          exiting={FadeOut.duration(160)}
+          style={[s.card, { top: space(1) }]}
+        >
+          <Text
+            selectable={false}
+            style={[
+              s.ayah,
+              { fontSize: 34, lineHeight: 56, color: theme.colors.lapis },
+            ]}
+          >
             {cardWord}
           </Text>
           <Text>Lord</Text>
           {/* English and Arabic on separate nodes, never one, or bidi reorders them. */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space(0.75) }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: space(0.75),
+            }}
+          >
             <Text variant="label" color="inkSoft">
               Root
             </Text>
-            <Text selectable={false} style={[s.ayah, { fontSize: 18, lineHeight: 30, color: theme.colors.inkSoft }]}>
+            <Text
+              selectable={false}
+              style={[
+                s.ayah,
+                { fontSize: 18, lineHeight: 30, color: theme.colors.inkSoft },
+              ]}
+            >
               ر ب ب
             </Text>
           </View>
@@ -235,11 +300,16 @@ export function MapHero({ width, height, active, still, paused }: HeroProps) {
   const beat = useBeat(active, 50, still, 90, paused);
   const rise = Math.min(1, beat / 40);
   const lit = Math.round(ammaSize * rise);
-  const understoodCount = still ? 12 : Math.max(0, Math.min(12, Math.floor((beat - 40) / 4)));
-  const understood = new Set(SURAHS.slice(114 - understoodCount).map((x) => x.n));
+  const understoodCount = still
+    ? 12
+    : Math.max(0, Math.min(12, Math.floor((beat - 40) / 4)));
+  const understood = new Set(
+    SURAHS.slice(114 - understoodCount).map((x) => x.n),
+  );
   const isUnderstood = (i: number) => {
     if (understoodCount === 0 || i < ammaStart) return false;
-    for (const x of SURAHS.slice(114 - understoodCount)) if (i >= x.start && i < x.start + x.ayahs) return true;
+    for (const x of SURAHS.slice(114 - understoodCount))
+      if (i >= x.start && i < x.start + x.ayahs) return true;
     return false;
   };
 
@@ -259,7 +329,10 @@ export function MapHero({ width, height, active, still, paused }: HeroProps) {
           </Text>
         </View>
         <View style={s.counter}>
-          <Text variant="numeral" style={s.numeral}>{`${understood.size}`}</Text>
+          <Text
+            variant="numeral"
+            style={s.numeral}
+          >{`${understood.size}`}</Text>
           <Text variant="label" color="inkSoft">
             Surahs understood
           </Text>
@@ -285,7 +358,11 @@ function Wave({ delay, still }: { delay: number; still: boolean }) {
   useEffect(() => {
     if (still) return;
     const id = setTimeout(() => {
-      p.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad) }), -1, false);
+      p.value = withRepeat(
+        withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad) }),
+        -1,
+        false,
+      );
     }, delay);
     return () => {
       clearTimeout(id);
@@ -319,18 +396,32 @@ export function LearnHero({ width, active, still, paused }: HeroProps) {
             <Wave delay={900} still={still} />
           </>
         ) : null}
-        <Text selectable={false} style={[s.ayah, { fontSize: 72, lineHeight: 130, color: theme.colors.ink }]}>
+        <Text
+          selectable={false}
+          style={[
+            s.ayah,
+            { fontSize: 72, lineHeight: 130, color: theme.colors.ink },
+          ]}
+        >
           {word}
         </Text>
       </View>
       <View style={[s.chips, { minHeight: 110 }]}>
         {showChips
-          ? OPTIONS.map((o, i) => (
-              <Animated.View key={o} entering={FadeInDown.delay(i * 70).duration(240)}>
-                <Glass style={s.chip} tint={picked && o === RIGHT ? theme.colors.verdigris : undefined}>
-                  <Text color={picked && o === RIGHT ? "paper" : "ink"}>{o}</Text>
+          ? OPTIONS.map((o) => (
+              /* Glass chips: no opacity fade (glass will not draw under one). */
+              <View key={o}>
+                <Glass
+                  style={s.chip}
+                  tint={
+                    picked && o === RIGHT ? theme.colors.verdigris : undefined
+                  }
+                >
+                  <Text color={picked && o === RIGHT ? "paper" : "ink"}>
+                    {o}
+                  </Text>
                 </Glass>
-              </Animated.View>
+              </View>
             ))
           : null}
       </View>
@@ -350,9 +441,16 @@ export function BarakahHero({ width, active, still, paused }: HeroProps) {
   return (
     <View style={[s.center, { width, flex: 1 }]}>
       <View style={s.center}>
-        <BarakahRing fills={[0, 1, 2, 3].map((i) => (i < done ? 1 : 0))} size={220} stroke={14} />
+        <BarakahRing
+          fills={[0, 1, 2, 3].map((i) => (i < done ? 1 : 0))}
+          size={220}
+          stroke={14}
+        />
         <View style={[s.center, { position: "absolute" }]}>
-          <Text variant="numeral" style={{ fontSize: 56, lineHeight: 62 }}>{`${done}`}</Text>
+          <Text
+            variant="numeral"
+            style={{ fontSize: 56, lineHeight: 62 }}
+          >{`${done}`}</Text>
           <Text variant="label" color="inkSoft">
             of 4 today
           </Text>
@@ -384,10 +482,24 @@ export function AskHero({ width, active, still, paused }: HeroProps) {
   const shown = still ? 2 : after > 6 ? (after > 14 ? 2 : 1) : 0;
 
   return (
-    <View style={{ width, flex: 1, justifyContent: "center", paddingHorizontal: space(3), gap: space(2) }}>
-      <View style={{ gap: space(1.25), minHeight: 260, justifyContent: "flex-end" }}>
+    <View
+      style={{
+        width,
+        flex: 1,
+        justifyContent: "center",
+        paddingHorizontal: space(3),
+        gap: space(2),
+      }}
+    >
+      <View
+        style={{ gap: space(1.25), minHeight: 260, justifyContent: "flex-end" }}
+      >
         {RESULTS.slice(0, shown).map((r) => (
-          <Animated.View key={r.ref} entering={FadeInDown.duration(300)} style={s.result}>
+          <Animated.View
+            key={r.ref}
+            entering={FadeInDown.duration(300)}
+            style={s.result}
+          >
             <View style={s.refRow}>
               <View style={s.ref}>
                 <Text variant="label" color="lapis">
@@ -398,19 +510,35 @@ export function AskHero({ width, active, still, paused }: HeroProps) {
                 {SURAHS[r.surah - 1].en}
               </Text>
             </View>
-            <Text selectable={false} style={[s.ayah, { fontSize: 22, lineHeight: 44 }]}>
+            <Text
+              selectable={false}
+              style={[s.ayah, { fontSize: 22, lineHeight: 44 }]}
+            >
               {AYAHS[r.ref]}
             </Text>
           </Animated.View>
         ))}
       </View>
       <Glass style={s.inputBar}>
-        <Text color={typed > 0 ? "ink" : "inkFaint"} style={{ flex: 1 }} numberOfLines={1}>
-          {typed > 0 ? QUESTION.slice(0, typed) : "Ask about a surah, or how you are feeling"}
+        <Text
+          color={typed > 0 ? "ink" : "inkFaint"}
+          style={{ flex: 1 }}
+          numberOfLines={1}
+        >
+          {typed > 0
+            ? QUESTION.slice(0, typed)
+            : "Ask about a surah, or how you are feeling"}
         </Text>
         <View style={s.send}>
           <Svg width={16} height={16} viewBox="0 0 24 24">
-            <Path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" stroke={theme.colors.paper} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <Path
+              d="M12 19V5M5.5 11.5L12 5l6.5 6.5"
+              stroke={theme.colors.paper}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
           </Svg>
         </View>
       </Glass>
@@ -419,9 +547,34 @@ export function AskHero({ width, active, still, paused }: HeroProps) {
 }
 
 export const STORY = [
-  { key: "read", title: "Read the Quran", line: "Translation and footnotes under every ayah. Tap a word to hear it.", Hero: ReadHero },
-  { key: "map", title: "See what you carry", line: "Every ayah is a dot. Light it as you memorize and understand.", Hero: MapHero },
-  { key: "learn", title: "Learn the Arabic", line: "The Quran's most common words, brought back just before you forget them.", Hero: LearnHero },
-  { key: "barakah", title: "Build barakah", line: "Small daily practices, measured by consistency.", Hero: BarakahHero },
-  { key: "ask", title: "Ask", line: "Say how you feel. Durus points you to ayahs to read.", Hero: AskHero },
+  {
+    key: "read",
+    title: "Read the Quran",
+    line: "Translation and footnotes under every ayah. Tap a word to hear it.",
+    Hero: ReadHero,
+  },
+  {
+    key: "map",
+    title: "See what you carry",
+    line: "Every ayah is a dot. Light it as you memorize and understand.",
+    Hero: MapHero,
+  },
+  {
+    key: "learn",
+    title: "Learn the Arabic",
+    line: "The Quran's most common words, brought back just before you forget them.",
+    Hero: LearnHero,
+  },
+  {
+    key: "barakah",
+    title: "Build barakah",
+    line: "Small daily practices, measured by consistency.",
+    Hero: BarakahHero,
+  },
+  {
+    key: "ask",
+    title: "Ask",
+    line: "Say how you feel. Durus points you to ayahs to read.",
+    Hero: AskHero,
+  },
 ] as const;
