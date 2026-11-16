@@ -28,5 +28,5 @@ export default function Boot() {
 
   if (!signedIn) return <Redirect href={onboardedAt === null ? "/onboarding" : "/welcome"} />;
   if (onboardedAt === null) return <Redirect href="/onboarding" />;
-  return <Redirect href="/today" />;
+  return <Redirect href="/home" />;
 }

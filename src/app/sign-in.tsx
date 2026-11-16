@@ -146,7 +146,7 @@ export default function SignIn() {
       /* ClerkGate binds the session to a local profile; this screen's only job
          is over. replace rather than back, so the stack has no signed-out
          screen left behind it. */
-      router.replace("/today");
+      router.replace("/home");
     } catch (e) {
       setError(message(e));
     } finally {

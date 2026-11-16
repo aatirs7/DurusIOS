@@ -734,7 +734,7 @@ export default function Onboarding() {
             <GlassButton
               label="Open Durus"
               primary
-              onPress={() => router.replace(chosen.size > 0 ? "/map" : "/read")}
+              onPress={() => router.replace(chosen.size > 0 ? "/map" : "/home")}
             />
           ) : null}
         </View>

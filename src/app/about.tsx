@@ -117,7 +117,7 @@ export default function About() {
 
         {/*
           Tanzil's terms: credit the source clearly and link to tanzil.net so
-          users can track changes. Remove with src/onboarding/tanzil.ts when
+          users can track changes. Remove with src/quran/tanzil.ts when
           Quran Foundation sync replaces it.
         */}
         <View style={s.group}>
@@ -130,10 +130,11 @@ export default function About() {
               {TANZIL_CREDIT.version}
             </Text>
             <Text variant="label" color="inkFaint" style={s.centred}>
-              The Quran text in the introduction is the Tanzil Uthmani text,
-              copied verbatim, under the Creative Commons Attribution 3.0
-              licence. Surah names and ayah counts are from Tanzil&apos;s
-              metadata.
+              The Quran text in Durus is the Tanzil Uthmani text, copied
+              verbatim, under the Creative Commons Attribution 3.0 licence.
+              Surah names, ayah counts and juz are from Tanzil&apos;s metadata.
+              It will be replaced by Quran.com data once that connection is
+              set up.
             </Text>
             <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(TANZIL_CREDIT.url)}>
               <Text color="lapis">tanzil.net</Text>

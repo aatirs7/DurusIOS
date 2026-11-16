@@ -21,6 +21,13 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs tintColor={theme.colors.lapis} minimizeBehavior="onScrollDown">
+      {/* Search is home: the app opens here, to a centred search bar, the way
+          Claude opens. It is an ordinary first tab, not the separate search
+          circle, so getting back to it is one tap on the bar like any other. */}
+      <NativeTabs.Trigger name="home">
+        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="magnifyingglass" />
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="read">
         <NativeTabs.Trigger.Label>Read</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "book", selected: "book.fill" }} />
@@ -36,12 +43,6 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="barakah">
         <NativeTabs.Trigger.Label>Barakah</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: "leaf", selected: "leaf.fill" }} />
-      </NativeTabs.Trigger>
-      {/* The search role gives Ask its own glass circle beside the bar on
-          iOS 26, which is what the spec asked for when the SDK supports it.
-          Expo Router 55 does. */}
-      <NativeTabs.Trigger name="ask" role="search">
-        <NativeTabs.Trigger.Label>Ask</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

@@ -70,7 +70,7 @@ export default function Welcome() {
     the account they are already signed in to.
   */
   useEffect(() => {
-    if (isSignedIn) router.replace("/today");
+    if (isSignedIn) router.replace("/home");
   }, [isSignedIn, router]);
 
   return (
@@ -109,7 +109,7 @@ export default function Welcome() {
       </View>
 
       <View style={s.actions}>
-        <SignInPanel onSignedIn={() => router.replace("/today")} />
+        <SignInPanel onSignedIn={() => router.replace("/home")} />
 
         {/*
           A way in for somebody who has never set Durus up on this phone.
