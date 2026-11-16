@@ -1,14 +1,19 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-15, 22:40
+Updated: 2026-11-16, 03:10
 
 ## Now
 
-Issue #2 (onboarding v3) is shipped over the air and waits on a look from the owner. It stays open until there is a screen recording: this Windows machine cannot run iOS, so the owner records it, or Prime does once a Mac or simulator is available.
-Rollback if needed: republish update group e3d79cbb (the previous onboarding) with eas update:republish.
+Read, Map and Search are live over the air (update group f992871f) and wait on a look from the owner on a phone. Rollback: republish group 008bcd4d.
+Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
+Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Search is home (OTA f992871f). The app opens to a centred search bar, Claude style, that rises to the top as you type. Tabs are now Search, Read, Map, Learn, Barakah; the separate Ask circle is gone. Search is deterministic and offline: references (2:255), surah numbers and names (kahf, Al-Mulk, the cave), juz (juz 30, juz amma), and Arabic words matched through Tanzil's Simple Clean text as a hidden search key, so typed Arabic finds Uthmani spelling. Feelings and topics answer "being reviewed" until the owner approves the eight seed topics.
+- Read tab: continue reading, then surahs or juz. The reader shows the full Tanzil Uthmani text verbatim in Amiri Quran, with the basmala as a header (split off 112 surahs and proven to rejoin byte for byte). Tap an ayah for a Liquid Glass bar: memorized, understood, share. Floating glass back button, a surah and juz pill that opens a Surah or Juz navigator, and Aa for the reading view and Arabic size. The view switcher lists Arabic, Translation, Word by word, Transliteration and Transliteration by word; only Arabic works, and the other four say "Comes with Quran.com". They are not machine made: the app's transliterator was built for vocabulary and does not know recitation rules.
+- Map tab: the Ayah Field with the user's marks (saffron memorized, teal understood), counters, a filter, and marking a whole surah from the list. Per-ayah marking is in the reader.
+- Everything above is on the phone and works offline. Only JavaScript and a font were added (@expo-google-fonts/amiri-quran), so no build was needed.
 - Fix (OTA group 008bcd4d): the owner could not get past Open because Begin was invisible. Liquid Glass does not draw inside a view whose opacity is animated, and Begin sat in a fade in. The same fault hid the glass behind the hifz chips, reminder rows, sign in card, Learn chips and Ask bar. All fades around glass are removed, the Open buttons appear on a timer in reserved space, and the primary button now has a solid lapis base so it cannot disappear. Rule for later: never put glass under an opacity animation.
 - Onboarding v3 (issue #2), OTA update group e676cf1b. Open (the word field drifts into the دُرُوس mark) leads to five full screen story pages with a story bar (tap, hold, swipe, 5 s each, still under Reduce Motion), then "What have you memorized?" (Al-Fatiha and Juz Amma as glass chips over a live Ayah Field), "Two gentle reminders" (morning adhkar 6:00, daily review 9:00), "Keep your progress" (sign in on a glass card), and your map with what was marked. The class, book, lesson and pace questions are gone; save writes Book 1, Lesson 1, 10 a day, no class nudge. Liquid Glass on buttons, chips, rows, the Ask bar and the sign in card, with the solid fallback. Tests cover the defaults, hifz written only on save, the keychain path, permission timing and story Reduce Motion. 245 tests pass. Not yet seen on a phone.
 - Real Quran text in onboarding (issue #3, closed). The Read hero shows Al-Fatiha 1:1 to 1:3 and the Ask hero shows 13:28 and 94:5, verbatim from Tanzil (source note above). Tanzil is credited in About with a link. Map and hifz use Tanzil's surah names and ayah counts.
@@ -32,9 +37,13 @@ Rollback if needed: republish update group e3d79cbb (the previous onboarding) wi
 
 ## Questions
 
+- Approve the eight topic seeds for search (from the owner's handoff, section 6): anxiety (94, 13:28, 65:2-3, 2:286), grief (2:155-157, 93, 12), gratitude (55, 14:7), feeling distant (2:186, 39:53, 50:16), before sleep (67, 2:255, 2:285-286, 112, 113, 114), Friday (18), patience (94:5-6, 2:153, 3:200), repentance (39:53, 4:110, 25:70). Approving is a one-line change per entry in src/quran/themes.ts.
+- Onboarding's last story page is still titled "Ask" and shows a feelings query, which the real search answers with "being reviewed" until the topics are approved. Retitle it "Search" and show a surah search instead?
+- Font check on a phone: these ayahs hold the rarest Uthmani marks, so they are the best test of mark placement in Amiri Quran: 11:41, 12:11, 41:44, 21:88, 52:37, 2:245.
+- Still not built, and why: translation, footnotes, word by word and transliteration (need Quran Foundation); word and ayah audio (need Quran Foundation or QUL, licence per resource); Quranic Words in Learn (needs lemma data); adhkar flow (needs verified adhkar.json); widgets (native, so they wait for a batched build); AI Ask (owner chose deterministic for now).
+
 - Returning accounts: "I have an account" and keychain sessions now skip the course defaults (and, for "I have an account", the reminders), because a settings write stamped with the current time would beat the server's values and reset that person's lesson and pace. New sign ins via Begin still get the defaults. Confirm that is the intent.
 - Settings shows the book instead of a picker, because Books 2 and 3 have no content yet. It becomes a picker when Book 2 is seeded.
-- "Open Durus" lands on Map (if anything was marked) or Read, and both are still placeholders. The hifz line "You can add more on the Map" is not true yet. Should the Map tab show the Ayah Field with the user's marks? It would use the same Tanzil metadata, which #3 scoped to onboarding only.
 - The sign in line promises "Your map, lessons and practice, saved if you change phones", but hifz marks and Barakah are stored on the device only so far. Change the line, or move both into sync?
 - The Read hero's line promises translation and footnotes, but the hero shows no English (licence). Keep the line?
 - The story bar is drawn plain, not on glass: a glass capsule behind a 3 pt bar read as clutter. Say if it should be glass anyway.
