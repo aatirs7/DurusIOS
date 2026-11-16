@@ -45,10 +45,22 @@ const useStyles = makeStyles((t) => ({
   sizeBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: t.colors.rule, alignItems: "center", justifyContent: "center" },
 }));
 
-function Sheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
+function Sheet({
+  visible,
+  onClose,
+  onDismiss,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  /* Fires once the sheet has fully gone. Navigation waits for it: replacing
+     the screen while its sheet is still closing can leave iOS unresponsive. */
+  onDismiss?: () => void;
+  children: React.ReactNode;
+}) {
   const s = useStyles();
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose} onDismiss={onDismiss}>
       <View style={s.sheet}>
         <View style={s.grabber} />
         {children}
@@ -63,18 +75,20 @@ export function NavigateSheet({
   onClose,
   current,
   onGo,
+  onDismiss,
 }: {
   visible: boolean;
   onClose: () => void;
   current: { surah: number; juz: number };
   onGo: (surah: number, ayah: number) => void;
+  onDismiss?: () => void;
 }) {
   const s = useStyles();
   const [tab, setTab] = useState<"surah" | "juz">("surah");
   const juzRows = useMemo(() => JUZ_STARTS.map((start, i) => ({ juz: i + 1, ...refOf(start) })), []);
 
   return (
-    <Sheet visible={visible} onClose={onClose}>
+    <Sheet visible={visible} onClose={onClose} onDismiss={onDismiss}>
       <View style={s.seg}>
         {(["surah", "juz"] as const).map((k) => (
           <Pressable key={k} accessibilityRole="button" accessibilityState={{ selected: tab === k }} onPress={() => setTab(k)} style={[s.segItem, tab === k && s.segOn]}>

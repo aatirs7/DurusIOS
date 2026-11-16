@@ -67,3 +67,12 @@ export function surahForDisplay(n: number): { basmala: string | null; ayahs: str
   const words = all[0].split(" ");
   return { basmala: words.slice(0, 4).join(" "), ayahs: [words.slice(4).join(" "), ...all.slice(1)] };
 }
+
+/* One ayah for display by global index, with the basmala header split off a
+   surah's first ayah exactly as the reader does it. */
+export function ayahForDisplay(index: number): string {
+  const { surah, ayah } = refOf(index);
+  const line = quranText()[index];
+  if (ayah !== 1 || !SPLIT.has(surah)) return line;
+  return line.split(" ").slice(4).join(" ");
+}

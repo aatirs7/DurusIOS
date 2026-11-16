@@ -7,9 +7,9 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { Arabic } from "@/components/Arabic";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { search, type Hit } from "@/quran/search";
+import { parseThemeRef, search, type Hit } from "@/quran/search";
 import { SURAHS } from "@/quran/tanzil";
-import { quranText, refOf, searchKeys } from "@/quran/text";
+import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
 import { usePrefs } from "@/state/prefs";
 import { FONTS } from "@/theme/typography";
 import { MARGIN, RADIUS, space } from "@/theme/layout";
@@ -102,12 +102,22 @@ export default function Home() {
       );
     }
     if (item.kind === "theme") {
+      /* Only verified topics reach here. Each reference opens in the reader. */
       return (
         <View style={s.result}>
           <Text>{item.theme.label}</Text>
-          <Text variant="label" color="inkSoft">
-            {item.theme.refs.join(", ")}
-          </Text>
+          <View style={[s.chips, { justifyContent: "flex-start", paddingTop: space(0.5) }]}>
+            {item.theme.refs.map((r) => {
+              const at = parseThemeRef(r);
+              return (
+                <Pressable key={r} accessibilityRole="button" onPress={() => open(at.surah, at.ayah)} style={s.chip}>
+                  <Text variant="label" color="lapis">
+                    {r.includes(":") ? r : SURAHS[at.surah - 1].en}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       );
     }
@@ -124,7 +134,7 @@ export default function Home() {
           </Text>
         </View>
         <Text selectable={false} numberOfLines={3} style={s.ayah}>
-          {quranText()[item.index]}
+          {ayahForDisplay(item.index)}
         </Text>
       </Pressable>
     );

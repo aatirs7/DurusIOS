@@ -116,6 +116,14 @@ for (const s of surahs) {
   const rest = words.slice(4).join(" ");
   if (`${head} ${rest}` !== line) throw new Error(`Split of ${s.n}:1 does not rejoin`);
   split.push(s.n);
+
+  /* The search key carries the same leading basmala. It is never shown, so it
+     is trimmed here, or every query for its words would match 112 first
+     ayahs. Checked the same way as the text. */
+  const keyWords = search[s.start].split(" ");
+  const cleanBasmala = search[0].split(" ");
+  if (keyWords.slice(0, 4).join(" ") !== cleanBasmala.join(" ")) throw new Error(`Search key for ${s.n}:1 does not open with the basmala`);
+  search[s.start] = keyWords.slice(4).join(" ");
 }
 if (split.length !== 112) throw new Error(`Expected 112 basmala splits, got ${split.length}`);
 

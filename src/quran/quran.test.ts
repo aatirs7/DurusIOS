@@ -1,7 +1,7 @@
 import { normalizeArabic, search } from "./search";
 import { foldStatus, totals } from "./status";
 import { BASMALA_SPLIT, SURAHS } from "./tanzil";
-import { globalIndex, quranText, refOf, searchKeys, surahForDisplay } from "./text";
+import { ayahForDisplay, globalIndex, quranText, refOf, searchKeys, surahForDisplay } from "./text";
 import { THEMES } from "./themes";
 
 describe("quran text", () => {
@@ -19,6 +19,11 @@ describe("quran text", () => {
     }
     expect(surahForDisplay(1).basmala).toBeNull();
     expect(surahForDisplay(9).basmala).toBeNull();
+  });
+
+  it("shows a first ayah without its basmala everywhere", () => {
+    expect(ayahForDisplay(SURAHS[1].start)).toBe(surahForDisplay(2).ayahs[0]);
+    expect(ayahForDisplay(0)).toBe(quranText()[0]);
   });
 
   it("maps references both ways", () => {
@@ -57,6 +62,12 @@ describe("search", () => {
       expect(r.hits.length).toBeLessThanOrEqual(40);
     }
     expect(s("الرحمن").hits.some((h) => h.kind === "text" && h.surah === 1)).toBe(true);
+  });
+
+  it("does not match the basmala on the first ayah of every surah", () => {
+    const r = s("الرحيم");
+    expect(r.hits.some((h) => h.kind === "text" && h.surah === 2 && h.ayah === 1)).toBe(false);
+    expect(r.hits.some((h) => h.kind === "text" && h.surah === 1 && h.ayah === 1)).toBe(true);
   });
 
   it("folds harakat and alef forms", () => {

@@ -146,11 +146,16 @@ export default function SurahReader() {
 
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<string>[] }) => {
     const first = viewableItems.find((v) => v.index !== null);
-    if (first?.index != null) {
-      setVisibleAyah(first.index + 1);
-      setLastRead({ surah: n, ayah: first.index + 1 });
-    }
+    if (first?.index != null) setVisibleAyah(first.index + 1);
   }).current;
+
+  /* The reading position is saved a moment after scrolling settles, not on
+     every ayah that passes, which would write to storage dozens of times a
+     second during a fling. */
+  useEffect(() => {
+    const id = setTimeout(() => setLastRead({ surah: n, ayah: visibleAyah }), 800);
+    return () => clearTimeout(id);
+  }, [n, visibleAyah, setLastRead]);
 
   const surahActions = useCallback(() => {
     let mAll = true;
@@ -172,13 +177,21 @@ export default function SurahReader() {
     );
   }, [maps, meta, n, setSurah]);
 
+  /* Chosen in the sheet, acted on once the sheet has fully closed. */
+  const pending = useRef<{ surah: number; ayah: number } | null>(null);
   const go = (surah: number, ayah: number) => {
+    pending.current = { surah, ayah };
     setNavOpen(false);
-    if (surah === n) {
-      list.current?.scrollToIndex({ index: ayah - 1, viewPosition: 0.2, animated: true });
+  };
+  const afterSheet = () => {
+    const to = pending.current;
+    pending.current = null;
+    if (!to) return;
+    if (to.surah === n) {
+      list.current?.scrollToIndex({ index: to.ayah - 1, viewPosition: 0.2, animated: true });
       return;
     }
-    router.replace(`/surah/${surah}?ayah=${ayah}`);
+    router.replace(`/surah/${to.surah}?ayah=${to.ayah}`);
   };
 
   const textStyle = { fontSize: size, lineHeight: Math.round(size * 2.15) };
@@ -350,7 +363,7 @@ export default function SurahReader() {
         </Pressable>
       </View>
 
-      <NavigateSheet visible={navOpen} onClose={() => setNavOpen(false)} current={{ surah: n, juz }} onGo={go} />
+      <NavigateSheet visible={navOpen} onClose={() => setNavOpen(false)} current={{ surah: n, juz }} onGo={go} onDismiss={afterSheet} />
       <ViewSheet visible={viewOpen} onClose={() => setViewOpen(false)} />
     </View>
   );
