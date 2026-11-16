@@ -13,7 +13,17 @@ import { jsonStorage, onRehydrate, type Hydratable } from "./storage";
 type PrefsState = Hydratable & {
   adhkarReminder: boolean;
   setAdhkarReminder: (on: boolean) => void;
+  /* Where reading stopped, for Resume. */
+  lastRead: { surah: number; ayah: number } | null;
+  setLastRead: (at: { surah: number; ayah: number }) => void;
+  /* The reader's view and Arabic size. */
+  readerView: ReaderView;
+  setReaderView: (v: ReaderView) => void;
+  arabicSize: number;
+  setArabicSize: (n: number) => void;
 };
+
+export type ReaderView = "arabic" | "translation" | "wordTranslation" | "transliteration" | "wordTransliteration";
 
 export const usePrefs = create<PrefsState>()(
   persist(
@@ -22,6 +32,12 @@ export const usePrefs = create<PrefsState>()(
       markHydrated: () => set({ _hydrated: true }),
       adhkarReminder: false,
       setAdhkarReminder: (adhkarReminder) => set({ adhkarReminder }),
+      lastRead: null,
+      setLastRead: (lastRead) => set({ lastRead }),
+      readerView: "arabic",
+      setReaderView: (readerView) => set({ readerView }),
+      arabicSize: 28,
+      setArabicSize: (arabicSize) => set({ arabicSize: Math.min(40, Math.max(22, arabicSize)) }),
     }),
     {
       name: "durus:prefs",

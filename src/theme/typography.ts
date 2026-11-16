@@ -32,6 +32,9 @@ export const FONTS = {
   mono: "IBMPlexMono_400Regular",
   arabicRegular: "Amiri_400Regular",
   arabicBold: "Amiri_700Bold",
+  /* Amiri Quran: the Amiri cut made for Quranic text, with the Uthmani marks
+     placed for it. Only Quran text uses it. */
+  quran: "AmiriQuran_400Regular",
 } as const;
 
 /* All three families are now the real thing. The About screen reads this. */

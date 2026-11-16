@@ -18,7 +18,6 @@ let search: string[] | null = null;
 
 export function quranText(): string[] {
   if (!uthmani) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     uthmani = (require("../../assets/quran/uthmani.json") as TextFile).text;
   }
   return uthmani;
@@ -27,7 +26,6 @@ export function quranText(): string[] {
 /* The Simple Clean text. A search key only: never displayed. */
 export function searchKeys(): string[] {
   if (!search) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     search = (require("../../assets/quran/search.json") as TextFile).text;
   }
   return search;

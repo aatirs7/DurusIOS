@@ -1,5 +1,6 @@
 import { ClerkProvider } from "@clerk/clerk-expo";
 import { Amiri_400Regular, Amiri_700Bold } from "@expo-google-fonts/amiri";
+import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
 import {
   IBMPlexMono_400Regular,
   IBMPlexMono_500Medium,
@@ -60,6 +61,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Amiri_400Regular,
     Amiri_700Bold,
+    AmiriQuran_400Regular,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     /* Each weight is its OWN family, and fontWeight is never set anywhere in
