@@ -26,7 +26,8 @@ export type Hit =
   | { kind: "text"; surah: number; ayah: number; index: number }
   | { kind: "theme"; theme: Theme };
 
-export type SearchResult = { hits: Hit[]; total: number; pendingTopic: string | null };
+/* `label` heads a list answer, such as "Meccan surahs". */
+export type SearchResult = { hits: Hit[]; total: number; pendingTopic: string | null; label?: string | null };
 
 const TEXT_LIMIT = 40;
 
@@ -123,6 +124,11 @@ export function search(raw: string, keys: () => string[]): SearchResult {
   }
 
   const n = normalizeLatin(q);
+
+  /* General questions answered from the metadata. */
+  const general = generalQuery(n);
+  if (general) return general;
+
   const compact = n.replace(/\s/g, "");
   const scored: { surah: number; score: number }[] = [];
   NAME_KEYS.forEach((k, i) => {
@@ -133,16 +139,162 @@ export function search(raw: string, keys: () => string[]): SearchResult {
     if (score) scored.push({ surah: i + 1, score });
   });
   scored.sort((a, b) => b.score - a.score || a.surah - b.surah);
-  const hits: Hit[] = scored.map((x) => ({ kind: "surah", surah: x.surah }));
+  const surahHits: Hit[] = scored.map((x) => ({ kind: "surah", surah: x.surah }));
+  const exactSurah = scored.length > 0 && scored[0].score === 3;
 
-  const words = new Set(n.split(" "));
-  let pendingTopic: string | null = null;
-  for (const t of THEMES) {
-    if (!t.keywords.some((k) => words.has(k))) continue;
-    if (t.verified) hits.unshift({ kind: "theme", theme: t });
-    else pendingTopic ??= t.label;
+  const topics = matchThemes(n);
+  const verified = topics.filter((t) => t.theme.verified);
+  const pending = topics.find((t) => !t.theme.verified && (verified.length === 0 || t.score > verified[0].score));
+  const themeHits: Hit[] = verified.slice(0, 6).map((t) => ({ kind: "theme", theme: t.theme }));
+
+  /* A whole-name surah match leads; otherwise topics lead, because a phrase
+     like "i cant sleep" is about a feeling, not a surah called "sleep". */
+  const hits = exactSurah ? [...surahHits, ...themeHits] : [...themeHits, ...surahHits];
+  return { hits, total: hits.length, pendingTopic: pending ? pending.theme.label : null, label: null };
+}
+
+/* ---------- topic matching ---------- */
+
+/* Words that carry no topic: "i feel so anxious about work" keeps "anxious work". */
+const FILLER = new Set(
+  (
+    "i im ive id me my myself am is are was were be been being feel feeling feels felt so very really just kind of a an the " +
+    "about on for to of in at with when what which who how why do does did should can could would will want need help " +
+    "please verse verses ayah ayahs ayat surah surat sura quran read reading recite something some any that this " +
+    "its it give show find tell talk lot little bit today right now lately always never again more most dealing going through"
+  ).split(" "),
+);
+
+/* Simple ending folds, so "worrying", "worried" and "worries" meet "worry". */
+export function stem(w: string): string {
+  if (w.length <= 4) return w;
+  return w
+    .replace(/(ies|ied)$/, "y")
+    .replace(/(ing|ness|ful|ment)$/, "")
+    .replace(/(ed|ly|es)$/, "")
+    .replace(/s$/, "");
+}
+
+function editDistanceAtMostOne(a: string, b: string): boolean {
+  if (a === b) return true;
+  /* Two neighbouring letters swapped ("anxeity") counts as one slip. */
+  if (a.length === b.length) {
+    const i = [...a].findIndex((c, k) => c !== b[k]);
+    if (i >= 0 && i + 1 < a.length && a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2)) return true;
   }
-  return { hits, total: hits.length, pendingTopic };
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  let j = 0;
+  let edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      i++;
+      j++;
+      continue;
+    }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (b.length > a.length) j++;
+    else {
+      i++;
+      j++;
+    }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+}
+
+function wordMatches(queryWord: string, keyWord: string): boolean {
+  if (queryWord === keyWord) return true;
+  const a = stem(queryWord);
+  const b = stem(keyWord);
+  if (a === b) return true;
+  /* One typo is forgiven only in longer words, where it cannot turn one real
+     word into another. */
+  return a.length >= 5 && b.length >= 5 && editDistanceAtMostOne(a, b);
+}
+
+type Prepared = { theme: Theme; keys: string[][] };
+let prepared: Prepared[] | null = null;
+function prepare(): Prepared[] {
+  if (!prepared) {
+    prepared = THEMES.map((theme) => ({
+      theme,
+      keys: theme.keywords.map((k) => normalizeLatin(k).split(" ").filter(Boolean)),
+    }));
+  }
+  return prepared;
+}
+
+/*
+  Scores every topic against the query. A keyword phrase scores by its length
+  when all its words appear in order; single words score 1. Filler is matched
+  inside phrases ("cant sleep") but never on its own.
+*/
+export function matchThemes(normalized: string): { theme: Theme; score: number }[] {
+  const all = normalized.split(" ").filter(Boolean);
+  const content = all.filter((w) => !FILLER.has(w));
+  const out: { theme: Theme; score: number }[] = [];
+  for (const p of prepare()) {
+    let best = 0;
+    for (const key of p.keys) {
+      if (key.length === 0) continue;
+      if (key.length === 1) {
+        if (FILLER.has(key[0])) continue;
+        if (content.some((w) => wordMatches(w, key[0]))) best = Math.max(best, 1);
+        continue;
+      }
+      /* Phrase: its words in order, allowing filler between them. */
+      let k = 0;
+      for (const w of all) if (k < key.length && wordMatches(w, key[k])) k++;
+      if (k === key.length) best = Math.max(best, key.length + 1);
+    }
+    if (best > 0) out.push({ theme: p.theme, score: best });
+  }
+  return out.sort((a, b) => b.score - a.score || Number(b.theme.verified) - Number(a.theme.verified));
+}
+
+/* ---------- general questions ---------- */
+
+const bySize = [...SURAHS].sort((a, b) => b.ayahs - a.ayahs || a.n - b.n);
+
+function list(label: string, surahs: number[]): SearchResult {
+  return { hits: surahs.map((s) => ({ kind: "surah", surah: s })), total: surahs.length, pendingTopic: null, label };
+}
+
+export function generalQuery(n: string): SearchResult | null {
+  const has = (...w: string[]) => w.every((x) => n.split(" ").includes(x));
+  if (/\b(random|surprise me|any ayah|random ayah|pick (one|an ayah)|shuffle)\b/.test(n)) {
+    const index = Math.floor(Math.random() * TOTAL_AYAHS);
+    const s = SURAHS.filter((x) => x.start <= index).pop()!;
+    return { hits: [{ kind: "ayah", surah: s.n, ayah: index - s.start + 1, index }], total: 1, pendingTopic: null, label: "A random ayah" };
+  }
+  if (has("longest") && !/(ayah|verse)/.test(n)) return list("Longest surahs by ayahs", bySize.slice(0, 10).map((s) => s.n));
+  if (has("shortest") || /\b(short|small|easy) (surah|surahs|ones)\b/.test(n) || n === "short surahs")
+    return list("Shortest surahs by ayahs", [...bySize].reverse().slice(0, 15).map((s) => s.n));
+  if (/\b(meccan|makki|makkan|mecca|makkah) (surah|surahs)\b|^(meccan|makki)$/.test(n))
+    return list("Meccan surahs", SURAHS.filter((s) => s.place === "Meccan").map((s) => s.n));
+  if (/\b(medinan|madani|medina|madinah) (surah|surahs)\b|^(medinan|madani)$/.test(n))
+    return list("Medinan surahs", SURAHS.filter((s) => s.place === "Medinan").map((s) => s.n));
+  if (/\blast (ten|10) (surah|surahs)\b|^last (ten|10)$/.test(n)) return list("The last ten surahs", SURAHS.slice(104).map((s) => s.n));
+  if (/\bjuz amma (surah|surahs)\b/.test(n)) return list("Surahs of Juz Amma", SURAHS.slice(77).map((s) => s.n));
+  const count = /\b(\d{1,3}) (ayah|ayahs|ayat|verse|verses)\b/.exec(n);
+  if (count && /\b(surah|surahs|with)\b/.test(n)) {
+    const k = Number(count[1]);
+    return list(`Surahs with ${k} ayahs`, SURAHS.filter((s) => s.ayahs === k).map((s) => s.n));
+  }
+  return null;
+}
+
+/* Type-ahead: up to six completions for what has been typed so far. */
+export function suggest(raw: string): string[] {
+  const n = normalizeLatin(raw);
+  if (n.length < 2 || /\d/.test(n) || /[؀-ۿ]/.test(raw)) return [];
+  const out = new Set<string>();
+  for (const t of THEMES) if (t.verified && normalizeLatin(t.label).startsWith(n)) out.add(t.label);
+  for (const s of SURAHS) if (normalizeLatin(s.en).replace(/\s/g, "").includes(n.replace(/\s/g, ""))) out.add(s.en);
+  for (const g of ["Longest surahs", "Shortest surahs", "Meccan surahs", "Medinan surahs", "Last ten surahs", "Surprise me"])
+    if (normalizeLatin(g).startsWith(n)) out.add(g);
+  return [...out].slice(0, 6);
 }
 
 /* "65:2-3" -> surah 65, ayah 2. A whole surah ("94") opens at ayah 1. */

@@ -74,11 +74,57 @@ describe("search", () => {
     expect(normalizeArabic("ٱلْحَمْدُ")).toBe("الحمد");
   });
 
-  it("says a topic is under review instead of going silent", () => {
-    const r = s("I feel anxious about work");
-    expect(THEMES.every((t) => !t.verified)).toBe(true);
-    expect(r.pendingTopic).toBe("Anxiety, worry");
+  it("answers feelings in many phrasings", () => {
+    const topic = (q: string) => s(q).hits.find((h) => h.kind === "theme");
+    const cases: [string, string][] = [
+      ["I feel anxious about work", "anxiety"],
+      ["im so stressed rn", "anxiety"],
+      ["worrying about everything", "anxiety"],
+      ["i cant sleep", "sleep"],
+      ["what should i read before bed", "sleep"],
+      ["my grandmother passed away", "grief"],
+      ["feeling really grateful today", "gratitude"],
+      ["i feel far from allah", "distant"],
+      ["verses about patience", "patience"],
+      ["going through a hard time", "patience"],
+      ["i messed up and want to repent", "repent"],
+      ["jumuah", "friday"],
+      ["anxeity", "anxiety"],
+    ];
+    for (const [q, id] of cases) expect([q, (topic(q) as { theme: { id: string } } | undefined)?.theme.id]).toEqual([q, id]);
+  });
+
+  it("names a topic under review instead of going silent", () => {
+    const r = s("verses about parents");
     expect(r.hits.some((h) => h.kind === "theme")).toBe(false);
+    expect(r.pendingTopic).toBe("Parents");
+  });
+
+  it("answers general questions from the metadata", () => {
+    expect(s("longest surah").label).toMatch(/Longest/);
+    expect(s("longest surah").hits[0]).toMatchObject({ kind: "surah", surah: 2 });
+    expect(s("meccan surahs").hits.length).toBe(86);
+    expect(s("medinan surahs").hits.length).toBe(28);
+    expect(s("last ten surahs").hits.length).toBe(10);
+    expect(s("surahs with 7 ayahs").hits.some((h) => h.kind === "surah" && h.surah === 1)).toBe(true);
+    expect(s("surprise me").hits[0].kind).toBe("ayah");
+  });
+
+  it("keeps surah names ahead of topics when the name is exact", () => {
+    expect(s("yusuf").hits[0]).toMatchObject({ kind: "surah", surah: 12 });
+  });
+
+  it("only verified topics are ever returned, and every ref is real", () => {
+    for (const t of THEMES) {
+      for (const r of t.refs) {
+        const [sn, range] = r.split(":");
+        const surah = SURAHS[Number(sn) - 1];
+        expect([r, !!surah]).toEqual([r, true]);
+        if (range) for (const a of range.split("-").map(Number)) expect([r, a >= 1 && a <= surah.ayahs]).toEqual([r, true]);
+      }
+      expect(`${t.label}${t.keywords.join("")}`).not.toMatch(/—/);
+    }
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });
 });
 

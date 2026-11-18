@@ -7,7 +7,7 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { Arabic } from "@/components/Arabic";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { parseThemeRef, search, type Hit } from "@/quran/search";
+import { parseThemeRef, search, suggest, type Hit } from "@/quran/search";
 import { SURAHS } from "@/quran/tanzil";
 import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
 import { usePrefs } from "@/state/prefs";
@@ -33,6 +33,9 @@ const SUGGESTIONS: { label: string; query: string }[] = [
   { label: "Al-Mulk", query: "mulk" },
   { label: "Ya-Sin", query: "36" },
   { label: "Ar-Rahman", query: "55" },
+  { label: "I can't sleep", query: "i cant sleep" },
+  { label: "Feeling anxious", query: "feeling anxious" },
+  { label: "Surprise me", query: "surprise me" },
 ];
 
 const useStyles = makeStyles((t) => ({
@@ -70,6 +73,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
 
   const result = useMemo(() => search(query, searchKeys), [query]);
+  const completions = useMemo(() => suggest(query).filter((c) => c.toLowerCase() !== query.trim().toLowerCase()), [query]);
   const typing = query.trim().length > 0;
 
   const open = (surah: number, ayah?: number) => {
@@ -190,14 +194,33 @@ export default function Home() {
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingTop: space(1), paddingBottom: space(12) }}
             ListHeaderComponent={
-              result.pendingTopic ? (
-                <View style={s.note}>
-                  <Text>{`Topics like "${result.pendingTopic}" are being reviewed`}</Text>
-                  <Text variant="label" color="inkSoft">
-                    Suggestions by feeling appear once every reference has been checked. Until then, search a surah, an ayah or Arabic words.
+              <View>
+                {completions.length > 0 ? (
+                  /* Type-ahead: tap to finish the query. */
+                  <View style={[s.chips, { justifyContent: "flex-start", paddingTop: space(1) }]}>
+                    {completions.map((c) => (
+                      <Pressable key={c} accessibilityRole="button" onPress={() => setQuery(c)} style={s.chip}>
+                        <Text variant="label" color="inkSoft">
+                          {c}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+                {result.label ? (
+                  <Text variant="eyebrow" color="inkSoft" style={{ paddingTop: space(2) }}>
+                    {`${result.label}, ${result.total}`}
                   </Text>
-                </View>
-              ) : null
+                ) : null}
+                {result.pendingTopic ? (
+                  <View style={s.note}>
+                    <Text>{`"${result.pendingTopic}" is being reviewed`}</Text>
+                    <Text variant="label" color="inkSoft">
+                      Each topic appears once its references have been checked. Until then, search a surah, an ayah or Arabic words.
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             }
             ListEmptyComponent={
               result.pendingTopic ? null : (

@@ -28,13 +28,19 @@ describe("search home", () => {
     expect(screen.getByText("What would you like to read?")).toBeTruthy();
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "kahf");
-    expect(screen.getByText("Al-Kahf")).toBeTruthy();
+    expect(screen.getAllByText("Al-Kahf").length).toBeGreaterThan(0);
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "الرحمن");
     expect(screen.getAllByText(/Showing|Ar-Rahmaan|Al-Faatiha/).length).toBeGreaterThan(0);
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "I feel anxious about work");
+    expect(screen.getAllByText("Anxiety, worry").length).toBeGreaterThan(0);
+
+    await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "verses about parents");
     expect(screen.getByText(/being reviewed/)).toBeTruthy();
+
+    await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "meccan surahs");
+    expect(screen.getByText(/Meccan surahs, 86/)).toBeTruthy();
   });
 });
 
