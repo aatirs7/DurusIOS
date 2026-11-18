@@ -5,7 +5,8 @@
 
   Routes
     GET /quran/resources          translations and reciters available
-    GET /quran/chapter/:n?translation=131&reciter=7
+    GET /quran/chapter/:n?translation=20&reciter=7
+    GET /quran/verses?keys=13:28,94:5&translation=20
 
   Access: if DURUS_APP_KEY is set, callers must send it as x-durus-key. Who may
   call this (anyone, signed-in users via Clerk, or an app key) is still the
@@ -36,6 +37,17 @@ export async function handle(req: Request, env: Record<string, string | undefine
     if (route[0] === "resources") {
       const [translations, reciters] = await Promise.all([qf(env).translations(), qf(env).recitations()]);
       return json({ env: qf(env).env, translations, reciters });
+    }
+    if (route[0] === "verses") {
+      /* Up to 20 keys like 13:28, for search results. */
+      const keys = (url.searchParams.get("keys") ?? "")
+        .split(",")
+        .filter((k) => /^\d{1,3}:\d{1,3}$/.test(k))
+        .slice(0, 20);
+      const t = url.searchParams.get("translation");
+      if (keys.length === 0) return json({ verses: [] });
+      const verses = await qf(env).verses(keys, t && /^\d+$/.test(t) ? Number(t) : 20);
+      return json({ verses });
     }
     if (route[0] === "chapter" && /^\d{1,3}$/.test(route[1] ?? "")) {
       const n = Number(route[1]);

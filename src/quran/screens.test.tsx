@@ -17,6 +17,7 @@ const params: { n: string; ayah?: string } = { n: "1" };
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: () => true }),
   useLocalSearchParams: () => params,
+  usePathname: () => "/home",
 }));
 
 jest.mock("react-native-safe-area-context", () => {
@@ -36,10 +37,14 @@ describe("search home", () => {
     expect(screen.getAllByText(/Showing|Ar-Rahmaan|Al-Faatiha/).length).toBeGreaterThan(0);
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "I feel anxious about work");
-    expect(screen.getAllByText("Anxiety, worry").length).toBeGreaterThan(0);
+    /* A feeling expands into the ayahs and surahs it points to. */
+    expect(screen.getByText("For anxiety, worry")).toBeTruthy();
+    expect(screen.getByLabelText("Ar-Ra'd 13:28")).toBeTruthy();
+    expect(screen.getByLabelText("Surah Ash-Sharh")).toBeTruthy();
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "verses about parents");
-    expect(screen.getAllByText("Parents").length).toBeGreaterThan(0);
+    expect(screen.getByText("For parents")).toBeTruthy();
+    expect(screen.getByLabelText("Al-Israa 17:23")).toBeTruthy();
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "meccan surahs");
     expect(screen.getByText("Meccan surahs")).toBeTruthy();

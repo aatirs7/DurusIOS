@@ -89,3 +89,48 @@ export function clearStoredChapters() {
     /* Nothing stored. */
   }
 }
+
+/*
+  English for a handful of ayahs, for search results. Each ayah's translation
+  is kept on the phone once fetched, so a repeat search, or one made offline,
+  shows it without a network.
+*/
+type VerseCache = Record<string, string>;
+const verseCaches = new Map<number, VerseCache>();
+
+function verseFile(translationId: number) {
+  return new File(dir(), `verses-t${translationId}.json`);
+}
+
+async function verseCache(translationId: number): Promise<VerseCache> {
+  const hit = verseCaches.get(translationId);
+  if (hit) return hit;
+  let c: VerseCache = {};
+  try {
+    const f = verseFile(translationId);
+    if (f.exists) c = JSON.parse(await f.text()) as VerseCache;
+  } catch {
+    c = {};
+  }
+  verseCaches.set(translationId, c);
+  return c;
+}
+
+export async function loadVerseTranslations(keys: string[], translationId: number): Promise<VerseCache> {
+  const cache = await verseCache(translationId);
+  const missing = keys.filter((k) => cache[k] === undefined).slice(0, 20);
+  if (missing.length === 0 || !quranApiConfigured()) return cache;
+  try {
+    const res = await fetch(`${API.replace(/\/$/, "")}/quran/verses?keys=${missing.join(",")}&translation=${translationId}`, {
+      headers: KEY ? { "x-durus-key": KEY } : {},
+    });
+    if (res.ok) {
+      const j = (await res.json()) as { verses: { key: string; translation: { text?: string }[] | null }[] };
+      for (const v of j.verses) cache[v.key] = (v.translation ?? []).map((p) => p.text ?? "").join("").trim();
+      verseFile(translationId).write(JSON.stringify(cache));
+    }
+  } catch {
+    /* Offline: whatever is cached is what shows. */
+  }
+  return cache;
+}

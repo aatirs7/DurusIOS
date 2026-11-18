@@ -35,6 +35,7 @@ jest.mock("@/quran/remote", () => ({
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: () => true }),
   useLocalSearchParams: () => ({ n: "1" }),
+  usePathname: () => "/surah/1",
 }));
 jest.mock("react-native-safe-area-context", () => {
   const actual = jest.requireActual("react-native-safe-area-context");

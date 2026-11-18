@@ -6,6 +6,7 @@ import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Screen } from "@/components/Screen";
 import { Section } from "@/components/Section";
 import { Text } from "@/components/Text";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   PRACTICES,
   PRACTICE_BY_ID,
@@ -268,6 +269,9 @@ export default function Barakah() {
     <Screen>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <View style={s.head}>
+          <View style={{ position: "absolute", right: 0, top: 0 }}>
+            <ThemeToggle />
+          </View>
           <Text variant="pageTitle" style={s.center}>
             Barakah
           </Text>

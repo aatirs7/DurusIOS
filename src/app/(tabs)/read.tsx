@@ -4,6 +4,7 @@ import { FlatList, Pressable, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { countRange, foldStatus } from "@/quran/status";
 import { JUZ_STARTS, SURAHS } from "@/quran/tanzil";
 import { refOf } from "@/quran/text";
@@ -84,6 +85,9 @@ export default function Read() {
   const header = (
     <>
       <View style={s.head}>
+        <View style={{ position: "absolute", right: 0, top: space(1) }}>
+          <ThemeToggle />
+        </View>
         <Text variant="pageTitle">Read</Text>
         <Text color="inkSoft">The Quran, surah by surah.</Text>
       </View>

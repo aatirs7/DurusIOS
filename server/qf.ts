@@ -9,7 +9,7 @@
   Not deployed anywhere yet. Where it runs, and who may call it, is the
   owner's decision (see docs/relay/from-prime.md).
 */
-import { footnoteIds, normalizeVerse, type QfChapter, type RawVerse } from "../src/quran/qf";
+import { footnoteIds, normalizeVerse, parseTranslation, type QfChapter, type RawVerse } from "../src/quran/qf";
 
 type Env = "prelive" | "production";
 
@@ -84,6 +84,17 @@ export class QfClient {
   async recitations(): Promise<{ id: number; name: string }[]> {
     const j = await this.get<{ recitations: { id: number; reciter_name: string; style: string | null }[] }>("resources/recitations?language=en");
     return j.recitations.map((r) => ({ id: r.id, name: r.style ? `${r.reciter_name} (${r.style})` : r.reciter_name }));
+  }
+
+  /* One translation for a few specific ayahs, for search results. */
+  async verses(keys: string[], translationId: number): Promise<{ key: string; translation: ReturnType<typeof parseTranslation> | null }[]> {
+    return Promise.all(
+      keys.map(async (key) => {
+        const j = await this.get<{ verse: RawVerse }>(`verses/by_key/${key}?translations=${translationId}&words=false`);
+        const t = j.verse.translations?.find((x) => x.resource_id === translationId) ?? j.verse.translations?.[0];
+        return { key, translation: t ? parseTranslation(t.text) : null };
+      }),
+    );
   }
 
   /* Every ayah of a surah with words, one translation, recitation audio and footnotes. */

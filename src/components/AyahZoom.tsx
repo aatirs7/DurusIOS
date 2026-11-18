@@ -51,7 +51,7 @@ const useStyles = makeStyles((t) => ({
   word: { alignItems: "center", borderRadius: 14, paddingHorizontal: space(0.75), paddingVertical: space(0.5), maxWidth: 150 },
   wordOn: { backgroundColor: t.colors.lapisWash },
   focus: { alignItems: "center", gap: space(0.5), borderRadius: 18, backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule, paddingVertical: space(2), paddingHorizontal: space(2) },
-  section: { gap: space(0.75) },
+  section: { gap: space(0.75), alignItems: "center" },
   bar: { flexDirection: "row", alignSelf: "center", borderRadius: RADIUS.pill, padding: 4, gap: 2, overflow: "hidden", marginTop: space(1.25) },
   tool: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: space(1), paddingHorizontal: space(1.5), borderRadius: RADIUS.pill },
 }));
@@ -153,7 +153,7 @@ export function AyahZoom(p: Props) {
                         <Text variant="eyebrow" color="inkSoft">
                           Transliteration
                         </Text>
-                        <Text color="inkSoft" style={{ fontStyle: "italic", lineHeight: 23 }}>
+                        <Text color="inkSoft" style={{ fontStyle: "italic", lineHeight: 23, textAlign: "center" }}>
                           {translit}
                         </Text>
                       </View>
@@ -164,7 +164,7 @@ export function AyahZoom(p: Props) {
                         <Text variant="eyebrow" color="inkSoft">
                           {p.translationName ?? "Translation"}
                         </Text>
-                        <Text style={{ lineHeight: 24 }}>{p.layer.translation.map((x) => ("text" in x ? x.text : "")).join("")}</Text>
+                        <Text style={{ lineHeight: 24, textAlign: "center" }}>{p.layer.translation.map((x) => ("text" in x ? x.text : "")).join("")}</Text>
                       </View>
                     ) : null}
 
