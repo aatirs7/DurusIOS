@@ -4,13 +4,16 @@ Updated: 2026-11-18, late
 
 ## Now
 
-Latest OTA: ea662a2f. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: a5ab553c. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Progress rebuilt as one screen with no vertical scroll (OTA a5ab553c). Swipe or tap between Wall (the whole Quran as dots), Juz (30 small fields; tap one to mark its surahs), Stats (two rings and six counts) and Week (reading bars and recent marks). A glass Mark button opens any surah for whole or ayah-by-ayah marking.
+- Search holds still and answers. The mark, the question and the bar never move; results scroll above the keyboard with iOS keyboard insets instead of the screen being pushed. A short reply leads the results, written from what the app knows (your marks, where you stopped, the hour, Friday), never interpreting ayahs and never praising. Type-ahead draws on 3,693 natural phrasings built from the approved topics, each tested to return results. "For you" on the empty screen offers continue reading, Friday or late-night readings, and a daily revision pick from surahs you know. The owner approved all 97 topics (2026-11-18).
+- Quran server deployed to durus.space (Durus repo, commit 797b326): /api/v1/quran/resources and /api/v1/quran/chapter/:n. It answers "quran_not_configured" until its environment variables are set. Production credentials work: 146 translations, 12 reciters. The Clear Quran is not in this client's catalogue, so the default is Saheeh International (20); Abdel Haleem, Pickthall, Yusuf Ali, Hilali and Khan, Taqi Usmani and Maududi are also available in English.
 - Barakah and reading (OTA ea662a2f): the Daily Quran portion card shows how many ayahs were read that day against a goal (10 by default, adjustable on the card), and ticks itself once when the goal is reached. If the card was touched by hand that day it is left alone.
 - Quran Foundation integration, built and tested on real data, switched off in the app until a server runs it. The content scope problem is solved: new clients do not get `content`, they get granular scopes, and the owner's client is approved for content.quran.read, content.translations.read, content.audio.read, content.sync.read and content.tafsirs.read. With those, a live run returned all 286 ayahs of Al-Baqarah with word by word meanings and transliterations, a translation, 102 footnotes, and recitation audio with per-word timings. server/qf.ts and server/handler.ts are a plain Fetch API handler (GET /quran/resources, GET /quran/chapter/:n?translation=&reciter=). The app downloads a surah once, keeps it on the phone, refreshes it after seven days, and uses the stored copy offline. The reader has the layers ready: translation with tappable footnotes, transliteration, and a word grid with each word over its meaning or reading. They stay "Comes with Quran.com" until EXPO_PUBLIC_QURAN_API is set.
 - Live fixes (OTA 687f9df4): the surah and juz navigator jumps even if the sheet's close event is missed; the reader's link colour follows the page tone; loose keywords in the eight live topics are tightened (night prayer, test tomorrow, far away and table of contents no longer hit them), with tests; smoke tests now cover the flowing layout, sepia and night, the reading view sheet and the Progress surah sheet. Publishing now only happens after a clean preflight run.
@@ -42,8 +45,7 @@ Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Blocked on the owner
 
-- **Where the Quran server runs, and who may call it.** The handler holds the Quran Foundation secret, so it must run on a server. Options: the durus.space backend (which repo, and may Prime deploy?), a new small Vercel project, or EAS Hosting on the Expo account Prime already uses. Access: open, signed-in users only (Clerk), or a shared app key (supported now via DURUS_APP_KEY). Prime has not deployed anything.
-- **Production access from Quran Foundation.** The client works on prelive only; production returns invalid_client. Prelive has a short list of translations and does not include The Clear Quran (131); Abdel Haleem (85) is there. Request production permissions in the Developer Console (developers@quran.com if stuck). Until then Durus can only show prelive translations.
+- **Vercel environment variables for durus.space.** The route is deployed and waiting. Needs QF_CLIENT_ID, QF_CLIENT_SECRET, QF_ENV=production and DURUS_APP_KEY (values are in DurusIOS server/.env.local). Either the owner adds them in the Vercel dashboard, or runs `npx vercel login` on this machine so Prime can. After that Prime sets the app's EXPO_PUBLIC_QURAN_API and key and switches the layers on.
 - **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
 
 ## Questions
