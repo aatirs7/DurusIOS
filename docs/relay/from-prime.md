@@ -4,13 +4,15 @@ Updated: 2026-11-18, late
 
 ## Now
 
-Latest OTA: 49bf76f4. Rollback: republish c6868e0a. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: ce7af734. Rollback: republish 49bf76f4. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Search rebuilt as one clean list (OTA ce7af734), after the owner said it had drifted from what they wanted. Type anything and the results are ayahs and surahs only: each ayah shows the Arabic, its English (Saheeh International by default, fetched from durus.space once and then kept on the phone) and its reference. A feeling or topic expands into the ayahs it points to, so "i feel sad" shows ayahs, not a topic box. One quiet caption line replaces the reply bubble, topic cards and headings. New server route on durus.space: GET /api/v1/quran/verses?keys=13:28,94:5&translation=20.
+- Light and dark toggle on every tab (Search, Read, Progress, Barakah), not just Learn. The long-press zoom centres its transliteration and translation.
 - Owner feedback from phone screenshots (OTA 49bf76f4): search looked heavy, and Progress was unreadable. Search: the title is smaller and set lower in a fixed spot, For you is two quiet lines, and six light chips replace the bordered cards; it still does not move while typing. Progress: every view opens with a plain sentence ("12 surahs memorized, 2% of the Quran"), the wall has a caption explaining that each square is an ayah from Al-Fatiha down to An-Nas, juz numbers run down its left side, a legend gives the counts, and juz boxes show their percentage.
 - Translation, word by word and transliteration are live (OTA c6868e0a). Prime logged in to Vercel (owner approved the device login), linked the Durus web project, added QF_CLIENT_ID, QF_CLIENT_SECRET, QF_ENV=production and DURUS_APP_KEY as production secrets, and redeployed durus.space. Live check: Ya-Sin returns 83 ayahs with word meanings, transliterations, Saheeh International and 25 footnotes; without the app key the route answers 403. The app's EAS production environment now has EXPO_PUBLIC_QURAN_API and EXPO_PUBLIC_DURUS_KEY. Reading view offers a translator choice: Saheeh International (default), Abdel Haleem, Pickthall, Yusuf Ali, Hilali and Khan, Taqi Usmani.
 - Long-press zoom: long press any ayah in the reader and it lifts into a Liquid Glass card with the ayah large, every word over its transliteration and meaning (tap a word to zoom in on it), the full transliteration and translation, and Memorized, Understood, Bookmark and Share. It scales in rather than fading, so the glass always draws.
