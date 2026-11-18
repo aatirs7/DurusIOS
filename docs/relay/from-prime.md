@@ -1,15 +1,18 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-18
+Updated: 2026-11-18, evening
 
 ## Now
 
-Search and bookmarks are live over the air (update group 733433db). 89 new search topics wait on owner approval: the list is in docs/review/topics.md.
+Live over the air (update group 1326585d): reader customisation, the Progress tab, cleaner search. Owner is away for a few hours; Prime keeps building the Quran Foundation integration so it switches on once access is granted.
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Reader customisation (OTA 1326585d). Five Quran scripts, all checked against every character of the text: Amiri Quran, Scheherazade, Naskh, Amiri, Lateef. Also size, line spacing (compact, normal, airy), page tone (follow the app, paper, sepia, night), ayah by ayah or a flowing page with ornate ayah numbers tinted by status, right or centre alignment, and switches for ayah numbers and marks, all with a live preview. Tapping an ayah floats a glass bar up from the bottom: memorized, understood, bookmark, share, close.
+- Progress tab (was Map). Two rings for memorized and understood, stat cards (surahs, juz, pages of the 604, words, surahs understood, in progress), a seven-day reading chart from a new reading log, 30 juz rings, the Ayah Field as one card ("the wall", expandable), recent marks, and a surah list with filters. Tap a surah to open a sheet with whole-surah toggles and an ayah-by-ayah grid.
+- Search: results grouped under Topics, Surahs and Ayahs, recent searches, cleaner rows.
 - Search, broadened (OTA b7b2494b). The owner approved the eight seed topics (2026-11-18) and asked for hundreds of variations. They are live and matched through 770 keywords and phrases. Filler is dropped ("i feel so", "verses about", "what should i read"), word endings are folded (worrying, worried, worries), and one typo or swapped letter is forgiven in longer words. General questions answer from the metadata: longest or shortest surahs, Meccan or Medinan, the last ten, surahs with N ayahs, and "surprise me" for a random ayah. Type-ahead chips appear as you type. 89 new topics and named passages (Ayat al-Kursi, the three Quls, parents, marriage, illness, prayer, death, stories of the prophets and more) are written but hidden until approved. Search names them as "being reviewed" when matched.
 - Bookmarks (OTA 733433db): a bookmark button in the ayah's glass bar, and a Bookmarks row on the Read tab.
 - Search is home (OTA f992871f). The app opens to a centred search bar, Claude style, that rises to the top as you type. Tabs are now Search, Read, Map, Learn, Barakah; the separate Ask circle is gone. Search is deterministic and offline: references (2:255), surah numbers and names (kahf, Al-Mulk, the cave), juz (juz 30, juz amma), and Arabic words matched through Tanzil's Simple Clean text as a hidden search key, so typed Arabic finds Uthmani spelling. Feelings and topics answer "being reviewed" until the owner approves the eight seed topics.
@@ -35,7 +38,7 @@ Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Blocked on the owner
 
-- **Quran Foundation credentials.** Reading the Quran, Quranic Words and Ask all need a client id and secret from the Quran Foundation Developer Console. Nothing Quranic gets typed in by hand.
+- **Quran Foundation content access.** The owner's client id and secret work (a token is issued on prelive), but every Content API call returns 403 "insufficient_scope", and requesting the `content` scope is refused ("The OAuth 2.0 Client is not allowed to request scope 'content'"). Production does not know the client yet ("invalid_client"). Fix: in the Quran Foundation Developer Console, enable the Content API (content scope) for this app, or ask Quran Foundation to grant it, and request production access. Translation, word by word, transliteration and audio switch on after that. The credentials are stored only in a git-ignored local file (server/.env.local); they should be rotated once things work, since the secret was shared in chat.
 
 ## Questions
 
