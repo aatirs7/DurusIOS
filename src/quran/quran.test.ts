@@ -123,7 +123,7 @@ describe("search", () => {
         expect([r, !!surah]).toEqual([r, true]);
         if (range) for (const a of range.split("-").map(Number)) expect([r, a >= 1 && a <= surah.ayahs]).toEqual([r, true]);
       }
-      expect(`${t.label}${t.keywords.join("")}`).not.toMatch(/—/);
+      expect(`${t.label}${t.keywords.join("")}`).not.toMatch(/\u2014/);
     }
     expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });

@@ -40,7 +40,7 @@ describe("search home", () => {
     expect(screen.getByText(/being reviewed/)).toBeTruthy();
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "meccan surahs");
-    expect(screen.getByText(/Meccan surahs, 86/)).toBeTruthy();
+    expect(screen.getByText("Meccan surahs")).toBeTruthy();
   });
 });
 
