@@ -3,6 +3,7 @@ import { FlatList, Modal, Pressable, ScrollView, Switch, View } from "react-nati
 
 import { Text } from "@/components/Text";
 import { JUZ_STARTS, SURAHS } from "@/quran/tanzil";
+import { quranApiConfigured } from "@/quran/remote";
 import { quranText, refOf } from "@/quran/text";
 import { DEFAULT_LOOK, usePrefs, type ReaderView } from "@/state/prefs";
 import { READER_TONES } from "@/theme/tokens";
@@ -278,7 +279,7 @@ export function ViewSheet({ visible, onClose }: { visible: boolean; onClose: () 
 
         <Row label="Show">
           <View style={{ gap: space(1) }}>
-            {VIEWS.map((v) => (
+            {VIEWS.map((base) => ({ ...base, available: base.available || quranApiConfigured() })).map((v) => (
               <Pressable
                 key={v.key}
                 accessibilityRole="radio"

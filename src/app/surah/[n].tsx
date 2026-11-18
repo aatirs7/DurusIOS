@@ -5,8 +5,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { Glass } from "@/components/Glass";
+import { FootnoteCard, TranslationLine, TransliterationLine, WordGrid } from "@/components/QuranLayers";
 import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
 import { Text } from "@/components/Text";
+import type { QfChapter } from "@/quran/qf";
+import { loadChapter, quranApiConfigured } from "@/quran/remote";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { surahForDisplay } from "@/quran/text";
@@ -117,7 +120,33 @@ export default function SurahReader() {
   const colors = useReaderColors();
   const type = useQuranType();
   const look = type.look;
-  const flow = look.layout === "flow";
+  const view = usePrefs((st) => st.readerView);
+  const translationId = usePrefs((st) => st.translationId) ?? 131;
+  const reciterId = usePrefs((st) => st.reciterId) ?? 7;
+
+  /* Layers from Quran Foundation, loaded per surah and kept offline. */
+  const wantsLayers = view !== "arabic" && quranApiConfigured();
+  const [qf, setQf] = useState<QfChapter | null>(null);
+  const [qfState, setQfState] = useState<"idle" | "loading" | "error">("idle");
+  const [footnote, setFootnote] = useState<number | null>(null);
+  useEffect(() => {
+    if (!wantsLayers) return;
+    let alive = true;
+    setQfState("loading");
+    loadChapter(n, translationId, reciterId)
+      .then((c) => {
+        if (!alive) return;
+        setQf(c);
+        setQfState("idle");
+      })
+      .catch(() => alive && setQfState("error"));
+    return () => {
+      alive = false;
+    };
+  }, [wantsLayers, n, translationId, reciterId]);
+
+  /* Layers need one ayah per row, so they always use the ayah layout. */
+  const flow = look.layout === "flow" && !wantsLayers;
 
   /* Flowing layout groups ayahs into paragraphs so a long surah stays one
      scrollable list rather than one enormous text node. */
@@ -234,6 +263,16 @@ export default function SurahReader() {
           {basmala}
         </Text>
       ) : null}
+      {wantsLayers && qfState === "loading" ? (
+        <Text variant="label" style={{ color: colors.soft, paddingTop: space(1.5) }}>
+          Loading from Quran.com. Kept on this phone after the first time.
+        </Text>
+      ) : null}
+      {wantsLayers && qfState === "error" ? (
+        <Text variant="label" style={{ color: colors.soft, paddingTop: space(1.5), textAlign: "center" }}>
+          Could not reach Quran.com. Showing the Arabic; try again when you are online.
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -256,6 +295,7 @@ export default function SurahReader() {
     const m = look.marks && maps.memorized[g] === 1;
     const u = look.marks && maps.understood[g] === 1;
     const isSel = selected === ayah;
+    const qa = wantsLayers && qf ? qf.ayahs[index] : undefined;
     return (
       <Pressable
         onPress={() => setSelected(isSel ? null : ayah)}
@@ -263,9 +303,15 @@ export default function SurahReader() {
         accessibilityHint="Tap for memorized, understood, bookmark and share"
         style={[s.ayah, (highlight === ayah || isSel) && { backgroundColor: selColor }]}
       >
-        <Text selectable={false} style={quran}>
-          {ayahs[index]}
-        </Text>
+        {qa && (view === "wordTranslation" || view === "wordTransliteration") ? (
+          <WordGrid ayah={qa} under={view === "wordTranslation" ? "meaning" : "translit"} colors={colors} quran={quran} />
+        ) : (
+          <Text selectable={false} style={quran}>
+            {ayahs[index]}
+          </Text>
+        )}
+        {qa && view === "translation" ? <TranslationLine ayah={qa} colors={colors} onFootnote={setFootnote} /> : null}
+        {qa && view === "transliteration" ? <TransliterationLine ayah={qa} colors={colors} /> : null}
         {look.numbers || m || u || bookmarks.includes(g) ? (
           <View style={s.meta}>
             <View style={s.chips}>
@@ -350,7 +396,7 @@ export default function SurahReader() {
         initialNumToRender={Math.max(12, (targetAyah ? rowOf(targetAyah) : 0) + 4)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top + TOP_BAR + space(1), paddingHorizontal: MARGIN, paddingBottom: insets.bottom + space(14) }}
-        extraData={[selected, highlight, maps, type, bookmarks, colors]}
+        extraData={[selected, highlight, maps, type, bookmarks, colors, qf, view]}
         renderItem={({ item }) => (Array.isArray(item) ? renderFlow(item) : renderAyah(item))}
       />
 
@@ -431,6 +477,12 @@ export default function SurahReader() {
               <Icon d="M6 6l12 12M18 6L6 18" color={theme.colors.inkSoft} size={16} />
             </Pressable>
           </Glass>
+        </View>
+      ) : null}
+
+      {footnote !== null && qf?.footnotes[footnote] ? (
+        <View style={[s.bottomBar, { bottom: insets.bottom + space(1.5), paddingHorizontal: MARGIN }]}>
+          <FootnoteCard text={qf.footnotes[footnote]} onClose={() => setFootnote(null)} colors={colors} />
         </View>
       ) : null}
 

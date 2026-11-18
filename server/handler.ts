@@ -1,0 +1,60 @@
+/*
+  The Durus Quran endpoint, as a plain Fetch API handler: Request in, Response
+  out. It runs unchanged on any host that speaks the Fetch API (Vercel, EAS
+  Hosting, Cloudflare, Node 18+ via a tiny adapter).
+
+  Routes
+    GET /quran/resources          translations and reciters available
+    GET /quran/chapter/:n?translation=131&reciter=7
+
+  Access: if DURUS_APP_KEY is set, callers must send it as x-durus-key. Who may
+  call this (anyone, signed-in users via Clerk, or an app key) is still the
+  owner's decision; until then the key is the switch.
+*/
+import { QfClient, configFromEnv } from "./qf";
+
+let client: QfClient | null = null;
+function qf(env: Record<string, string | undefined>): QfClient {
+  client ??= new QfClient(configFromEnv(env));
+  return client;
+}
+
+const json = (body: unknown, status = 200, cache = "public, max-age=3600") =>
+  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": cache } });
+
+export async function handle(req: Request, env: Record<string, string | undefined> = process.env): Promise<Response> {
+  if (req.method !== "GET") return json({ error: "method" }, 405, "no-store");
+  if (env.DURUS_APP_KEY && req.headers.get("x-durus-key") !== env.DURUS_APP_KEY) return json({ error: "forbidden" }, 403, "no-store");
+
+  const url = new URL(req.url);
+  const parts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
+  /* Accept a mount prefix such as /api. */
+  const i = parts.indexOf("quran");
+  const route = i >= 0 ? parts.slice(i + 1) : [];
+
+  try {
+    if (route[0] === "resources") {
+      const [translations, reciters] = await Promise.all([qf(env).translations(), qf(env).recitations()]);
+      return json({ env: qf(env).env, translations, reciters });
+    }
+    if (route[0] === "chapter" && /^\d{1,3}$/.test(route[1] ?? "")) {
+      const n = Number(route[1]);
+      if (n < 1 || n > 114) return json({ error: "surah" }, 400, "no-store");
+      const t = url.searchParams.get("translation");
+      const r = url.searchParams.get("reciter");
+      const chapter = await qf(env).chapter(n, {
+        translationId: t && /^\d+$/.test(t) ? Number(t) : null,
+        reciterId: r && /^\d+$/.test(r) ? Number(r) : null,
+      });
+      return json(chapter);
+    }
+    return json({ error: "not found" }, 404, "no-store");
+  } catch (e) {
+    return json({ error: String((e as Error).message ?? e) }, 502, "no-store");
+  }
+}
+
+/* Reset the cached client; for tests. */
+export function resetClient() {
+  client = null;
+}

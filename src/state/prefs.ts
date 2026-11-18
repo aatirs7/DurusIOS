@@ -21,6 +21,10 @@ type PrefsState = Hydratable & {
   setReaderView: (v: ReaderView) => void;
   arabicSize: number;
   setArabicSize: (n: number) => void;
+  /* Quran Foundation translation and reciter. The Clear Quran is 131, Alafasy is 7. */
+  translationId: number;
+  reciterId: number;
+  setTranslationId: (id: number) => void;
   /* Reader look. */
   reader: ReaderLook;
   setReader: (patch: Partial<ReaderLook>) => void;
@@ -65,6 +69,9 @@ export const usePrefs = create<PrefsState>()(
       setReaderView: (readerView) => set({ readerView }),
       arabicSize: 28,
       setArabicSize: (arabicSize) => set({ arabicSize: Math.min(40, Math.max(22, arabicSize)) }),
+      translationId: 131,
+      reciterId: 7,
+      setTranslationId: (translationId) => set({ translationId }),
       reader: DEFAULT_LOOK,
       setReader: (patch) => set((st) => ({ reader: { ...DEFAULT_LOOK, ...st.reader, ...patch } })),
       recentSearches: [],
