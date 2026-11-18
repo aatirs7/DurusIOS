@@ -4,13 +4,14 @@ Updated: 2026-11-18, late
 
 ## Now
 
-Latest OTA: ba2572c3. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: ea662a2f. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Barakah and reading (OTA ea662a2f): the Daily Quran portion card shows how many ayahs were read that day against a goal (10 by default, adjustable on the card), and ticks itself once when the goal is reached. If the card was touched by hand that day it is left alone.
 - Quran Foundation integration, built and tested on real data, switched off in the app until a server runs it. The content scope problem is solved: new clients do not get `content`, they get granular scopes, and the owner's client is approved for content.quran.read, content.translations.read, content.audio.read, content.sync.read and content.tafsirs.read. With those, a live run returned all 286 ayahs of Al-Baqarah with word by word meanings and transliterations, a translation, 102 footnotes, and recitation audio with per-word timings. server/qf.ts and server/handler.ts are a plain Fetch API handler (GET /quran/resources, GET /quran/chapter/:n?translation=&reciter=). The app downloads a surah once, keeps it on the phone, refreshes it after seven days, and uses the stored copy offline. The reader has the layers ready: translation with tappable footnotes, transliteration, and a word grid with each word over its meaning or reading. They stay "Comes with Quran.com" until EXPO_PUBLIC_QURAN_API is set.
 - Live fixes (OTA 687f9df4): the surah and juz navigator jumps even if the sheet's close event is missed; the reader's link colour follows the page tone; loose keywords in the eight live topics are tightened (night prayer, test tomorrow, far away and table of contents no longer hit them), with tests; smoke tests now cover the flowing layout, sepia and night, the reading view sheet and the Progress surah sheet. Publishing now only happens after a clean preflight run.
 - Reader customisation (OTA 1326585d). Five Quran scripts, all checked against every character of the text: Amiri Quran, Scheherazade, Naskh, Amiri, Lateef. Also size, line spacing (compact, normal, airy), page tone (follow the app, paper, sepia, night), ayah by ayah or a flowing page with ornate ayah numbers tinted by status, right or centre alignment, and switches for ayah numbers and marks, all with a live preview. Tapping an ayah floats a glass bar up from the bottom: memorized, understood, bookmark, share, close.
