@@ -45,7 +45,9 @@ const useStyles = makeStyles((t) => ({
   segItem: { paddingVertical: 7, paddingHorizontal: space(2), borderRadius: RADIUS.pill },
   segOn: { backgroundColor: t.colors.lapisWash },
   page: { paddingHorizontal: MARGIN },
-  legend: { flexDirection: "row", justifyContent: "center", gap: space(3), paddingTop: space(1.5) },
+  legend: { flexDirection: "row", justifyContent: "center", gap: space(2.5), paddingTop: space(1.25) },
+  headline: { fontFamily: FONTS.uiMedium, fontSize: 19, lineHeight: 25, color: t.colors.ink, textAlign: "center", paddingBottom: space(0.5) },
+  caption: { textAlign: "center", paddingBottom: space(1.5), paddingHorizontal: space(1) },
   legendItem: { alignItems: "center" },
   swatch: { width: 10, height: 10, borderRadius: 3 },
   juzGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
@@ -303,12 +305,17 @@ export default function ProgressTab() {
   };
 
   const inner = area.w - MARGIN * 2;
+  /* One plain sentence of where you are, in words rather than dots. */
+  const headline =
+    p.ayahsMemorized === 0
+      ? "Nothing marked yet. Tap Mark to add what you know."
+      : `${p.surahsMemorized} ${p.surahsMemorized === 1 ? "surah" : "surahs"} memorized, ${pct(p.ayahsMemorized / TOTAL_AYAHS)}% of the Quran`;
   const h = area.h;
 
   /* Juz grid: 5 columns, 6 rows, filling the page. */
   const gap = space(1);
   const cellW = (inner - gap * 4) / 5;
-  const cellH = Math.max(40, (h - space(4) - gap * 5) / 6);
+  const cellH = Math.max(40, (h - 96 - gap * 5) / 6);
 
   const ringSize = Math.min(150, (inner - space(3)) / 2, h * 0.36);
 
@@ -345,44 +352,42 @@ export default function ProgressTab() {
             onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / Math.max(1, area.w)))}
           >
             {/* Wall */}
-            <View style={[s.page, { width: area.w, height: h, alignItems: "center" }]}>
-              <AyahField width={inner} height={h - 70} memorized={(i) => maps.memorized[i] === 1} understood={(i) => maps.understood[i] === 1} />
+            <View style={[s.page, { width: area.w, height: h }]}>
+              <Text style={s.headline}>{headline}</Text>
+              <Text variant="label" color="inkSoft" style={s.caption}>
+                Each square is one ayah, all 6,236 in order: Al-Fatiha at the top, An-Nas at the bottom. Numbers on the left are juz.
+              </Text>
+              <View style={{ alignItems: "center", flex: 1, justifyContent: "center" }}>
+                <AyahField
+                  labels
+                  width={inner}
+                  height={h - 150}
+                  memorized={(i) => maps.memorized[i] === 1}
+                  understood={(i) => maps.understood[i] === 1}
+                />
+              </View>
               <View style={s.legend}>
-                <View style={s.legendItem}>
-                  <Text variant="numeral" style={{ fontSize: 22, lineHeight: 26 }}>
-                    {fmt(p.ayahsMemorized)}
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                    <View style={[s.swatch, { backgroundColor: theme.colors.saffron }]} />
+                {[
+                  { color: theme.colors.saffron, label: `Memorized ${fmt(p.ayahsMemorized)}` },
+                  { color: theme.colors.verdigris, label: `Understood ${fmt(p.ayahsUnderstood)}` },
+                  { color: theme.colors.rule, label: "Not yet" },
+                ].map((l) => (
+                  <View key={l.label} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={[s.swatch, { backgroundColor: l.color }]} />
                     <Text variant="label" color="inkSoft">
-                      memorized
+                      {l.label}
                     </Text>
                   </View>
-                </View>
-                <View style={s.legendItem}>
-                  <Text variant="numeral" style={{ fontSize: 22, lineHeight: 26 }}>
-                    {fmt(p.ayahsUnderstood)}
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                    <View style={[s.swatch, { backgroundColor: theme.colors.verdigris }]} />
-                    <Text variant="label" color="inkSoft">
-                      understood
-                    </Text>
-                  </View>
-                </View>
-                <View style={s.legendItem}>
-                  <Text variant="numeral" style={{ fontSize: 22, lineHeight: 26 }}>
-                    {fmt(TOTAL_AYAHS)}
-                  </Text>
-                  <Text variant="label" color="inkSoft">
-                    ayahs
-                  </Text>
-                </View>
+                ))}
               </View>
             </View>
 
             {/* Juz */}
             <View style={[s.page, { width: area.w, height: h }]}>
+              <Text style={s.headline}>{`${p.juzMemorized} of 30 juz complete`}</Text>
+              <Text variant="label" color="inkSoft" style={s.caption}>
+                Each box is one juz. Gold fills in as you memorize. Tap a juz to mark its surahs.
+              </Text>
               <View style={[s.juzGrid, { rowGap: gap }]}>
                 {JUZ_RANGES.map((range, i) => (
                   <Pressable
@@ -396,18 +401,16 @@ export default function ProgressTab() {
                       <JuzField width={cellW - 12} height={cellH - 28} range={range} memorized={maps.memorized} understood={maps.understood} />
                     </View>
                     <Text variant="label" color={p.juz[i].memorized === 1 ? "saffron" : "inkSoft"} style={{ paddingBottom: 4 }}>
-                      {`${i + 1}`}
+                      {p.juz[i].memorized > 0 ? `${i + 1} · ${pct(p.juz[i].memorized)}%` : `Juz ${i + 1}`}
                     </Text>
                   </Pressable>
                 ))}
               </View>
-              <Text variant="label" color="inkFaint" style={{ textAlign: "center", paddingTop: space(1.5) }}>
-                {`${p.juzMemorized} of 30 complete. Tap a juz to mark its surahs.`}
-              </Text>
             </View>
 
             {/* Stats */}
             <View style={[s.page, { width: area.w, height: h, justifyContent: "space-evenly" }]}>
+              <Text style={[s.headline, { paddingBottom: 0 }]}>Your numbers</Text>
               <View style={s.rings}>
                 {[
                   { label: "Memorized", value: p.ayahsMemorized, color: theme.colors.saffron },
@@ -446,6 +449,7 @@ export default function ProgressTab() {
 
             {/* Week */}
             <View style={[s.page, { width: area.w, height: h, gap: space(1.5) }]}>
+              <Text style={[s.headline, { paddingBottom: 0 }]}>{weekTotal > 0 ? `${fmt(weekTotal)} ayahs read this week` : "No reading logged this week yet"}</Text>
               <View style={[s.panel, { flex: 1 }]}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text variant="eyebrow" color="inkSoft">

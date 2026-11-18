@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { FlatList, Keyboard, Pressable, TextInput, View } from "react-native";
+import { FlatList, Keyboard, Pressable, TextInput, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -32,13 +32,10 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 
 const SUGGESTIONS: { label: string; query: string }[] = [
   { label: "Al-Kahf", query: "kahf" },
-  { label: "2:255", query: "2:255" },
-  { label: "Juz 30", query: "juz 30" },
-  { label: "Al-Mulk", query: "mulk" },
-  { label: "Ya-Sin", query: "36" },
-  { label: "Ar-Rahman", query: "55" },
-  { label: "I can't sleep", query: "i cant sleep" },
+  { label: "Ayat al-Kursi", query: "ayat al kursi" },
   { label: "Feeling anxious", query: "feeling anxious" },
+  { label: "Before sleep", query: "before sleep" },
+  { label: "Juz Amma", query: "juz amma" },
   { label: "Surprise me", query: "surprise me" },
 ];
 
@@ -49,19 +46,20 @@ const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
   heads: { alignItems: "center", gap: space(1) },
-  title: { fontSize: 34, lineHeight: 40, textAlign: "center" },
+  title: { fontSize: 24, lineHeight: 30, textAlign: "center" },
   bar: { flexDirection: "row", alignItems: "center", borderRadius: 28, minHeight: 56, paddingLeft: space(2), paddingRight: space(1), gap: space(1), overflow: "hidden" },
   input: { flex: 1, fontFamily: FONTS.uiRegular, fontSize: 17, color: t.colors.ink, paddingVertical: space(1.75) },
   chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1) },
-  chip: { borderRadius: RADIUS.pill, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(1), paddingHorizontal: space(1.75) },
+  chip: { borderRadius: RADIUS.pill, backgroundColor: t.colors.surfaceSunk, paddingVertical: space(0.875), paddingHorizontal: space(1.5) },
   result: { paddingVertical: space(1.5), gap: space(0.5) },
   rowCard: { borderRadius: RADIUS.card, backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule, paddingHorizontal: space(1.75), marginBottom: space(1) },
   badge: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: t.colors.rule, alignItems: "center", justifyContent: "center" },
   heading: { paddingTop: space(2), paddingBottom: space(1) },
-  headFixed: { alignItems: "center", gap: space(0.5), paddingTop: space(3), paddingBottom: space(2.5) },
+  headFixed: { alignItems: "center", gap: space(0.75), paddingBottom: space(2.5) },
   replyCard: { borderRadius: RADIUS.card, backgroundColor: t.colors.lapisWash, paddingVertical: space(1.75), paddingHorizontal: space(2) },
   completion: { flexDirection: "row", alignItems: "center", gap: space(1.25), paddingVertical: space(1.1), paddingHorizontal: space(0.5) },
-  forYou: { borderRadius: RADIUS.card, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(1.5), paddingHorizontal: space(2), gap: 2 },
+  forYou: { flexDirection: "row", alignItems: "center", gap: space(1), paddingVertical: space(1.25), paddingHorizontal: space(0.5) },
+  forYouRule: { borderTopWidth: 1, borderTopColor: t.colors.rule },
   refRow: { flexDirection: "row", alignItems: "center", gap: space(1) },
   ref: { borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingHorizontal: space(1.25), paddingVertical: 2 },
   ayah: { fontFamily: FONTS.quran, fontSize: 22, lineHeight: 46, color: t.colors.ink, textAlign: "right", writingDirection: "rtl" },
@@ -83,6 +81,7 @@ export default function Home() {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
+  const { height } = useWindowDimensions();
   const lastRead = usePrefs((st) => st.lastRead);
   const [query, setQuery] = useState("");
 
@@ -118,13 +117,12 @@ export default function Home() {
       const pick = carried[Math.floor(now.getTime() / 86_400_000) % carried.length];
       out.push({ label: `Revise ${pick.en}`, line: `One of the ${carried.length} ${carried.length === 1 ? "surah" : "surahs"} you know by heart.`, onPress: () => openTo(pick.n) });
     }
-    return out.slice(0, 3);
+    return out.slice(0, 2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastRead, maps]);
 
   const recents = usePrefs((st) => st.recentSearches) ?? NO_RECENTS;
   const rememberSearch = usePrefs((st) => st.rememberSearch);
-  const clearSearches = usePrefs((st) => st.clearSearches);
 
   /* Results grouped under quiet headings: topics, surahs, ayahs. */
   const rows = useMemo(() => {
@@ -255,7 +253,7 @@ export default function Home() {
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
       <View style={s.body}>
-        <View style={s.headFixed}>
+        <View style={[s.headFixed, { paddingTop: Math.round(height * 0.12) }]}>
           <Arabic variant="title" color="lapis">
             دُرُوس
           </Arabic>
@@ -294,56 +292,35 @@ export default function Home() {
                 ) : null}
               </View>
             ) : (
-              <View style={{ gap: space(2.5) }}>
+              /* Quiet when idle: a line or two for you, then a few light
+                 suggestions. No boxes, so the bar stays the centre of it. */
+              <View style={{ gap: space(3), paddingTop: space(1) }}>
                 {forYou.length > 0 ? (
-                  <View style={{ gap: space(1) }}>
-                    <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
-                      For you
-                    </Text>
-                    {forYou.map((f) => (
-                      <Pressable key={f.label} accessibilityRole="button" onPress={f.onPress} style={s.forYou}>
-                        <Text>{f.label}</Text>
-                        <Text variant="label" color="inkSoft">
-                          {f.line}
-                        </Text>
+                  <View>
+                    {forYou.map((f, i) => (
+                      <Pressable key={f.label} accessibilityRole="button" onPress={f.onPress} style={[s.forYou, i > 0 && s.forYouRule]}>
+                        <View style={{ flex: 1 }}>
+                          <Text>{f.label}</Text>
+                          <Text variant="label" color="inkFaint">
+                            {f.line}
+                          </Text>
+                        </View>
+                        <Text color="inkFaint">{"›"}</Text>
                       </Pressable>
                     ))}
                   </View>
                 ) : null}
-                {recents.length > 0 ? (
-                  <View style={{ gap: space(1) }}>
-                    <View style={{ flexDirection: "row", justifyContent: "center", gap: space(2) }}>
-                      <Text variant="eyebrow" color="inkSoft">
-                        Recent
-                      </Text>
-                      <Pressable accessibilityRole="button" onPress={clearSearches} hitSlop={8}>
-                        <Text variant="eyebrow" color="inkFaint">
-                          Clear
-                        </Text>
-                      </Pressable>
-                    </View>
-                    <View style={s.chips}>
-                      {recents.slice(0, 6).map((r) => (
-                        <Pressable key={r} accessibilityRole="button" onPress={() => setQuery(r)} style={s.chip}>
-                          <Text variant="label">{r}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
-                <View style={{ gap: space(1) }}>
-                  <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
-                    Try
-                  </Text>
-                  <View style={s.chips}>
-                    {SUGGESTIONS.map((x) => (
+                <View style={s.chips}>
+                  {(recents.length > 0 ? recents.slice(0, 2).map((r) => ({ label: r, query: r })) : [])
+                    .concat(SUGGESTIONS)
+                    .slice(0, 6)
+                    .map((x) => (
                       <Pressable key={x.label} accessibilityRole="button" onPress={() => setQuery(x.query)} style={s.chip}>
                         <Text variant="label" color="inkSoft">
                           {x.label}
                         </Text>
                       </Pressable>
                     ))}
-                  </View>
                 </View>
               </View>
             )

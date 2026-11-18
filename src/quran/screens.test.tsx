@@ -61,7 +61,8 @@ describe("map", () => {
     await render(<MapTab />);
     await fireEvent(screen.getByTestId("progress-pager"), "layout", { nativeEvent: { layout: { width: 390, height: 560 } } });
     for (const tab of ["Wall", "Juz", "Stats", "Week"]) expect(screen.getByText(tab)).toBeTruthy();
-    expect(screen.getByText("memorized")).toBeTruthy();
+    expect(screen.getByText(/^Memorized \d/)).toBeTruthy();
+    expect(screen.getByText(/Each square is one ayah/)).toBeTruthy();
     expect(screen.getByText("Reading this week")).toBeTruthy();
   });
 });
