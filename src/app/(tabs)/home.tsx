@@ -38,6 +38,9 @@ const SUGGESTIONS: { label: string; query: string }[] = [
   { label: "Surprise me", query: "surprise me" },
 ];
 
+type Row = Hit | { kind: "heading"; title: string; count: number };
+const NO_RECENTS: string[] = [];
+
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
@@ -47,7 +50,10 @@ const useStyles = makeStyles((t) => ({
   input: { flex: 1, fontFamily: FONTS.uiRegular, fontSize: 17, color: t.colors.ink, paddingVertical: space(1.75) },
   chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1) },
   chip: { borderRadius: RADIUS.pill, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(1), paddingHorizontal: space(1.75) },
-  result: { paddingVertical: space(1.75), gap: space(0.5) },
+  result: { paddingVertical: space(1.5), gap: space(0.5) },
+  rowCard: { borderRadius: RADIUS.card, backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule, paddingHorizontal: space(1.75), marginBottom: space(1) },
+  badge: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: t.colors.rule, alignItems: "center", justifyContent: "center" },
+  heading: { paddingTop: space(2), paddingBottom: space(1) },
   refRow: { flexDirection: "row", alignItems: "center", gap: space(1) },
   ref: { borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingHorizontal: space(1.25), paddingVertical: 2 },
   ayah: { fontFamily: FONTS.quran, fontSize: 22, lineHeight: 46, color: t.colors.ink, textAlign: "right", writingDirection: "rtl" },
@@ -76,16 +82,51 @@ export default function Home() {
   const completions = useMemo(() => suggest(query).filter((c) => c.toLowerCase() !== query.trim().toLowerCase()), [query]);
   const typing = query.trim().length > 0;
 
+  const recents = usePrefs((st) => st.recentSearches) ?? NO_RECENTS;
+  const rememberSearch = usePrefs((st) => st.rememberSearch);
+  const clearSearches = usePrefs((st) => st.clearSearches);
+
+  /* Results grouped under quiet headings: topics, surahs, ayahs. */
+  const rows = useMemo(() => {
+    const groups: [string, Hit[]][] = [
+      ["Topics", result.hits.filter((h) => h.kind === "theme")],
+      ["Surahs and juz", result.hits.filter((h) => h.kind === "surah" || h.kind === "juz")],
+      ["Ayahs", result.hits.filter((h) => h.kind === "ayah" || h.kind === "text")],
+    ];
+    const out: Row[] = [];
+    for (const [title, hits] of groups) {
+      if (hits.length === 0) continue;
+      out.push({ kind: "heading", title: result.label && title !== "Topics" ? result.label : title, count: title === "Ayahs" ? Math.max(hits.length, result.total - out.length) : hits.length });
+      hits.forEach((h) => out.push(h));
+    }
+    return out;
+  }, [result]);
+
   const open = (surah: number, ayah?: number) => {
+    rememberSearch(query);
     Keyboard.dismiss();
     router.push(ayah ? `/surah/${surah}?ayah=${ayah}` : `/surah/${surah}`);
   };
 
-  const renderHit = ({ item }: { item: Hit }) => {
+  const renderHit = ({ item }: { item: Row }) => {
+    if (item.kind === "heading") {
+      return (
+        <View style={s.heading}>
+          <Text variant="eyebrow" color="inkSoft">
+            {item.title}
+          </Text>
+        </View>
+      );
+    }
     if (item.kind === "surah") {
       const x = SURAHS[item.surah - 1];
       return (
-        <Pressable accessibilityRole="button" onPress={() => open(x.n)} style={[s.result, { flexDirection: "row", alignItems: "center" }]}>
+        <Pressable accessibilityRole="button" onPress={() => open(x.n)} style={[s.result, s.rowCard, { flexDirection: "row", alignItems: "center", gap: space(1.5) }]}>
+          <View style={s.badge}>
+            <Text variant="label" color="inkSoft">
+              {String(x.n)}
+            </Text>
+          </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text>{x.en}</Text>
             <Text variant="label" color="inkSoft">{`Surah ${x.n}. ${x.meaning}, ${x.ayahs} ayahs`}</Text>
@@ -99,7 +140,7 @@ export default function Home() {
     if (item.kind === "juz") {
       const at = refOf(item.index);
       return (
-        <Pressable accessibilityRole="button" onPress={() => open(at.surah, at.ayah)} style={s.result}>
+        <Pressable accessibilityRole="button" onPress={() => open(at.surah, at.ayah)} style={[s.result, s.rowCard]}>
           <Text>{`Juz ${item.juz}`}</Text>
           <Text variant="label" color="inkSoft">{`From ${SURAHS[at.surah - 1].en} ${at.surah}:${at.ayah}`}</Text>
         </Pressable>
@@ -108,7 +149,7 @@ export default function Home() {
     if (item.kind === "theme") {
       /* Only verified topics reach here. Each reference opens in the reader. */
       return (
-        <View style={s.result}>
+        <View style={[s.result, s.rowCard]}>
           <Text>{item.theme.label}</Text>
           <View style={[s.chips, { justifyContent: "flex-start", paddingTop: space(0.5) }]}>
             {item.theme.refs.map((r) => {
@@ -128,7 +169,7 @@ export default function Home() {
     /* An ayah, by reference or by its words. Shown verbatim. */
     const x = SURAHS[item.surah - 1];
     return (
-      <Pressable accessibilityRole="button" onPress={() => open(item.surah, item.ayah)} style={s.result}>
+      <Pressable accessibilityRole="button" onPress={() => open(item.surah, item.ayah)} style={[s.result, s.rowCard]}>
         <View style={s.refRow}>
           <View style={s.ref}>
             <Text variant="label" color="lapis">{`${item.surah}:${item.ayah}`}</Text>
@@ -186,10 +227,9 @@ export default function Home() {
         {typing ? (
           <FlatList
             style={{ flex: 1 }}
-            data={result.hits}
+            data={rows}
             keyExtractor={(h, i) => `${h.kind}-${i}`}
             renderItem={renderHit}
-            ItemSeparatorComponent={() => <View style={s.rule} />}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={{ paddingTop: space(1), paddingBottom: space(12) }}
@@ -206,11 +246,6 @@ export default function Home() {
                       </Pressable>
                     ))}
                   </View>
-                ) : null}
-                {result.label ? (
-                  <Text variant="eyebrow" color="inkSoft" style={{ paddingTop: space(2) }}>
-                    {`${result.label}, ${result.total}`}
-                  </Text>
                 ) : null}
                 {result.pendingTopic ? (
                   <View style={s.note}>
@@ -238,7 +273,28 @@ export default function Home() {
             }
           />
         ) : (
-          <View style={{ flex: 1, paddingTop: space(3) }}>
+          <View style={{ flex: 1, paddingTop: space(3), gap: space(2.5) }}>
+            {recents.length > 0 ? (
+              <View style={{ gap: space(1) }}>
+                <View style={{ flexDirection: "row", justifyContent: "center", gap: space(2) }}>
+                  <Text variant="eyebrow" color="inkSoft">
+                    Recent
+                  </Text>
+                  <Pressable accessibilityRole="button" onPress={clearSearches} hitSlop={8}>
+                    <Text variant="eyebrow" color="inkFaint">
+                      Clear
+                    </Text>
+                  </Pressable>
+                </View>
+                <View style={s.chips}>
+                  {recents.slice(0, 6).map((r) => (
+                    <Pressable key={r} accessibilityRole="button" onPress={() => setQuery(r)} style={s.chip}>
+                      <Text variant="label">{r}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
             <View style={s.chips}>
               {lastRead ? (
                 <Pressable
