@@ -69,6 +69,7 @@ export default function Read() {
   const router = useRouter();
   const events = useQuranStatus((st) => st.events);
   const lastRead = usePrefs((st) => st.lastRead);
+  const bookmarks = usePrefs((st) => st.bookmarks);
   const [by, setBy] = useState<"surah" | "juz">("surah");
   const juzRows = useMemo(() => JUZ_STARTS.map((start, i) => ({ juz: i + 1, ...refOf(start) })), []);
 
@@ -100,6 +101,28 @@ export default function Read() {
           </Text>
           <Text>{`${SURAHS[lastRead.surah - 1].en}, ayah ${lastRead.ayah}`}</Text>
         </Pressable>
+      ) : null}
+      {bookmarks.length > 0 ? (
+        <View style={{ paddingBottom: space(2.5), gap: space(1) }}>
+          <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
+            Bookmarks
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(1) }}>
+            {bookmarks.slice(0, 12).map((g) => {
+              const at = refOf(g);
+              return (
+                <Pressable
+                  key={g}
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/surah/${at.surah}?ayah=${at.ayah}`)}
+                  style={{ borderRadius: 999, borderWidth: 1, borderColor: theme.colors.rule, backgroundColor: theme.colors.surface, paddingVertical: 6, paddingHorizontal: space(1.5) }}
+                >
+                  <Text variant="label">{`${SURAHS[at.surah - 1].en} ${at.surah}:${at.ayah}`}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
       ) : null}
       <View style={s.seg}>
         {(["surah", "juz"] as const).map((k) => (

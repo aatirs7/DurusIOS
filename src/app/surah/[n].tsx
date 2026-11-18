@@ -123,6 +123,8 @@ export default function SurahReader() {
   const setSurah = useQuranStatus((st) => st.setSurah);
   const setLastRead = usePrefs((st) => st.setLastRead);
   const size = usePrefs((st) => st.arabicSize);
+  const bookmarks = usePrefs((st) => st.bookmarks);
+  const toggleBookmark = usePrefs((st) => st.toggleBookmark);
   const maps = useMemo(() => foldStatus(events), [events]);
 
   const list = useRef<FlatList<string>>(null);
@@ -251,7 +253,7 @@ export default function SurahReader() {
         initialNumToRender={Math.max(12, (targetAyah ?? 0) + 4)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top + TOP_BAR + space(1), paddingHorizontal: MARGIN, paddingBottom: insets.bottom + space(4) }}
-        extraData={[selected, highlight, maps, size]}
+        extraData={[selected, highlight, maps, size, bookmarks]}
         renderItem={({ item, index }) => {
           const ayah = index + 1;
           const g = meta.start + index;
@@ -324,6 +326,15 @@ export default function SurahReader() {
                     <Text variant="label" color={u ? "paper" : "ink"}>
                       Understood
                     </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={bookmarks.includes(g) ? "Remove bookmark" : "Bookmark"}
+                    accessibilityState={{ selected: bookmarks.includes(g) }}
+                    onPress={() => toggleBookmark(g)}
+                    style={[s.tool, bookmarks.includes(g) && { backgroundColor: theme.colors.lapis }]}
+                  >
+                    <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={bookmarks.includes(g) ? theme.colors.paper : theme.colors.lapis} />
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"

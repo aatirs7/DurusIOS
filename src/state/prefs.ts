@@ -21,6 +21,9 @@ type PrefsState = Hydratable & {
   setReaderView: (v: ReaderView) => void;
   arabicSize: number;
   setArabicSize: (n: number) => void;
+  /* Bookmarked ayahs, by global index, newest first. */
+  bookmarks: number[];
+  toggleBookmark: (index: number) => void;
 };
 
 export type ReaderView = "arabic" | "translation" | "wordTranslation" | "transliteration" | "wordTransliteration";
@@ -38,6 +41,11 @@ export const usePrefs = create<PrefsState>()(
       setReaderView: (readerView) => set({ readerView }),
       arabicSize: 28,
       setArabicSize: (arabicSize) => set({ arabicSize: Math.min(40, Math.max(22, arabicSize)) }),
+      bookmarks: [],
+      toggleBookmark: (index) =>
+        set((st) => ({
+          bookmarks: st.bookmarks.includes(index) ? st.bookmarks.filter((b) => b !== index) : [index, ...st.bookmarks],
+        })),
     }),
     {
       name: "durus:prefs",
