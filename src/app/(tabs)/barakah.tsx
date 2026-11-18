@@ -22,6 +22,7 @@ import {
 } from "@/engine/barakah";
 import { gregorianDate, hijriDate } from "@/lib/time";
 import { localToday, useBarakah } from "@/state/barakah";
+import { usePrefs } from "@/state/prefs";
 import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
@@ -105,10 +106,13 @@ function PracticeCard({
   practice,
   value,
   onChange,
+  extra,
 }: {
   practice: Practice;
   value: number;
   onChange: (next: number) => void;
+  /* A line under the description, such as today's reading. */
+  extra?: React.ReactNode;
 }) {
   const s = useStyles();
   const theme = useTheme();
@@ -141,6 +145,7 @@ function PracticeCard({
           {practice.quranRef}
         </Text>
       ) : null}
+      {extra ?? null}
       {practice.input === "count" ? (
         <View style={s.counter}>
           <Pressable
@@ -201,6 +206,9 @@ function Chevron({ left }: { left?: boolean }) {
   );
 }
 
+/* A stable fallback: a fresh {} inside a selector re-renders forever. */
+const NO_LOG: Record<string, number[]> = {};
+
 export default function Barakah() {
   const s = useStyles();
   const theme = useTheme();
@@ -218,10 +226,26 @@ export default function Barakah() {
   }, [hydrated, ensureSince]);
 
   const today = localToday();
+  const readLog = usePrefs((st) => st.readLog) ?? NO_LOG;
+  const readingGoal = usePrefs((st) => st.readingGoal) ?? 10;
+  const setReadingGoal = usePrefs((st) => st.setReadingGoal);
+  const readOn = (d: string) => readLog[d]?.length ?? 0;
   const [day, setDay] = useState(today);
   const isToday = day === today;
 
   const values = useMemo(() => fold(events), [events]);
+
+  /*
+    Reading counts toward the daily Quran portion. Once today's ayahs reach
+    the goal the card ticks itself, once. If the card was touched by hand
+    today, it is left alone, so unticking it sticks.
+  */
+  const readToday = readOn(today);
+  useEffect(() => {
+    if (!hydrated || !tracked.includes("quran") || readToday < readingGoal) return;
+    if (events.some((e) => e.day === today && e.practiceId === "quran")) return;
+    log(today, "quran", 1);
+  }, [hydrated, tracked, readToday, readingGoal, events, today, log]);
 
   const due = useMemo(
     () =>
@@ -304,6 +328,24 @@ export default function Barakah() {
                 practice={p}
                 value={valueOn(values, day, p.id)}
                 onChange={(next) => log(day, p.id, next)}
+                extra={
+                  p.id === "quran" ? (
+                    <View style={{ alignItems: "center", gap: space(0.75), paddingTop: space(0.5) }}>
+                      <Text variant="label" color="inkSoft">{`${readOn(day)} of ${readingGoal} ayahs read ${isToday ? "today" : "that day"}`}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: space(1.5) }}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Smaller goal" onPress={() => setReadingGoal(readingGoal - 5)} hitSlop={8}>
+                          <Text color="lapis">−</Text>
+                        </Pressable>
+                        <Text variant="label" color="inkFaint">
+                          Daily goal
+                        </Text>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Larger goal" onPress={() => setReadingGoal(readingGoal + 5)} hitSlop={8}>
+                          <Text color="lapis">+</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : undefined
+                }
               />
             ))
           )}

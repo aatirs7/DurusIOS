@@ -31,6 +31,9 @@ type PrefsState = Hydratable & {
   /* Ayahs read, per local day, as global indexes. Kept for 60 days. */
   readLog: Record<string, number[]>;
   logRead: (day: string, index: number) => void;
+  /* Ayahs a day that count as the daily Quran portion in Barakah. */
+  readingGoal: number;
+  setReadingGoal: (n: number) => void;
   /* Searches that led somewhere, newest first, at most eight. */
   recentSearches: string[];
   rememberSearch: (q: string) => void;
@@ -74,6 +77,8 @@ export const usePrefs = create<PrefsState>()(
       setTranslationId: (translationId) => set({ translationId }),
       reader: DEFAULT_LOOK,
       setReader: (patch) => set((st) => ({ reader: { ...DEFAULT_LOOK, ...st.reader, ...patch } })),
+      readingGoal: 10,
+      setReadingGoal: (n) => set({ readingGoal: Math.min(300, Math.max(1, Math.round(n))) }),
       recentSearches: [],
       rememberSearch: (q) =>
         set((st) => {
