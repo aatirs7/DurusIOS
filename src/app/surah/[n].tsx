@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { Glass } from "@/components/Glass";
-import { NavigateSheet, ViewSheet, juzOf } from "@/components/QuranSheets";
+import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
 import { Text } from "@/components/Text";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
@@ -28,8 +28,10 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   is no English yet: The Clear Quran only comes through Quran Foundation, and
   Tanzil's translations are licensed for non-commercial use only.
 
-  Tap an ayah and a Liquid Glass bar appears under it: memorized, understood,
-  share. The surah and juz pill at the top opens the navigator; Aa opens the
+  Tap an ayah and a Liquid Glass bar floats up from the bottom: memorized,
+  understood, bookmark, share. The page itself follows the reading view: the
+  script, size, spacing, tone (app, paper, sepia, night), ayah by ayah or a
+  flowing page, alignment, and whether numbers and marks show. The surah and juz pill at the top opens the navigator; Aa opens the
   reading view. The controls float on glass over the page and never hold the
   text itself. Statuses live in the device event log (src/state/quranStatus).
   Everything here is on the phone, so it works offline.
@@ -42,34 +44,18 @@ const useStyles = makeStyles((t) => ({
   topBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: MARGIN },
   round: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   pill: { height: 44, borderRadius: 22, paddingHorizontal: space(2.25), alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  toolbar: { flexDirection: "row", alignSelf: "center", borderRadius: RADIUS.pill, padding: 4, gap: 4, overflow: "hidden" },
+  toolbar: { flexDirection: "row", alignItems: "center", alignSelf: "center", borderRadius: RADIUS.pill, padding: 4, gap: 2, overflow: "hidden" },
+  toolLabel: { paddingHorizontal: space(1.25) },
+  bottomBar: { position: "absolute", left: 0, right: 0, alignItems: "center", paddingHorizontal: space(1) },
   tool: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: space(1), paddingHorizontal: space(1.75), borderRadius: RADIUS.pill },
   head: { alignItems: "center", gap: space(0.5), paddingTop: space(1), paddingBottom: space(3) },
   surahAr: { fontFamily: FONTS.quran, fontSize: 40, lineHeight: 76, color: t.colors.ink, textAlign: "center" },
-  basmala: {
-    fontFamily: FONTS.quran,
-    fontSize: 26,
-    lineHeight: 56,
-    color: t.colors.ink,
-    textAlign: "center",
-    writingDirection: "rtl",
-    paddingTop: space(2),
-  },
+  basmala: { paddingTop: space(2) },
   ayah: {
     paddingVertical: space(2),
     paddingHorizontal: space(1),
     borderRadius: RADIUS.card,
     gap: space(1),
-  },
-  target: { backgroundColor: t.colors.lapisWash },
-  selected: { backgroundColor: t.colors.surfaceSunk },
-  text: {
-    fontFamily: FONTS.quran,
-    fontSize: 28,
-    lineHeight: 60,
-    color: t.colors.ink,
-    textAlign: "right",
-    writingDirection: "rtl",
   },
   meta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   chips: { flexDirection: "row", gap: space(0.75) },
@@ -106,6 +92,7 @@ function Icon({ d, color, size = 18 }: { d: string; color: string; size?: number
 }
 
 const TOP_BAR = 44;
+const FLOW_CHUNK = 8;
 
 export default function SurahReader() {
   const s = useStyles();
@@ -122,12 +109,24 @@ export default function SurahReader() {
   const setAyah = useQuranStatus((st) => st.setAyah);
   const setSurah = useQuranStatus((st) => st.setSurah);
   const setLastRead = usePrefs((st) => st.setLastRead);
-  const size = usePrefs((st) => st.arabicSize);
   const bookmarks = usePrefs((st) => st.bookmarks);
   const toggleBookmark = usePrefs((st) => st.toggleBookmark);
   const maps = useMemo(() => foldStatus(events), [events]);
+  const colors = useReaderColors();
+  const type = useQuranType();
+  const look = type.look;
+  const flow = look.layout === "flow";
 
-  const list = useRef<FlatList<string>>(null);
+  /* Flowing layout groups ayahs into paragraphs so a long surah stays one
+     scrollable list rather than one enormous text node. */
+  const chunks = useMemo(() => {
+    const out: number[][] = [];
+    for (let i = 0; i < ayahs.length; i += FLOW_CHUNK) out.push(Array.from({ length: Math.min(FLOW_CHUNK, ayahs.length - i) }, (_, k) => i + k));
+    return out;
+  }, [ayahs.length]);
+  const rowOf = (ayah: number) => (flow ? Math.floor((ayah - 1) / FLOW_CHUNK) : ayah - 1);
+
+  const list = useRef<FlatList<number | number[]>>(null);
   const [highlight, setHighlight] = useState<number | null>(targetAyah);
   const [selected, setSelected] = useState<number | null>(null);
   const [visibleAyah, setVisibleAyah] = useState(targetAyah ?? 1);
@@ -138,22 +137,24 @@ export default function SurahReader() {
      FlatList and retries once its estimate has laid out. */
   useEffect(() => {
     if (!targetAyah || targetAyah < 1 || targetAyah > meta.ayahs) return;
-    const id = setTimeout(() => list.current?.scrollToIndex({ index: targetAyah - 1, viewPosition: 0.2, animated: false }), 60);
+    const id = setTimeout(() => list.current?.scrollToIndex({ index: rowOf(targetAyah), viewPosition: 0.2, animated: false }), 60);
     const fade = setTimeout(() => setHighlight(null), 4000);
     return () => {
       clearTimeout(id);
       clearTimeout(fade);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetAyah, meta.ayahs]);
 
-  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<string>[] }) => {
+  const flowRef = useRef(flow);
+  flowRef.current = flow;
+  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<number | number[]>[] }) => {
     const first = viewableItems.find((v) => v.index !== null);
-    if (first?.index != null) setVisibleAyah(first.index + 1);
+    if (first?.index != null) setVisibleAyah(flowRef.current ? first.index * FLOW_CHUNK + 1 : first.index + 1);
   }).current;
 
   /* The reading position is saved a moment after scrolling settles, not on
-     every ayah that passes, which would write to storage dozens of times a
-     second during a fling. */
+     every ayah that passes. */
   useEffect(() => {
     const id = setTimeout(() => setLastRead({ surah: n, ayah: visibleAyah }), 800);
     return () => clearTimeout(id);
@@ -190,24 +191,29 @@ export default function SurahReader() {
     pending.current = null;
     if (!to) return;
     if (to.surah === n) {
-      list.current?.scrollToIndex({ index: to.ayah - 1, viewPosition: 0.2, animated: true });
+      list.current?.scrollToIndex({ index: rowOf(to.ayah), viewPosition: 0.2, animated: true });
       return;
     }
     router.replace(`/surah/${to.surah}?ayah=${to.ayah}`);
   };
 
-  const textStyle = { fontSize: size, lineHeight: Math.round(size * 2.15) };
+  const quran = { fontFamily: type.fontFamily, fontSize: type.fontSize, lineHeight: type.lineHeight, color: colors.ink, textAlign: look.align, writingDirection: "rtl" as const };
   const top = insets.top + space(1);
   const juz = juzOf(meta.start + visibleAyah - 1);
+  const selColor = colors.dark ? colors.rule : theme.colors.lapisWash;
+  const markColor = (g: number) =>
+    !look.marks ? colors.soft : maps.understood[g] ? theme.colors.verdigris : maps.memorized[g] ? theme.colors.saffron : colors.soft;
 
   const header = (
     <View style={s.head}>
-      <Text selectable={false} style={s.surahAr}>
+      <Text selectable={false} style={[s.surahAr, { color: colors.ink }]}>
         {meta.ar}
       </Text>
-      <Text variant="pageTitle">{meta.en}</Text>
-      <Text variant="label" color="inkSoft">
-        {`${meta.meaning}. ${meta.place}, ${meta.ayahs} ayahs`}
+      <Text variant="pageTitle" style={{ color: colors.ink }}>
+        {meta.en}
+      </Text>
+      <Text variant="label" style={{ color: colors.soft }}>
+        {`${meta.meaning}. ${meta.place}, ${meta.ayahs} ayahs, Juz ${juzOf(meta.start)}`}
       </Text>
       <Pressable accessibilityRole="button" onPress={surahActions} hitSlop={8} style={{ paddingTop: space(1) }}>
         <Text variant="label" color="lapis">
@@ -215,7 +221,7 @@ export default function SurahReader() {
         </Text>
       </Pressable>
       {basmala ? (
-        <Text selectable={false} style={[s.basmala, { fontSize: size - 2, lineHeight: Math.round((size - 2) * 2.1) }]}>
+        <Text selectable={false} style={[quran, s.basmala, { textAlign: "center" }]}>
           {basmala}
         </Text>
       ) : null}
@@ -224,131 +230,119 @@ export default function SurahReader() {
 
   const footer = (
     <View style={s.foot}>
-      <Text variant="label" color="inkFaint" style={{ textAlign: "center" }}>
+      <Text variant="label" style={{ textAlign: "center", color: colors.soft }}>
         Arabic text from Tanzil. Translation arrives with Quran.com.
       </Text>
       {n < 114 ? (
-        <Pressable accessibilityRole="button" onPress={() => router.replace(`/surah/${n + 1}`)} style={s.next}>
-          <Text>{`Next: ${SURAHS[n].en}`}</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.replace(`/surah/${n + 1}`)} style={[s.next, { borderColor: colors.rule }]}>
+          <Text style={{ color: colors.ink }}>{`Next: ${SURAHS[n].en}`}</Text>
         </Pressable>
       ) : null}
     </View>
   );
 
+  const renderAyah = (index: number) => {
+    const ayah = index + 1;
+    const g = meta.start + index;
+    const m = look.marks && maps.memorized[g] === 1;
+    const u = look.marks && maps.understood[g] === 1;
+    const isSel = selected === ayah;
+    return (
+      <Pressable
+        onPress={() => setSelected(isSel ? null : ayah)}
+        accessibilityLabel={`Ayah ${ayah}`}
+        accessibilityHint="Tap for memorized, understood, bookmark and share"
+        style={[s.ayah, (highlight === ayah || isSel) && { backgroundColor: selColor }]}
+      >
+        <Text selectable={false} style={quran}>
+          {ayahs[index]}
+        </Text>
+        {look.numbers || m || u || bookmarks.includes(g) ? (
+          <View style={s.meta}>
+            <View style={s.chips}>
+              {m ? (
+                <View style={s.chip}>
+                  <View style={[s.dot, { backgroundColor: theme.colors.saffron }]} />
+                  <Text variant="label" style={{ color: colors.soft }}>
+                    Memorized
+                  </Text>
+                </View>
+              ) : null}
+              {u ? (
+                <View style={s.chip}>
+                  <View style={[s.dot, { backgroundColor: theme.colors.verdigris }]} />
+                  <Text variant="label" style={{ color: colors.soft }}>
+                    Understood
+                  </Text>
+                </View>
+              ) : null}
+              {bookmarks.includes(g) ? <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={theme.colors.lapis} size={14} /> : null}
+            </View>
+            {look.numbers ? (
+              <View style={s.marker}>
+                <Text variant="label" color="saffron">
+                  {toArabicDigits(ayah)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </Pressable>
+    );
+  };
+
+  /* One paragraph of the flowing layout: each ayah is its own pressable span,
+     followed by its number in ornate brackets, tinted by its status. */
+  const renderFlow = (indexes: number[]) => (
+    <Text selectable={false} style={[quran, { paddingVertical: space(1) }]}>
+      {indexes.map((index) => {
+        const ayah = index + 1;
+        const g = meta.start + index;
+        const lit = selected === ayah || highlight === ayah;
+        return (
+          <Text key={index} selectable={false}>
+            <Text selectable={false} onPress={() => setSelected(selected === ayah ? null : ayah)} style={[quran, lit && { backgroundColor: selColor }]}>
+              {ayahs[index]}
+            </Text>
+            {look.numbers ? (
+              <Text selectable={false} style={[quran, { color: markColor(g) }]}>{` ﴿${toArabicDigits(ayah)}﴾ `}</Text>
+            ) : (
+              <Text selectable={false} style={quran}>
+                {"  "}
+              </Text>
+            )}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+
+  const sel = selected ? meta.start + selected - 1 : null;
+  const selM = sel !== null && maps.memorized[sel] === 1;
+  const selU = sel !== null && maps.understood[sel] === 1;
+  const selB = sel !== null && bookmarks.includes(sel);
+
   return (
-    <View style={s.page}>
-      <FlatList
+    <View style={[s.page, { backgroundColor: colors.page }]}>
+      <FlatList<number | number[]>
+        key={look.layout}
         ref={list}
-        data={ayahs}
+        data={flow ? chunks : ayahs.map((_, i) => i)}
         keyExtractor={(_, i) => String(i)}
         ListHeaderComponent={header}
         ListFooterComponent={footer}
-        ItemSeparatorComponent={() => <View style={s.rule} />}
+        ItemSeparatorComponent={flow ? null : () => <View style={[s.rule, { backgroundColor: colors.rule }]} />}
         onViewableItemsChanged={onViewable}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 40 }}
         onScrollToIndexFailed={(info) => {
           list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
           setTimeout(() => list.current?.scrollToIndex({ index: info.index, viewPosition: 0.2, animated: false }), 120);
         }}
-        initialNumToRender={Math.max(12, (targetAyah ?? 0) + 4)}
+        initialNumToRender={Math.max(12, (targetAyah ? rowOf(targetAyah) : 0) + 4)}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: top + TOP_BAR + space(1), paddingHorizontal: MARGIN, paddingBottom: insets.bottom + space(4) }}
-        extraData={[selected, highlight, maps, size, bookmarks]}
-        renderItem={({ item, index }) => {
-          const ayah = index + 1;
-          const g = meta.start + index;
-          const m = maps.memorized[g] === 1;
-          const u = maps.understood[g] === 1;
-          const isSel = selected === ayah;
-          return (
-            <View>
-              <Pressable
-                onPress={() => setSelected(isSel ? null : ayah)}
-                onLongPress={() => setSelected(ayah)}
-                accessibilityLabel={`Ayah ${ayah}`}
-                accessibilityHint="Tap for memorized, understood and share"
-                style={[s.ayah, highlight === ayah && s.target, isSel && s.selected]}
-              >
-                <Text selectable={false} style={[s.text, textStyle]}>
-                  {item}
-                </Text>
-                <View style={s.meta}>
-                  <View style={s.chips}>
-                    {m ? (
-                      <View style={s.chip}>
-                        <View style={[s.dot, { backgroundColor: theme.colors.saffron }]} />
-                        <Text variant="label" color="inkSoft">
-                          Memorized
-                        </Text>
-                      </View>
-                    ) : null}
-                    {u ? (
-                      <View style={s.chip}>
-                        <View style={[s.dot, { backgroundColor: theme.colors.verdigris }]} />
-                        <Text variant="label" color="inkSoft">
-                          Understood
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={s.marker}>
-                    <Text variant="label" color="saffron">
-                      {toArabicDigits(ayah)}
-                    </Text>
-                  </View>
-                </View>
-              </Pressable>
-              {isSel ? (
-                /* Mounted plainly, never faded: glass does not draw under an
-                   animated opacity. */
-                <Glass interactive style={[s.toolbar, { marginBottom: space(1.5) }]}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: m }}
-                    onPress={() => setAyah(g, "memorized", !m)}
-                    style={[s.tool, m && { backgroundColor: theme.colors.saffron }]}
-                  >
-                    <Icon d="M5 12.5l4.5 4.5L19 7.5" color={m ? theme.colors.paper : theme.colors.saffron} />
-                    <Text variant="label" color={m ? "paper" : "ink"}>
-                      Memorized
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: u }}
-                    onPress={() => setAyah(g, "understood", !u)}
-                    style={[s.tool, u && { backgroundColor: theme.colors.verdigris }]}
-                  >
-                    <Icon
-                      d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 14.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"
-                      color={u ? theme.colors.paper : theme.colors.verdigris}
-                    />
-                    <Text variant="label" color={u ? "paper" : "ink"}>
-                      Understood
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={bookmarks.includes(g) ? "Remove bookmark" : "Bookmark"}
-                    accessibilityState={{ selected: bookmarks.includes(g) }}
-                    onPress={() => toggleBookmark(g)}
-                    style={[s.tool, bookmarks.includes(g) && { backgroundColor: theme.colors.lapis }]}
-                  >
-                    <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={bookmarks.includes(g) ? theme.colors.paper : theme.colors.lapis} />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Share reference"
-                    onPress={() => void Share.share({ message: `${meta.en} ${n}:${ayah}` })}
-                    style={s.tool}
-                  >
-                    <Icon d="M12 15V3.5M7.5 8L12 3.5 16.5 8M5 12.5v6a2 2 0 002 2h10a2 2 0 002-2v-6" color={theme.colors.lapis} />
-                  </Pressable>
-                </Glass>
-              ) : null}
-            </View>
-          );
-        }}
+        contentContainerStyle={{ paddingTop: top + TOP_BAR + space(1), paddingHorizontal: MARGIN, paddingBottom: insets.bottom + space(14) }}
+        extraData={[selected, highlight, maps, type, bookmarks, colors]}
+        renderItem={({ item }) => (Array.isArray(item) ? renderFlow(item) : renderAyah(item))}
       />
 
       {/* Chrome floats on glass above the page. */}
@@ -373,6 +367,63 @@ export default function SurahReader() {
           </Glass>
         </Pressable>
       </View>
+
+      {/* The ayah bar: floats on glass at the bottom while an ayah is chosen.
+          Mounted plainly, never faded, so the glass always draws. */}
+      {selected && sel !== null ? (
+        <View style={[s.bottomBar, { bottom: insets.bottom + space(1.5) }]} pointerEvents="box-none">
+          <Glass interactive style={s.toolbar}>
+            <View style={s.toolLabel}>
+              <Text variant="label">{`${n}:${selected}`}</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: selM }}
+              onPress={() => setAyah(sel, "memorized", !selM)}
+              style={[s.tool, selM && { backgroundColor: theme.colors.saffron }]}
+            >
+              <Icon d="M5 12.5l4.5 4.5L19 7.5" color={selM ? theme.colors.paper : theme.colors.saffron} />
+              <Text variant="label" color={selM ? "paper" : "ink"}>
+                Memorized
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: selU }}
+              onPress={() => setAyah(sel, "understood", !selU)}
+              style={[s.tool, selU && { backgroundColor: theme.colors.verdigris }]}
+            >
+              <Icon
+                d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 14.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"
+                color={selU ? theme.colors.paper : theme.colors.verdigris}
+              />
+              <Text variant="label" color={selU ? "paper" : "ink"}>
+                Understood
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={selB ? "Remove bookmark" : "Bookmark"}
+              accessibilityState={{ selected: selB }}
+              onPress={() => toggleBookmark(sel)}
+              style={[s.tool, selB && { backgroundColor: theme.colors.lapis }]}
+            >
+              <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={selB ? theme.colors.paper : theme.colors.lapis} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share reference"
+              onPress={() => void Share.share({ message: `${meta.en} ${n}:${selected}` })}
+              style={s.tool}
+            >
+              <Icon d="M12 15V3.5M7.5 8L12 3.5 16.5 8M5 12.5v6a2 2 0 002 2h10a2 2 0 002-2v-6" color={theme.colors.lapis} />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setSelected(null)} style={s.tool}>
+              <Icon d="M6 6l12 12M18 6L6 18" color={theme.colors.inkSoft} size={16} />
+            </Pressable>
+          </Glass>
+        </View>
+      ) : null}
 
       <NavigateSheet visible={navOpen} onClose={() => setNavOpen(false)} current={{ surah: n, juz }} onGo={go} onDismiss={afterSheet} />
       <ViewSheet visible={viewOpen} onClose={() => setViewOpen(false)} />

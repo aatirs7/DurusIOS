@@ -21,10 +21,27 @@ type PrefsState = Hydratable & {
   setReaderView: (v: ReaderView) => void;
   arabicSize: number;
   setArabicSize: (n: number) => void;
+  /* Reader look. */
+  reader: ReaderLook;
+  setReader: (patch: Partial<ReaderLook>) => void;
   /* Bookmarked ayahs, by global index, newest first. */
   bookmarks: number[];
   toggleBookmark: (index: number) => void;
 };
+
+export type ReaderFont = "amiriQuran" | "scheherazade" | "naskh" | "amiri" | "lateef";
+export type ReaderLook = {
+  font: ReaderFont;
+  /* Line height as a multiple of the font size. */
+  spacing: "compact" | "normal" | "airy";
+  tone: "app" | "paper" | "sepia" | "night";
+  /* One ayah per row, or the text flowing on like a page. */
+  layout: "ayah" | "flow";
+  align: "right" | "center";
+  marks: boolean;
+  numbers: boolean;
+};
+export const DEFAULT_LOOK: ReaderLook = { font: "amiriQuran", spacing: "normal", tone: "app", layout: "ayah", align: "right", marks: true, numbers: true };
 
 export type ReaderView = "arabic" | "translation" | "wordTranslation" | "transliteration" | "wordTransliteration";
 
@@ -41,6 +58,8 @@ export const usePrefs = create<PrefsState>()(
       setReaderView: (readerView) => set({ readerView }),
       arabicSize: 28,
       setArabicSize: (arabicSize) => set({ arabicSize: Math.min(40, Math.max(22, arabicSize)) }),
+      reader: DEFAULT_LOOK,
+      setReader: (patch) => set((st) => ({ reader: { ...DEFAULT_LOOK, ...st.reader, ...patch } })),
       bookmarks: [],
       toggleBookmark: (index) =>
         set((st) => ({

@@ -1,6 +1,9 @@
 import { ClerkProvider } from "@clerk/clerk-expo";
 import { Amiri_400Regular, Amiri_700Bold } from "@expo-google-fonts/amiri";
 import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
+import { Lateef_400Regular } from "@expo-google-fonts/lateef";
+import { NotoNaskhArabic_400Regular } from "@expo-google-fonts/noto-naskh-arabic";
+import { ScheherazadeNew_400Regular } from "@expo-google-fonts/scheherazade-new";
 import {
   IBMPlexMono_400Regular,
   IBMPlexMono_500Medium,
@@ -62,6 +65,9 @@ export default function RootLayout() {
     Amiri_400Regular,
     Amiri_700Bold,
     AmiriQuran_400Regular,
+    ScheherazadeNew_400Regular,
+    NotoNaskhArabic_400Regular,
+    Lateef_400Regular,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     /* Each weight is its OWN family, and fontWeight is never set anywhere in

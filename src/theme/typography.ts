@@ -37,6 +37,16 @@ export const FONTS = {
   quran: "AmiriQuran_400Regular",
 } as const;
 
+/* Faces the reader can choose for Quran text. Each was checked to carry every
+   character in the Tanzil Uthmani text. */
+export const QURAN_FONTS = {
+  amiriQuran: { family: "AmiriQuran_400Regular", label: "Amiri Quran", scale: 1 },
+  scheherazade: { family: "ScheherazadeNew_400Regular", label: "Scheherazade", scale: 1.08 },
+  naskh: { family: "NotoNaskhArabic_400Regular", label: "Naskh", scale: 0.92 },
+  amiri: { family: "Amiri_400Regular", label: "Amiri", scale: 1 },
+  lateef: { family: "Lateef_400Regular", label: "Lateef", scale: 1.15 },
+} as const;
+
 /* All three families are now the real thing. The About screen reads this. */
 export const FONTS_ARE_PLACEHOLDERS = false;
 

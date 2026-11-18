@@ -77,3 +77,16 @@ export const THEMES: Readonly<Record<SchemeKey, Theme>> = {
 };
 
 export const SCHEME_KEYS = ["light", "dark"] as const;
+
+/*
+  Reading tones for the Quran reader only. The app's own light and dark stay
+  as they are; these tint just the page you read on. Still no pure white or
+  pure black.
+*/
+export type ReaderTone = "app" | "paper" | "sepia" | "night";
+export type ToneColors = Readonly<{ page: Hex; ink: Hex; soft: Hex; rule: Hex; dark: boolean }>;
+export const READER_TONES: Readonly<Record<Exclude<ReaderTone, "app">, ToneColors>> = {
+  paper: { page: "#f6f4ef", ink: "#1e356f", soft: "#56679a", rule: "#d7d9e2", dark: false },
+  sepia: { page: "#f2e8d5", ink: "#4a3520", soft: "#7a6248", rule: "#dccdb2", dark: false },
+  night: { page: "#0f1218", ink: "#d9d4c7", soft: "#8f97a6", rule: "#262c38", dark: true },
+};
