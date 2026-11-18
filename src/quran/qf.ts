@@ -118,3 +118,15 @@ export const RESYNC_MS = 7 * 24 * 60 * 60 * 1000;
 export function isStale(c: Pick<QfChapter, "fetchedAt">, now: number): boolean {
   return now - c.fetchedAt > RESYNC_MS;
 }
+
+/* English translations available to the Durus production client (2026-11-18).
+   The Clear Quran (131) is not licensed to it. */
+export const TRANSLATIONS: { id: number; name: string }[] = [
+  { id: 20, name: "Saheeh International" },
+  { id: 85, name: "Abdel Haleem" },
+  { id: 19, name: "Pickthall" },
+  { id: 22, name: "Yusuf Ali" },
+  { id: 203, name: "Hilali and Khan" },
+  { id: 84, name: "Taqi Usmani" },
+];
+export const translationName = (id: number) => TRANSLATIONS.find((t) => t.id === id)?.name ?? "Translation";

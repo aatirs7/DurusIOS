@@ -4,11 +4,12 @@ import { ActionSheetIOS, FlatList, Pressable, Share, View, type ViewToken } from
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
+import { AyahZoom } from "@/components/AyahZoom";
 import { Glass } from "@/components/Glass";
 import { FootnoteCard, TranslationLine, TransliterationLine, WordGrid } from "@/components/QuranLayers";
 import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
 import { Text } from "@/components/Text";
-import type { QfChapter } from "@/quran/qf";
+import { translationName, type QfChapter } from "@/quran/qf";
 import { loadChapter, quranApiConfigured } from "@/quran/remote";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
@@ -129,8 +130,11 @@ export default function SurahReader() {
   const [qf, setQf] = useState<QfChapter | null>(null);
   const [qfState, setQfState] = useState<"idle" | "loading" | "error">("idle");
   const [footnote, setFootnote] = useState<number | null>(null);
+  /* The long-press zoom, and whether its layers are loading. */
+  const [zoom, setZoom] = useState<number | null>(null);
+  const needLayers = wantsLayers || (zoom !== null && quranApiConfigured());
   useEffect(() => {
-    if (!wantsLayers) return;
+    if (!needLayers) return;
     let alive = true;
     setQfState("loading");
     loadChapter(n, translationId, reciterId)
@@ -143,7 +147,7 @@ export default function SurahReader() {
     return () => {
       alive = false;
     };
-  }, [wantsLayers, n, translationId, reciterId]);
+  }, [needLayers, n, translationId, reciterId]);
 
   /* Layers need one ayah per row, so they always use the ayah layout. */
   const flow = look.layout === "flow" && !wantsLayers;
@@ -299,8 +303,13 @@ export default function SurahReader() {
     return (
       <Pressable
         onPress={() => setSelected(isSel ? null : ayah)}
+        onLongPress={() => {
+          setSelected(null);
+          setZoom(ayah);
+        }}
+        delayLongPress={320}
         accessibilityLabel={`Ayah ${ayah}`}
-        accessibilityHint="Tap for memorized, understood, bookmark and share"
+        accessibilityHint="Tap for actions, long press to zoom in"
         style={[s.ayah, (highlight === ayah || isSel) && { backgroundColor: selColor }]}
       >
         {qa && (view === "wordTranslation" || view === "wordTransliteration") ? (
@@ -356,7 +365,15 @@ export default function SurahReader() {
         const lit = selected === ayah || highlight === ayah;
         return (
           <Text key={index} selectable={false}>
-            <Text selectable={false} onPress={() => setSelected(selected === ayah ? null : ayah)} style={[quran, lit && { backgroundColor: selColor }]}>
+            <Text
+              selectable={false}
+              onPress={() => setSelected(selected === ayah ? null : ayah)}
+              onLongPress={() => {
+                setSelected(null);
+                setZoom(ayah);
+              }}
+              style={[quran, lit && { backgroundColor: selColor }]}
+            >
               {ayahs[index]}
             </Text>
             {look.numbers ? (
@@ -484,6 +501,25 @@ export default function SurahReader() {
         <View style={[s.bottomBar, { bottom: insets.bottom + space(1.5), paddingHorizontal: MARGIN }]}>
           <FootnoteCard text={qf.footnotes[footnote]} onClose={() => setFootnote(null)} colors={colors} />
         </View>
+      ) : null}
+
+      {zoom !== null ? (
+        <AyahZoom
+          visible
+          onClose={() => setZoom(null)}
+          title={`${meta.en} ${n}:${zoom}`}
+          arabic={ayahs[zoom - 1]}
+          quran={{ fontFamily: type.fontFamily }}
+          layer={qf ? qf.ayahs[zoom - 1] ?? null : null}
+          layerState={!quranApiConfigured() ? "unavailable" : qf ? "ready" : qfState === "error" ? "error" : "loading"}
+          translationName={translationName(translationId)}
+          memorized={maps.memorized[meta.start + zoom - 1] === 1}
+          understood={maps.understood[meta.start + zoom - 1] === 1}
+          bookmarked={bookmarks.includes(meta.start + zoom - 1)}
+          onMemorized={() => setAyah(meta.start + zoom - 1, "memorized", maps.memorized[meta.start + zoom - 1] !== 1)}
+          onUnderstood={() => setAyah(meta.start + zoom - 1, "understood", maps.understood[meta.start + zoom - 1] !== 1)}
+          onBookmark={() => toggleBookmark(meta.start + zoom - 1)}
+        />
       ) : null}
 
       <NavigateSheet visible={navOpen} onClose={() => setNavOpen(false)} current={{ surah: n, juz }} onGo={go} onDismiss={afterSheet} />

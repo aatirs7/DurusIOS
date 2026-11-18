@@ -62,3 +62,17 @@ it("shows each word over its meaning, and over its reading", async () => {
   await act(async () => {});
   expect(screen.getByText("al-ḥamdu")).toBeTruthy();
 });
+
+it("zooms into an ayah on long press, then into a word", async () => {
+  await render(<SurahReader />);
+  await fireEvent(screen.getByLabelText("Ayah 2"), "longPress");
+  await act(async () => {});
+  expect(screen.getByText("Transliteration")).toBeTruthy();
+  expect(screen.getByText("Praise belongs to God, Lord of the Worlds,")).toBeTruthy();
+  const word = mockChapter.ayahs[1].words[0];
+  await fireEvent.press(screen.getByLabelText(word.meaning!));
+  expect(screen.getByText("Tap to go back to the ayah")).toBeTruthy();
+  await fireEvent.press(screen.getAllByText("Memorized")[0]);
+  const { useQuranStatus } = jest.requireActual("@/state/quranStatus");
+  expect(useQuranStatus.getState().events.at(-1)).toMatchObject({ type: "ayah_status_set", index: 1, memorized: true });
+});

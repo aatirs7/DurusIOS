@@ -3,6 +3,7 @@ import { FlatList, Modal, Pressable, ScrollView, Switch, View } from "react-nati
 
 import { Text } from "@/components/Text";
 import { JUZ_STARTS, SURAHS } from "@/quran/tanzil";
+import { TRANSLATIONS } from "@/quran/qf";
 import { quranApiConfigured } from "@/quran/remote";
 import { quranText, refOf } from "@/quran/text";
 import { DEFAULT_LOOK, usePrefs, type ReaderView } from "@/state/prefs";
@@ -249,6 +250,8 @@ export function ViewSheet({ visible, onClose }: { visible: boolean; onClose: () 
   const size = usePrefs((st) => st.arabicSize);
   const setSize = usePrefs((st) => st.setArabicSize);
   const setReader = usePrefs((st) => st.setReader);
+  const translationId = usePrefs((st) => st.translationId) ?? 20;
+  const setTranslationId = usePrefs((st) => st.setTranslationId);
   const type = useQuranType();
   const look = type.look;
   const colors = useReaderColors();
@@ -299,6 +302,16 @@ export function ViewSheet({ visible, onClose }: { visible: boolean; onClose: () 
             ))}
           </View>
         </Row>
+
+        {quranApiConfigured() ? (
+          <Row label="Translation">
+            <Choice
+              options={TRANSLATIONS.map((t) => ({ key: String(t.id), label: t.name }))}
+              value={String(translationId)}
+              onChange={(k) => setTranslationId(Number(k))}
+            />
+          </Row>
+        ) : null}
 
         <Row label="Script">
           <Choice
