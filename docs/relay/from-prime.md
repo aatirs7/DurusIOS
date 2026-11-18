@@ -1,15 +1,18 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-18, evening
+Updated: 2026-11-18, late
 
 ## Now
 
-Live over the air (update group 1326585d): reader customisation, the Progress tab, cleaner search. Owner is away for a few hours; Prime keeps building the Quran Foundation integration so it switches on once access is granted.
+Latest OTA: ba2572c3. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Quran Foundation integration, built and tested on real data, switched off in the app until a server runs it. The content scope problem is solved: new clients do not get `content`, they get granular scopes, and the owner's client is approved for content.quran.read, content.translations.read, content.audio.read, content.sync.read and content.tafsirs.read. With those, a live run returned all 286 ayahs of Al-Baqarah with word by word meanings and transliterations, a translation, 102 footnotes, and recitation audio with per-word timings. server/qf.ts and server/handler.ts are a plain Fetch API handler (GET /quran/resources, GET /quran/chapter/:n?translation=&reciter=). The app downloads a surah once, keeps it on the phone, refreshes it after seven days, and uses the stored copy offline. The reader has the layers ready: translation with tappable footnotes, transliteration, and a word grid with each word over its meaning or reading. They stay "Comes with Quran.com" until EXPO_PUBLIC_QURAN_API is set.
+- Live fixes (OTA 687f9df4): the surah and juz navigator jumps even if the sheet's close event is missed; the reader's link colour follows the page tone; loose keywords in the eight live topics are tightened (night prayer, test tomorrow, far away and table of contents no longer hit them), with tests; smoke tests now cover the flowing layout, sepia and night, the reading view sheet and the Progress surah sheet. Publishing now only happens after a clean preflight run.
 - Reader customisation (OTA 1326585d). Five Quran scripts, all checked against every character of the text: Amiri Quran, Scheherazade, Naskh, Amiri, Lateef. Also size, line spacing (compact, normal, airy), page tone (follow the app, paper, sepia, night), ayah by ayah or a flowing page with ornate ayah numbers tinted by status, right or centre alignment, and switches for ayah numbers and marks, all with a live preview. Tapping an ayah floats a glass bar up from the bottom: memorized, understood, bookmark, share, close.
 - Progress tab (was Map). Two rings for memorized and understood, stat cards (surahs, juz, pages of the 604, words, surahs understood, in progress), a seven-day reading chart from a new reading log, 30 juz rings, the Ayah Field as one card ("the wall", expandable), recent marks, and a surah list with filters. Tap a surah to open a sheet with whole-surah toggles and an ayah-by-ayah grid.
 - Search: results grouped under Topics, Surahs and Ayahs, recent searches, cleaner rows.
@@ -38,12 +41,15 @@ Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Blocked on the owner
 
-- **Quran Foundation content access.** The owner's client id and secret work (a token is issued on prelive), but every Content API call returns 403 "insufficient_scope", and requesting the `content` scope is refused ("The OAuth 2.0 Client is not allowed to request scope 'content'"). Production does not know the client yet ("invalid_client"). Fix: in the Quran Foundation Developer Console, enable the Content API (content scope) for this app, or ask Quran Foundation to grant it, and request production access. Translation, word by word, transliteration and audio switch on after that. The credentials are stored only in a git-ignored local file (server/.env.local); they should be rotated once things work, since the secret was shared in chat.
+- **Where the Quran server runs, and who may call it.** The handler holds the Quran Foundation secret, so it must run on a server. Options: the durus.space backend (which repo, and may Prime deploy?), a new small Vercel project, or EAS Hosting on the Expo account Prime already uses. Access: open, signed-in users only (Clerk), or a shared app key (supported now via DURUS_APP_KEY). Prime has not deployed anything.
+- **Production access from Quran Foundation.** The client works on prelive only; production returns invalid_client. Prelive has a short list of translations and does not include The Clear Quran (131); Abdel Haleem (85) is there. Request production permissions in the Developer Console (developers@quran.com if stuck). Until then Durus can only show prelive translations.
+- **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
 
 ## Questions
 
 - Approve the 89 new search topics in docs/review/topics.md. Each one points readers to specific ayahs, so it needs a look before it goes live. Reply "approve all", or name the ones to change.
 - Onboarding's last story page is still titled "Ask" and shows a feelings query, which the real search answers with "being reviewed" until the topics are approved. Retitle it "Search" and show a surah search instead?
+- Word and ayah audio needs a native audio module (expo-audio), so it waits for the next batched build. Say when a build is fine.
 - Still not built, and why: translation, footnotes, word by word and transliteration (need Quran Foundation); word and ayah audio (need Quran Foundation or QUL, licence per resource); Quranic Words in Learn (needs lemma data); adhkar flow (needs verified adhkar.json); widgets (native, so they wait for a batched build); AI Ask (owner chose deterministic for now).
 
 - Returning accounts: "I have an account" and keychain sessions now skip the course defaults (and, for "I have an account", the reminders), because a settings write stamped with the current time would beat the server's values and reset that person's lesson and pace. New sign ins via Begin still get the defaults. Confirm that is the intent.
