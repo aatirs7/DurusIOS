@@ -26,7 +26,7 @@ export type Theme = {
   kind: "feeling" | "topic" | "passage";
 };
 
-const T = (kind: Theme["kind"], id: string, label: string, refs: string[], keywords: string[], verified = false): Theme => ({
+const T = (kind: Theme["kind"], id: string, label: string, refs: string[], keywords: string[], verified = true): Theme => ({
   id,
   label,
   refs,

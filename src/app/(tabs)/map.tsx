@@ -1,15 +1,17 @@
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import { useMemo, useRef, useState } from "react";
+import { FlatList, Modal, Pressable, ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle, Path } from "react-native-svg";
 
 import { AyahField } from "@/components/AyahField";
-import { Screen } from "@/components/Screen";
+import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
+import { rangePath } from "@/onboarding/field";
 import { ago, progress, readingWeek, recentMarks } from "@/quran/progress";
 import { countRange, foldStatus } from "@/quran/status";
 import { JUZ_STARTS, SURAHS, TOTAL_AYAHS } from "@/quran/tanzil";
-import { quranText, refOf } from "@/quran/text";
+import { quranText } from "@/quran/text";
 import { localToday } from "@/state/barakah";
 import { usePrefs } from "@/state/prefs";
 import { useQuranStatus } from "@/state/quranStatus";
@@ -18,54 +20,58 @@ import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 /*
-  Progress: what you carry, at a glance.
+  Progress: one screen, no scrolling down. Swipe sideways between four views.
 
-  Two rings up top (memorized, understood), clean stat cards, the week's
-  reading, thirty juz rings, the Ayah Field as one card among them, recent
-  marks, and every surah with its own bar. Tap a surah to mark it, or mark
-  single ayahs on its grid. No streaks and no praise: it reports, it does not
-  cheer.
+    Wall    every ayah as a dot, the whole Quran at once
+    Juz     thirty small fields, one per juz; tap one to mark its surahs
+    Stats   the two rings and the counts that matter
+    Week    reading over the last seven days and the latest marks
+
+  Each view is sized to the space it has, so nothing is cut off and nothing
+  scrolls. Marking any surah is one tap away in the glass Mark button.
 */
 
+const PAGES = ["Wall", "Juz", "Stats", "Week"] as const;
+const NO_LOG: Record<string, number[]> = {};
+const NO_BOOKMARKS: number[] = [];
+
+const JUZ_RANGES: [number, number][] = JUZ_STARTS.map((s, i) => [s, i + 1 < JUZ_STARTS.length ? JUZ_STARTS[i + 1] : TOTAL_AYAHS]);
+
 const useStyles = makeStyles((t) => ({
-  head: { alignItems: "center", gap: space(0.5), paddingTop: space(2), paddingBottom: space(2) },
-  rings: { flexDirection: "row", justifyContent: "center", gap: space(3), paddingBottom: space(2) },
-  ringBox: { alignItems: "center", gap: space(0.75) },
-  ringCenter: { position: "absolute", alignItems: "center", justifyContent: "center" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: space(1.25), paddingBottom: space(3) },
-  card: {
-    flexGrow: 1,
-    flexBasis: "45%",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: t.colors.rule,
-    backgroundColor: t.colors.surface,
-    paddingVertical: space(1.75),
-    paddingHorizontal: space(2),
-    gap: 2,
-  },
-  section: { borderRadius: 24, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, padding: space(2.25), marginBottom: space(2.5), gap: space(1.5) },
-  sectionHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
-  bars: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", height: 96, gap: space(1) },
+  safe: { flex: 1, backgroundColor: t.colors.paper },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: MARGIN, paddingTop: space(1) },
+  markBtn: { height: 38, borderRadius: 19, paddingHorizontal: space(2), alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  seg: { flexDirection: "row", alignSelf: "center", borderRadius: RADIUS.pill, padding: 3, marginVertical: space(1.5), overflow: "hidden" },
+  segItem: { paddingVertical: 7, paddingHorizontal: space(2), borderRadius: RADIUS.pill },
+  segOn: { backgroundColor: t.colors.lapisWash },
+  page: { paddingHorizontal: MARGIN },
+  legend: { flexDirection: "row", justifyContent: "center", gap: space(3), paddingTop: space(1.5) },
+  legendItem: { alignItems: "center" },
+  swatch: { width: 10, height: 10, borderRadius: 3 },
+  juzGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  juzCell: { borderRadius: 12, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, overflow: "hidden", alignItems: "center", justifyContent: "flex-end" },
+  rings: { flexDirection: "row", justifyContent: "center", gap: space(3) },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: space(1) },
+  card: { flexGrow: 1, flexBasis: "30%", borderRadius: 16, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(1.25), paddingHorizontal: space(1.25), alignItems: "center" },
+  panel: { borderRadius: 20, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, padding: space(2), gap: space(1.25) },
+  bars: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: space(1) },
   barCol: { flex: 1, alignItems: "center", gap: 4 },
-  bar: { width: "100%", borderRadius: 6, minHeight: 4 },
-  juzGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: space(1.25) },
-  juzCell: { width: "16%", alignItems: "center" },
-  filters: { flexDirection: "row", flexWrap: "wrap", gap: space(1), paddingBottom: space(1) },
-  filter: { borderRadius: RADIUS.pill, borderWidth: 1, borderColor: t.colors.rule, paddingVertical: 6, paddingHorizontal: space(1.75) },
-  filterOn: { backgroundColor: t.colors.lapisWash, borderColor: t.colors.lapis },
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: space(1.25), gap: space(1.5) },
-  names: { flex: 1, gap: 4 },
-  ar: { fontFamily: FONTS.quran, fontSize: 20, lineHeight: 38, color: t.colors.ink, writingDirection: "rtl" },
-  track: { height: 5, borderRadius: 3, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", flexDirection: "row" },
-  rule: { height: 1, backgroundColor: t.colors.rule },
-  /* Surah sheet */
+  /* Sheets */
   sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(1.5) },
   grabber: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: t.colors.rule, marginBottom: space(2) },
+  ar: { fontFamily: FONTS.quran, fontSize: 20, lineHeight: 38, color: t.colors.ink, writingDirection: "rtl" },
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: space(1.25), gap: space(1.5) },
+  rule: { height: 1, backgroundColor: t.colors.rule },
+  track: { height: 5, borderRadius: 3, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", flexDirection: "row" },
   bigToggle: { flex: 1, borderRadius: 18, borderWidth: 1.5, borderColor: t.colors.rule, paddingVertical: space(1.75), alignItems: "center", gap: 2 },
   dots: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingVertical: space(2) },
   dot: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: t.colors.rule, alignItems: "center", justifyContent: "center" },
+  pill: { borderRadius: RADIUS.pill, borderWidth: 1, borderColor: t.colors.rule, paddingVertical: 6, paddingHorizontal: space(1.75) },
+  pillOn: { backgroundColor: t.colors.lapisWash, borderColor: t.colors.lapis },
 }));
+
+const pct = (x: number) => (x === 0 ? "0" : x < 0.01 ? "<1" : String(Math.round(x * 100)));
+const fmt = (n: number) => n.toLocaleString("en-US");
 
 function Ring({ fraction, color, size, stroke, children }: { fraction: number; color: string; size: number; stroke: number; children?: React.ReactNode }) {
   const theme = useTheme();
@@ -76,16 +82,7 @@ function Ring({ fraction, color, size, stroke, children }: { fraction: number; c
       <Svg width={size} height={size} style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={theme.colors.surfaceSunk} strokeWidth={stroke} fill="none" />
         {fraction > 0 ? (
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            stroke={color}
-            strokeWidth={stroke}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={`${Math.max(0.01, fraction) * c} ${c}`}
-          />
+          <Circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${Math.max(0.01, fraction) * c} ${c}`} />
         ) : null}
       </Svg>
       {children}
@@ -93,29 +90,35 @@ function Ring({ fraction, color, size, stroke, children }: { fraction: number; c
   );
 }
 
-function Stat({ value, of, label }: { value: string; of?: string; label: string }) {
-  const s = useStyles();
+/* One juz as its own small field. */
+function JuzField({ width, height, range, memorized, understood }: { width: number; height: number; range: [number, number]; memorized: Uint8Array; understood: Uint8Array }) {
+  const theme = useTheme();
+  const [a, b] = range;
+  const base = useMemo(() => rangePath(width, height, a, b, () => true), [width, height, a, b]);
+  const m = rangePath(width, height, a, b, (i) => memorized[i] === 1 && understood[i] !== 1);
+  const u = rangePath(width, height, a, b, (i) => understood[i] === 1);
   return (
-    <View style={s.card}>
-      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
-        <Text variant="numeral" style={{ fontSize: 28, lineHeight: 34 }}>
-          {value}
-        </Text>
-        {of ? (
-          <Text variant="label" color="inkFaint">
-            {of}
-          </Text>
-        ) : null}
-      </View>
-      <Text variant="label" color="inkSoft">
-        {label}
-      </Text>
-    </View>
+    <Svg width={width} height={height}>
+      <Path d={base} fill={theme.colors.rule} />
+      {m ? <Path d={m} fill={theme.colors.saffron} /> : null}
+      {u ? <Path d={u} fill={theme.colors.verdigris} /> : null}
+    </Svg>
   );
 }
 
-const pct = (x: number) => (x === 0 ? "0" : x < 0.01 ? "<1" : String(Math.round(x * 100)));
-const fmt = (n: number) => n.toLocaleString("en-US");
+/* ---------- sheets ---------- */
+
+function Sheet({ visible, onClose, onDismiss, children }: { visible: boolean; onClose: () => void; onDismiss?: () => void; children: React.ReactNode }) {
+  const s = useStyles();
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose} onDismiss={onDismiss}>
+      <View style={s.sheet}>
+        <View style={s.grabber} />
+        {children}
+      </View>
+    </Modal>
+  );
+}
 
 /* Mark a surah whole, or ayah by ayah. */
 function SurahSheet({ surah, onClose }: { surah: number | null; onClose: () => void }) {
@@ -135,327 +138,368 @@ function SurahSheet({ surah, onClose }: { surah: number | null; onClose: () => v
   const color = mode === "memorized" ? theme.colors.saffron : theme.colors.verdigris;
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={s.sheet}>
-        <View style={s.grabber} />
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space(6) }}>
-          <View style={{ alignItems: "center", gap: 2, paddingBottom: space(2) }}>
-            <Text selectable={false} style={[s.ar, { fontSize: 30, lineHeight: 56 }]}>
-              {x.ar}
-            </Text>
-            <Text variant="pageTitle">{x.en}</Text>
-            <Text variant="label" color="inkSoft">{`${x.ayahs} ayahs. ${m} memorized, ${u} understood`}</Text>
+    <Sheet visible onClose={onClose}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space(6) }}>
+        <View style={{ alignItems: "center", gap: 2, paddingBottom: space(2) }}>
+          <Text selectable={false} style={[s.ar, { fontSize: 30, lineHeight: 56 }]}>
+            {x.ar}
+          </Text>
+          <Text variant="pageTitle">{x.en}</Text>
+          <Text variant="label" color="inkSoft">{`${x.ayahs} ayahs. ${m} memorized, ${u} understood`}</Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: space(1.25) }}>
+          {(["memorized", "understood"] as const).map((f) => {
+            const all = (f === "memorized" ? m : u) === x.ayahs;
+            const c = f === "memorized" ? theme.colors.saffron : theme.colors.verdigris;
+            return (
+              <Pressable key={f} accessibilityRole="button" onPress={() => setSurah(x.n, f, !all)} style={[s.bigToggle, all && { backgroundColor: c, borderColor: c }]}>
+                <Text color={all ? "paper" : "ink"}>{all ? (f === "memorized" ? "Memorized" : "Understood") : f === "memorized" ? "Mark memorized" : "Mark understood"}</Text>
+                <Text variant="label" color={all ? "paper" : "inkSoft"}>
+                  Whole surah
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: space(3) }}>
+          <Text variant="eyebrow" color="inkSoft">
+            Ayah by ayah
+          </Text>
+          <View style={{ flexDirection: "row", gap: space(1) }}>
+            {(["memorized", "understood"] as const).map((f) => (
+              <Pressable key={f} accessibilityRole="button" onPress={() => setMode(f)} style={[s.pill, mode === f && s.pillOn]}>
+                <Text variant="label" color={mode === f ? "lapis" : "inkSoft"}>
+                  {f === "memorized" ? "Memorized" : "Understood"}
+                </Text>
+              </Pressable>
+            ))}
           </View>
-          <View style={{ flexDirection: "row", gap: space(1.25) }}>
-            {(["memorized", "understood"] as const).map((f) => {
-              const all = (f === "memorized" ? m : u) === x.ayahs;
-              const c = f === "memorized" ? theme.colors.saffron : theme.colors.verdigris;
-              return (
-                <Pressable
-                  key={f}
-                  accessibilityRole="button"
-                  onPress={() => setSurah(x.n, f, !all)}
-                  style={[s.bigToggle, all && { backgroundColor: c, borderColor: c }]}
-                >
-                  <Text color={all ? "paper" : "ink"}>{all ? (f === "memorized" ? "Memorized" : "Understood") : f === "memorized" ? "Mark memorized" : "Mark understood"}</Text>
-                  <Text variant="label" color={all ? "paper" : "inkSoft"}>
-                    Whole surah
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: space(3) }}>
-            <Text variant="eyebrow" color="inkSoft">
-              Ayah by ayah
-            </Text>
-            <View style={{ flexDirection: "row", gap: space(1) }}>
-              {(["memorized", "understood"] as const).map((f) => (
-                <Pressable key={f} accessibilityRole="button" onPress={() => setMode(f)} style={[s.filter, mode === f && s.filterOn]}>
-                  <Text variant="label" color={mode === f ? "lapis" : "inkSoft"}>
-                    {f === "memorized" ? "Memorized" : "Understood"}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          <View style={s.dots}>
-            {Array.from({ length: x.ayahs }, (_, i) => {
-              const on = map[x.start + i] === 1;
-              return (
-                <Pressable
-                  key={i}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: on }}
-                  accessibilityLabel={`Ayah ${i + 1}`}
-                  onPress={() => setAyah(x.start + i, mode, !on)}
-                  style={[s.dot, on && { backgroundColor: color, borderColor: color }]}
-                >
-                  <Text variant="label" color={on ? "paper" : "inkSoft"}>
-                    {String(i + 1)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              onClose();
-              setTimeout(() => router.push(`/surah/${x.n}`), 350);
-            }}
-            style={[s.filter, { alignSelf: "center", paddingHorizontal: space(3), paddingVertical: space(1.25) }]}
-          >
-            <Text color="lapis">Open in Read</Text>
-          </Pressable>
-        </ScrollView>
-      </View>
-    </Modal>
+        </View>
+        <View style={s.dots}>
+          {Array.from({ length: x.ayahs }, (_, i) => {
+            const on = map[x.start + i] === 1;
+            return (
+              <Pressable
+                key={i}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={`Ayah ${i + 1}`}
+                onPress={() => setAyah(x.start + i, mode, !on)}
+                style={[s.dot, on && { backgroundColor: color, borderColor: color }]}
+              >
+                <Text variant="label" color={on ? "paper" : "inkSoft"}>
+                  {String(i + 1)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            onClose();
+            setTimeout(() => router.push(`/surah/${x.n}`), 350);
+          }}
+          style={[s.pill, { alignSelf: "center", paddingHorizontal: space(3), paddingVertical: space(1.25) }]}
+        >
+          <Text color="lapis">Open in Read</Text>
+        </Pressable>
+      </ScrollView>
+    </Sheet>
   );
 }
 
-/* Stable fallbacks: a fresh {} or [] inside a selector re-renders forever. */
-const NO_LOG: Record<string, number[]> = {};
-const NO_BOOKMARKS: number[] = [];
+/* Pick any surah to mark, optionally limited to one juz. */
+function PickSheet({ juz, visible, onClose, onPick }: { juz: number | null; visible: boolean; onClose: () => void; onPick: (n: number) => void }) {
+  const s = useStyles();
+  const theme = useTheme();
+  const events = useQuranStatus((st) => st.events);
+  const maps = useMemo(() => foldStatus(events), [events]);
+  const list = useMemo(() => {
+    if (juz === null) return SURAHS;
+    const [a, b] = JUZ_RANGES[juz - 1];
+    return SURAHS.filter((x) => x.start < b && x.start + x.ayahs > a);
+  }, [juz]);
+  return (
+    <Sheet visible={visible} onClose={onClose}>
+      <Text variant="pageTitle" style={{ textAlign: "center", paddingBottom: space(1.5) }}>
+        {juz === null ? "Mark a surah" : `Juz ${juz}`}
+      </Text>
+      <FlatList
+        data={list}
+        keyExtractor={(x) => String(x.n)}
+        ItemSeparatorComponent={() => <View style={s.rule} />}
+        contentContainerStyle={{ paddingBottom: space(6) }}
+        renderItem={({ item }) => {
+          const m = countRange(maps.memorized, item.start, item.start + item.ayahs);
+          const u = countRange(maps.understood, item.start, item.start + item.ayahs);
+          return (
+            <Pressable accessibilityRole="button" accessibilityLabel={`${item.en}, ${m} of ${item.ayahs} memorized`} onPress={() => onPick(item.n)} style={s.row}>
+              <Text variant="label" color="inkFaint" style={{ width: 28, textAlign: "center" }}>
+                {String(item.n)}
+              </Text>
+              <View style={{ flex: 1, gap: 4 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text>{item.en}</Text>
+                  <Text variant="label" color="inkFaint">{`${m}/${item.ayahs}`}</Text>
+                </View>
+                <View style={s.track}>
+                  <View style={{ flex: m, backgroundColor: theme.colors.saffron }} />
+                  <View style={{ flex: Math.max(0, u - m), backgroundColor: theme.colors.verdigris }} />
+                  <View style={{ flex: Math.max(0, item.ayahs - Math.max(m, u)) }} />
+                </View>
+              </View>
+              <Text selectable={false} style={s.ar}>
+                {item.ar}
+              </Text>
+            </Pressable>
+          );
+        }}
+      />
+    </Sheet>
+  );
+}
 
-type Filter = "progress" | "memorized" | "understood" | "all";
+/* ---------- the screen ---------- */
 
 export default function ProgressTab() {
   const s = useStyles();
   const theme = useTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const events = useQuranStatus((st) => st.events);
   const readLog = usePrefs((st) => st.readLog) ?? NO_LOG;
   const bookmarks = usePrefs((st) => st.bookmarks) ?? NO_BOOKMARKS;
-  const [filter, setFilter] = useState<Filter>("all");
-  const [wallOpen, setWallOpen] = useState(false);
+
+  const [page, setPage] = useState(0);
+  const [area, setArea] = useState({ w: width, h: 0 });
+  const pager = useRef<ScrollView>(null);
+  const [pick, setPick] = useState<{ open: boolean; juz: number | null }>({ open: false, juz: null });
   const [sheet, setSheet] = useState<number | null>(null);
+  const pending = useRef<number | null>(null);
 
   const maps = useMemo(() => foldStatus(events), [events]);
   const p = useMemo(() => progress(maps, quranText), [maps]);
   const week = useMemo(() => readingWeek(readLog, localToday()), [readLog]);
   const weekTotal = week.reduce((n, d) => n + d.count, 0);
   const maxDay = Math.max(1, ...week.map((d) => d.count));
-  const recent = useMemo(() => recentMarks(events), [events]);
-  const now = Date.now();
+  const recent = useMemo(() => recentMarks(events, 4), [events]);
 
-  const rows = useMemo(
-    () =>
-      SURAHS.map((x) => ({
-        ...x,
-        m: countRange(maps.memorized, x.start, x.start + x.ayahs),
-        u: countRange(maps.understood, x.start, x.start + x.ayahs),
-      })).filter((x) =>
-        filter === "progress" ? x.m > 0 && x.m < x.ayahs : filter === "memorized" ? x.m === x.ayahs : filter === "understood" ? x.u === x.ayahs : true,
-      ),
-    [maps, filter],
-  );
+  const go = (i: number) => {
+    setPage(i);
+    pager.current?.scrollTo({ x: i * area.w, animated: true });
+  };
+  const onArea = (e: LayoutChangeEvent) => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
 
-  const inner = width - MARGIN * 2 - space(4.5);
+  /* Picking a surah closes the list first, then opens its sheet once the list is gone. */
+  const choose = (n: number) => {
+    pending.current = n;
+    setPick((x) => ({ ...x, open: false }));
+    setTimeout(() => {
+      if (pending.current !== null) {
+        setSheet(pending.current);
+        pending.current = null;
+      }
+    }, 450);
+  };
 
-  const header = (
-    <>
-      <View style={s.head}>
+  const inner = area.w - MARGIN * 2;
+  const h = area.h;
+
+  /* Juz grid: 5 columns, 6 rows, filling the page. */
+  const gap = space(1);
+  const cellW = (inner - gap * 4) / 5;
+  const cellH = Math.max(40, (h - space(4) - gap * 5) / 6);
+
+  const ringSize = Math.min(150, (inner - space(3)) / 2, h * 0.36);
+
+  return (
+    <SafeAreaView style={s.safe} edges={["top"]}>
+      <View style={s.top}>
         <Text variant="pageTitle">Progress</Text>
-        <Text color="inkSoft">What you carry, and what you understand.</Text>
-      </View>
-
-      <View style={s.rings}>
-        {[
-          { label: "Memorized", value: p.ayahsMemorized, color: theme.colors.saffron },
-          { label: "Understood", value: p.ayahsUnderstood, color: theme.colors.verdigris },
-        ].map((r) => (
-          <View key={r.label} style={s.ringBox}>
-            <Ring fraction={r.value / TOTAL_AYAHS} color={r.color} size={142} stroke={12}>
-              <View style={s.ringCenter}>
-                <Text variant="numeral" style={{ fontSize: 30, lineHeight: 36 }}>{`${pct(r.value / TOTAL_AYAHS)}%`}</Text>
-                <Text variant="label" color="inkSoft">{`${fmt(r.value)} ayahs`}</Text>
-              </View>
-            </Ring>
-            <Text variant="eyebrow" color="inkSoft">
-              {r.label}
+        <Pressable accessibilityRole="button" accessibilityLabel="Mark a surah" onPress={() => setPick({ open: true, juz: null })}>
+          <Glass interactive primary style={s.markBtn}>
+            <Text variant="label" color="paper">
+              Mark
             </Text>
-          </View>
-        ))}
+          </Glass>
+        </Pressable>
       </View>
 
-      <View style={s.grid}>
-        <Stat value={`${p.surahsMemorized}`} of="/ 114" label="Surahs memorized" />
-        <Stat value={`${p.juzMemorized}`} of="/ 30" label="Juz memorized" />
-        <Stat value={`${p.pagesMemorized}`} of="/ 604" label="Pages memorized" />
-        <Stat value={fmt(p.wordsMemorized)} label="Words memorized" />
-        <Stat value={`${p.surahsUnderstood}`} of="/ 114" label="Surahs understood" />
-        <Stat value={`${p.inProgress}`} label="Surahs in progress" />
-      </View>
-
-      <View style={s.section}>
-        <View style={s.sectionHead}>
-          <Text variant="eyebrow" color="inkSoft">
-            Reading this week
-          </Text>
-          <Text variant="label" color="inkSoft">{`${fmt(weekTotal)} ayahs`}</Text>
-        </View>
-        <View style={s.bars}>
-          {week.map((d, i) => (
-            <View key={d.day} style={s.barCol}>
-              <View
-                style={[
-                  s.bar,
-                  { height: Math.max(4, (d.count / maxDay) * 72), backgroundColor: d.count > 0 ? theme.colors.lapis : theme.colors.surfaceSunk },
-                ]}
-              />
-              <Text variant="label" color={i === 6 ? "ink" : "inkFaint"}>
-                {"SMTWTFS"[new Date(`${d.day}T12:00:00Z`).getUTCDay()]}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <Text variant="label" color="inkFaint">{`${bookmarks.length} bookmarked ayahs`}</Text>
-      </View>
-
-      <View style={s.section}>
-        <View style={s.sectionHead}>
-          <Text variant="eyebrow" color="inkSoft">
-            Juz
-          </Text>
-          <Text variant="label" color="inkSoft">{`${p.juzMemorized} of 30 complete`}</Text>
-        </View>
-        <View style={s.juzGrid}>
-          {p.juz.map((j, i) => (
-            <Pressable
-              key={i}
-              accessibilityRole="button"
-              accessibilityLabel={`Juz ${i + 1}, ${Math.round(j.memorized * 100)} percent memorized`}
-              onPress={() => {
-                const at = refOf(JUZ_STARTS[i]);
-                router.push(`/surah/${at.surah}?ayah=${at.ayah}`);
-              }}
-              style={s.juzCell}
-            >
-              <Ring fraction={j.memorized} color={theme.colors.saffron} size={44} stroke={4}>
-                <Text variant="label" color={j.memorized === 1 ? "saffron" : "inkSoft"}>
-                  {String(i + 1)}
-                </Text>
-              </Ring>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      <View style={s.section}>
-        <View style={s.sectionHead}>
-          <Text variant="eyebrow" color="inkSoft">
-            The wall
-          </Text>
-          <Pressable accessibilityRole="button" onPress={() => setWallOpen((o) => !o)} hitSlop={8}>
-            <Text variant="label" color="lapis">
-              {wallOpen ? "Smaller" : "Larger"}
-            </Text>
-          </Pressable>
-        </View>
-        <Text variant="label" color="inkSoft">
-          Every ayah is a dot. Saffron is memorized, teal is understood.
-        </Text>
-        <View style={{ alignItems: "center" }}>
-          <AyahField
-            width={inner}
-            height={wallOpen ? Math.round(inner * 1.25) : Math.round(inner * 0.6)}
-            memorized={(i) => maps.memorized[i] === 1}
-            understood={(i) => maps.understood[i] === 1}
-          />
-        </View>
-      </View>
-
-      {recent.length > 0 ? (
-        <View style={s.section}>
-          <Text variant="eyebrow" color="inkSoft">
-            Recent
-          </Text>
-          {recent.map((r, i) => (
-            <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", gap: space(1) }}>
-              <Text variant="label" style={{ flex: 1 }}>
-                {r.text}
-              </Text>
-              <Text variant="label" color="inkFaint">
-                {ago(r.at, now)}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-
-      <Text variant="eyebrow" color="inkSoft" style={{ paddingBottom: space(1) }}>
-        Surahs
-      </Text>
-      <View style={s.filters}>
-        {(
-          [
-            ["all", "All"],
-            ["progress", "In progress"],
-            ["memorized", "Memorized"],
-            ["understood", "Understood"],
-          ] as const
-        ).map(([f, label]) => (
-          <Pressable
-            key={f}
-            accessibilityRole="button"
-            accessibilityState={{ selected: filter === f }}
-            onPress={() => setFilter(f)}
-            style={[s.filter, filter === f && s.filterOn]}
-          >
-            <Text variant="label" color={filter === f ? "lapis" : "inkSoft"}>
+      <Glass style={s.seg}>
+        {PAGES.map((label, i) => (
+          <Pressable key={label} accessibilityRole="tab" accessibilityState={{ selected: page === i }} onPress={() => go(i)} style={[s.segItem, page === i && s.segOn]}>
+            <Text variant="label" color={page === i ? "lapis" : "inkSoft"}>
               {label}
             </Text>
           </Pressable>
         ))}
-      </View>
-    </>
-  );
+      </Glass>
 
-  return (
-    <Screen edges={["top"]}>
-      <FlatList
-        data={rows}
-        keyExtractor={(x) => String(x.n)}
-        ListHeaderComponent={header}
-        ItemSeparatorComponent={() => <View style={s.rule} />}
-        contentContainerStyle={{ paddingBottom: space(12) }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <Text color="inkSoft" style={{ textAlign: "center", paddingTop: space(2) }}>
-            Nothing here yet. Choose All and tap a surah to mark it.
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${item.en}, ${item.m} of ${item.ayahs} memorized`}
-            onPress={() => setSheet(item.n)}
-            style={s.row}
+      <View style={{ flex: 1, paddingBottom: space(11) }} onLayout={onArea} testID="progress-pager">
+        {h > 0 ? (
+          <ScrollView
+            ref={pager}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / Math.max(1, area.w)))}
           >
-            <Text variant="label" color="inkFaint" style={{ width: 28, textAlign: "center" }}>
-              {String(item.n)}
-            </Text>
-            <View style={s.names}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text>{item.en}</Text>
-                <Text variant="label" color="inkFaint">{`${item.m}/${item.ayahs}`}</Text>
-              </View>
-              <View style={s.track}>
-                <View style={{ flex: item.m, backgroundColor: theme.colors.saffron }} />
-                <View style={{ flex: Math.max(0, item.u - item.m), backgroundColor: theme.colors.verdigris }} />
-                <View style={{ flex: Math.max(0, item.ayahs - Math.max(item.m, item.u)) }} />
+            {/* Wall */}
+            <View style={[s.page, { width: area.w, height: h, alignItems: "center" }]}>
+              <AyahField width={inner} height={h - 70} memorized={(i) => maps.memorized[i] === 1} understood={(i) => maps.understood[i] === 1} />
+              <View style={s.legend}>
+                <View style={s.legendItem}>
+                  <Text variant="numeral" style={{ fontSize: 22, lineHeight: 26 }}>
+                    {fmt(p.ayahsMemorized)}
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    <View style={[s.swatch, { backgroundColor: theme.colors.saffron }]} />
+                    <Text variant="label" color="inkSoft">
+                      memorized
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.legendItem}>
+                  <Text variant="numeral" style={{ fontSize: 22, lineHeight: 26 }}>
+                    {fmt(p.ayahsUnderstood)}
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    <View style={[s.swatch, { backgroundColor: theme.colors.verdigris }]} />
+                    <Text variant="label" color="inkSoft">
+                      understood
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.legendItem}>
+                  <Text variant="numeral" style={{ fontSize: 22, lineHeight: 26 }}>
+                    {fmt(TOTAL_AYAHS)}
+                  </Text>
+                  <Text variant="label" color="inkSoft">
+                    ayahs
+                  </Text>
+                </View>
               </View>
             </View>
-            <Text selectable={false} style={s.ar}>
-              {item.ar}
-            </Text>
-          </Pressable>
-        )}
-      />
+
+            {/* Juz */}
+            <View style={[s.page, { width: area.w, height: h }]}>
+              <View style={[s.juzGrid, { rowGap: gap }]}>
+                {JUZ_RANGES.map((range, i) => (
+                  <Pressable
+                    key={i}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Juz ${i + 1}, ${Math.round(p.juz[i].memorized * 100)} percent memorized`}
+                    onPress={() => setPick({ open: true, juz: i + 1 })}
+                    style={[s.juzCell, { width: cellW, height: cellH }]}
+                  >
+                    <View style={{ position: "absolute", top: 6, left: 6, right: 6, bottom: 22 }}>
+                      <JuzField width={cellW - 12} height={cellH - 28} range={range} memorized={maps.memorized} understood={maps.understood} />
+                    </View>
+                    <Text variant="label" color={p.juz[i].memorized === 1 ? "saffron" : "inkSoft"} style={{ paddingBottom: 4 }}>
+                      {`${i + 1}`}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text variant="label" color="inkFaint" style={{ textAlign: "center", paddingTop: space(1.5) }}>
+                {`${p.juzMemorized} of 30 complete. Tap a juz to mark its surahs.`}
+              </Text>
+            </View>
+
+            {/* Stats */}
+            <View style={[s.page, { width: area.w, height: h, justifyContent: "space-evenly" }]}>
+              <View style={s.rings}>
+                {[
+                  { label: "Memorized", value: p.ayahsMemorized, color: theme.colors.saffron },
+                  { label: "Understood", value: p.ayahsUnderstood, color: theme.colors.verdigris },
+                ].map((r) => (
+                  <View key={r.label} style={{ alignItems: "center", gap: space(0.75) }}>
+                    <Ring fraction={r.value / TOTAL_AYAHS} color={r.color} size={ringSize} stroke={11}>
+                      <Text variant="numeral" style={{ fontSize: 26, lineHeight: 30 }}>{`${pct(r.value / TOTAL_AYAHS)}%`}</Text>
+                    </Ring>
+                    <Text variant="eyebrow" color="inkSoft">
+                      {r.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <View style={s.grid}>
+                {[
+                  [`${p.surahsMemorized}`, "of 114 surahs"],
+                  [`${p.juzMemorized}`, "of 30 juz"],
+                  [`${p.pagesMemorized}`, "of 604 pages"],
+                  [fmt(p.wordsMemorized), "words memorized"],
+                  [`${p.surahsUnderstood}`, "surahs understood"],
+                  [`${p.inProgress}`, "in progress"],
+                ].map(([v, l]) => (
+                  <View key={l} style={s.card}>
+                    <Text variant="numeral" style={{ fontSize: 24, lineHeight: 30 }}>
+                      {v}
+                    </Text>
+                    <Text variant="label" color="inkSoft" style={{ textAlign: "center" }}>
+                      {l}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Week */}
+            <View style={[s.page, { width: area.w, height: h, gap: space(1.5) }]}>
+              <View style={[s.panel, { flex: 1 }]}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text variant="eyebrow" color="inkSoft">
+                    Reading this week
+                  </Text>
+                  <Text variant="label" color="inkSoft">{`${fmt(weekTotal)} ayahs`}</Text>
+                </View>
+                <View style={[s.bars, { flex: 1 }]}>
+                  {week.map((d, i) => (
+                    <View key={d.day} style={[s.barCol, { height: "100%", justifyContent: "flex-end" }]}>
+                      <View
+                        style={{
+                          width: "100%",
+                          borderRadius: 6,
+                          height: `${Math.max(3, (d.count / maxDay) * 85)}%`,
+                          backgroundColor: d.count > 0 ? theme.colors.lapis : theme.colors.surfaceSunk,
+                        }}
+                      />
+                      <Text variant="label" color={i === 6 ? "ink" : "inkFaint"}>
+                        {"SMTWTFS"[new Date(`${d.day}T12:00:00Z`).getUTCDay()]}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                <Text variant="label" color="inkFaint">{`${bookmarks.length} bookmarked ayahs`}</Text>
+              </View>
+              <View style={s.panel}>
+                <Text variant="eyebrow" color="inkSoft">
+                  Recent
+                </Text>
+                {recent.length === 0 ? (
+                  <Text variant="label" color="inkSoft">
+                    Nothing marked yet. Tap Mark to start.
+                  </Text>
+                ) : (
+                  recent.map((r, i) => (
+                    <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", gap: space(1) }}>
+                      <Text variant="label" numberOfLines={1} style={{ flex: 1 }}>
+                        {r.text}
+                      </Text>
+                      <Text variant="label" color="inkFaint">
+                        {ago(r.at, Date.now())}
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+          </ScrollView>
+        ) : null}
+      </View>
+
+      <PickSheet juz={pick.juz} visible={pick.open} onClose={() => setPick((x) => ({ ...x, open: false }))} onPick={choose} />
       <SurahSheet surah={sheet} onClose={() => setSheet(null)} />
-    </Screen>
+    </SafeAreaView>
   );
 }

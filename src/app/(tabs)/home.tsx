@@ -1,16 +1,20 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
+import { FlatList, Keyboard, Pressable, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { parseThemeRef, search, suggest, type Hit } from "@/quran/search";
+import { complete } from "@/quran/phrases";
+import { reply } from "@/quran/reply";
+import { parseThemeRef, search, type Hit } from "@/quran/search";
+import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
 import { usePrefs } from "@/state/prefs";
+import { useQuranStatus } from "@/state/quranStatus";
 import { FONTS } from "@/theme/typography";
 import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
@@ -54,6 +58,10 @@ const useStyles = makeStyles((t) => ({
   rowCard: { borderRadius: RADIUS.card, backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule, paddingHorizontal: space(1.75), marginBottom: space(1) },
   badge: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: t.colors.rule, alignItems: "center", justifyContent: "center" },
   heading: { paddingTop: space(2), paddingBottom: space(1) },
+  headFixed: { alignItems: "center", gap: space(0.5), paddingTop: space(3), paddingBottom: space(2.5) },
+  replyCard: { borderRadius: RADIUS.card, backgroundColor: t.colors.lapisWash, paddingVertical: space(1.75), paddingHorizontal: space(2) },
+  completion: { flexDirection: "row", alignItems: "center", gap: space(1.25), paddingVertical: space(1.1), paddingHorizontal: space(0.5) },
+  forYou: { borderRadius: RADIUS.card, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(1.5), paddingHorizontal: space(2), gap: 2 },
   refRow: { flexDirection: "row", alignItems: "center", gap: space(1) },
   ref: { borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingHorizontal: space(1.25), paddingVertical: 2 },
   ayah: { fontFamily: FONTS.quran, fontSize: 22, lineHeight: 46, color: t.colors.ink, textAlign: "right", writingDirection: "rtl" },
@@ -79,8 +87,40 @@ export default function Home() {
   const [query, setQuery] = useState("");
 
   const result = useMemo(() => search(query, searchKeys), [query]);
-  const completions = useMemo(() => suggest(query).filter((c) => c.toLowerCase() !== query.trim().toLowerCase()), [query]);
+  const completions = useMemo(() => complete(query, 4), [query]);
   const typing = query.trim().length > 0;
+  const events = useQuranStatus((st) => st.events);
+  const maps = useMemo(() => foldStatus(events), [events]);
+  const answer = useMemo(() => reply(query, result, { maps, lastRead, now: new Date() }), [query, result, maps, lastRead]);
+
+  /*
+    For you: a few personal starting points when the bar is empty. Built only
+    from what the app knows: where you stopped, what you carry, the hour and
+    the day.
+  */
+  const forYou = useMemo(() => {
+    const now = new Date();
+    const hour = now.getHours();
+    const out: { label: string; line: string; onPress: () => void }[] = [];
+    if (lastRead) {
+      const x = SURAHS[lastRead.surah - 1];
+      out.push({ label: `Continue ${x.en}`, line: `You stopped at ayah ${lastRead.ayah}.`, onPress: () => openTo(lastRead.surah, lastRead.ayah) });
+    }
+    if (now.getDay() === 5) out.push({ label: "Al-Kahf", line: "It is Friday.", onPress: () => openTo(18) });
+    else if (hour >= 21 || hour < 4) out.push({ label: "Before sleep", line: "It is late. Readings for the end of the day.", onPress: () => setQuery("before sleep") });
+    const carried = SURAHS.filter((x) => {
+      let all = true;
+      for (let i = x.start; i < x.start + x.ayahs; i++) if (!maps.memorized[i]) { all = false; break; }
+      return all;
+    });
+    if (carried.length > 0) {
+      /* A different one each day, so revision moves through what you know. */
+      const pick = carried[Math.floor(now.getTime() / 86_400_000) % carried.length];
+      out.push({ label: `Revise ${pick.en}`, line: `One of the ${carried.length} ${carried.length === 1 ? "surah" : "surahs"} you know by heart.`, onPress: () => openTo(pick.n) });
+    }
+    return out.slice(0, 3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastRead, maps]);
 
   const recents = usePrefs((st) => st.recentSearches) ?? NO_RECENTS;
   const rememberSearch = usePrefs((st) => st.rememberSearch);
@@ -102,10 +142,13 @@ export default function Home() {
     return out;
   }, [result]);
 
-  const open = (surah: number, ayah?: number) => {
-    rememberSearch(query);
+  const openTo = (surah: number, ayah?: number) => {
     Keyboard.dismiss();
     router.push(ayah ? `/surah/${surah}?ayah=${ayah}` : `/surah/${surah}`);
+  };
+  const open = (surah: number, ayah?: number) => {
+    rememberSearch(query);
+    openTo(surah, ayah);
   };
 
   const renderHit = ({ item }: { item: Row }) => {
@@ -203,119 +246,117 @@ export default function Home() {
     </Glass>
   );
 
+  /*
+    One fixed layout. The mark, the question and the bar never move: typing
+    only changes what sits below the bar, and the keyboard is handled by the
+    list's own insets rather than by pushing the screen up. Nothing fades,
+    because the bar is glass.
+  */
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
-      <KeyboardAvoidingView style={s.body} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        {/*
-          One tree for both states, so the input is never remounted and the
-          keyboard stays up on the first letter. Idle, flexible space above and
-          below centres the bar; typing, the space above collapses and results
-          fill the space below. No fade: the bar is glass.
-        */}
-        <View style={{ flex: typing ? 0 : 1 }} />
-        {typing ? null : (
-          <View style={[s.heads, { paddingBottom: space(3) }]}>
-            <Arabic variant="title" color="lapis">
-              دُرُوس
-            </Arabic>
-            <Text variant="pageTitle" style={s.title}>
-              What would you like to read?
-            </Text>
-          </View>
-        )}
-        <View style={{ paddingTop: typing ? space(1.5) : 0 }}>{bar}</View>
-        {typing ? (
-          <FlatList
-            style={{ flex: 1 }}
-            data={rows}
-            keyExtractor={(h, i) => `${h.kind}-${i}`}
-            renderItem={renderHit}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingTop: space(1), paddingBottom: space(12) }}
-            ListHeaderComponent={
-              <View>
+      <View style={s.body}>
+        <View style={s.headFixed}>
+          <Arabic variant="title" color="lapis">
+            دُرُوس
+          </Arabic>
+          <Text variant="pageTitle" style={s.title}>
+            What would you like to read?
+          </Text>
+        </View>
+        {bar}
+        <FlatList
+          style={{ flex: 1 }}
+          data={typing ? rows : []}
+          keyExtractor={(h, i) => `${h.kind}-${i}`}
+          renderItem={renderHit}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: space(1.5), paddingBottom: space(12) }}
+          ListHeaderComponent={
+            typing ? (
+              <View style={{ gap: space(1.25) }}>
+                {answer ? (
+                  <View style={[s.replyCard, answer.tone !== "answer" && { backgroundColor: theme.colors.surface }]}>
+                    <Text style={{ lineHeight: 23 }}>{answer.text}</Text>
+                  </View>
+                ) : null}
                 {completions.length > 0 ? (
-                  /* Type-ahead: tap to finish the query. */
-                  <View style={[s.chips, { justifyContent: "flex-start", paddingTop: space(1) }]}>
+                  <View style={{ gap: 2 }}>
                     {completions.map((c) => (
-                      <Pressable key={c} accessibilityRole="button" onPress={() => setQuery(c)} style={s.chip}>
+                      <Pressable key={c} accessibilityRole="button" onPress={() => setQuery(c)} style={s.completion}>
+                        <SearchIcon color={theme.colors.inkFaint} />
+                        <Text color="inkSoft">{c}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <View style={{ gap: space(2.5) }}>
+                {forYou.length > 0 ? (
+                  <View style={{ gap: space(1) }}>
+                    <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
+                      For you
+                    </Text>
+                    {forYou.map((f) => (
+                      <Pressable key={f.label} accessibilityRole="button" onPress={f.onPress} style={s.forYou}>
+                        <Text>{f.label}</Text>
                         <Text variant="label" color="inkSoft">
-                          {c}
+                          {f.line}
                         </Text>
                       </Pressable>
                     ))}
                   </View>
                 ) : null}
-                {result.pendingTopic ? (
-                  <View style={s.note}>
-                    <Text>{`"${result.pendingTopic}" is being reviewed`}</Text>
-                    <Text variant="label" color="inkSoft">
-                      Each topic appears once its references have been checked. Until then, search a surah, an ayah or Arabic words.
-                    </Text>
+                {recents.length > 0 ? (
+                  <View style={{ gap: space(1) }}>
+                    <View style={{ flexDirection: "row", justifyContent: "center", gap: space(2) }}>
+                      <Text variant="eyebrow" color="inkSoft">
+                        Recent
+                      </Text>
+                      <Pressable accessibilityRole="button" onPress={clearSearches} hitSlop={8}>
+                        <Text variant="eyebrow" color="inkFaint">
+                          Clear
+                        </Text>
+                      </Pressable>
+                    </View>
+                    <View style={s.chips}>
+                      {recents.slice(0, 6).map((r) => (
+                        <Pressable key={r} accessibilityRole="button" onPress={() => setQuery(r)} style={s.chip}>
+                          <Text variant="label">{r}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   </View>
                 ) : null}
-              </View>
-            }
-            ListEmptyComponent={
-              result.pendingTopic ? null : (
-                <Text color="inkSoft" style={{ textAlign: "center", paddingTop: space(3) }}>
-                  Nothing found. Try a surah name, a number like 18, an ayah like 2:255, or Arabic words.
-                </Text>
-              )
-            }
-            ListFooterComponent={
-              result.total > result.hits.length ? (
-                <Text variant="label" color="inkFaint" style={{ textAlign: "center", paddingTop: space(2) }}>
-                  {`Showing ${result.hits.length} of ${result.total}`}
-                </Text>
-              ) : null
-            }
-          />
-        ) : (
-          <View style={{ flex: 1, paddingTop: space(3), gap: space(2.5) }}>
-            {recents.length > 0 ? (
-              <View style={{ gap: space(1) }}>
-                <View style={{ flexDirection: "row", justifyContent: "center", gap: space(2) }}>
-                  <Text variant="eyebrow" color="inkSoft">
-                    Recent
+                <View style={{ gap: space(1) }}>
+                  <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
+                    Try
                   </Text>
-                  <Pressable accessibilityRole="button" onPress={clearSearches} hitSlop={8}>
-                    <Text variant="eyebrow" color="inkFaint">
-                      Clear
-                    </Text>
-                  </Pressable>
-                </View>
-                <View style={s.chips}>
-                  {recents.slice(0, 6).map((r) => (
-                    <Pressable key={r} accessibilityRole="button" onPress={() => setQuery(r)} style={s.chip}>
-                      <Text variant="label">{r}</Text>
-                    </Pressable>
-                  ))}
+                  <View style={s.chips}>
+                    {SUGGESTIONS.map((x) => (
+                      <Pressable key={x.label} accessibilityRole="button" onPress={() => setQuery(x.query)} style={s.chip}>
+                        <Text variant="label" color="inkSoft">
+                          {x.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
                 </View>
               </View>
-            ) : null}
-            <View style={s.chips}>
-              {lastRead ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => open(lastRead.surah, lastRead.ayah)}
-                  style={[s.chip, { borderColor: theme.colors.lapis }]}
-                >
-                  <Text variant="label" color="lapis">{`Continue ${SURAHS[lastRead.surah - 1].en} ${lastRead.surah}:${lastRead.ayah}`}</Text>
-                </Pressable>
-              ) : null}
-              {SUGGESTIONS.map((x) => (
-                <Pressable key={x.label} accessibilityRole="button" onPress={() => setQuery(x.query)} style={s.chip}>
-                  <Text variant="label" color="inkSoft">
-                    {x.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
-      </KeyboardAvoidingView>
+            )
+          }
+          ListFooterComponent={
+            typing && result.total > result.hits.length ? (
+              <Text variant="label" color="inkFaint" style={{ textAlign: "center", paddingTop: space(2) }}>
+                {`Showing ${result.hits.length} of ${result.total}`}
+              </Text>
+            ) : null
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }

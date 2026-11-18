@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import Home from "@/app/(tabs)/home";
 import MapTab from "@/app/(tabs)/map";
@@ -39,7 +39,7 @@ describe("search home", () => {
     expect(screen.getAllByText("Anxiety, worry").length).toBeGreaterThan(0);
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "verses about parents");
-    expect(screen.getByText(/being reviewed/)).toBeTruthy();
+    expect(screen.getAllByText("Parents").length).toBeGreaterThan(0);
 
     await fireEvent.changeText(screen.getByLabelText("Search the Quran"), "meccan surahs");
     expect(screen.getByText("Meccan surahs")).toBeTruthy();
@@ -57,11 +57,12 @@ describe("reader", () => {
 });
 
 describe("map", () => {
-  it("renders the field, counters and surahs", async () => {
+  it("renders the four views on one screen", async () => {
     await render(<MapTab />);
-    expect(screen.getByText("Surahs memorized")).toBeTruthy();
+    await fireEvent(screen.getByTestId("progress-pager"), "layout", { nativeEvent: { layout: { width: 390, height: 560 } } });
+    for (const tab of ["Wall", "Juz", "Stats", "Week"]) expect(screen.getByText(tab)).toBeTruthy();
+    expect(screen.getByText("memorized")).toBeTruthy();
     expect(screen.getByText("Reading this week")).toBeTruthy();
-    expect(screen.getByText("Al-Faatiha")).toBeTruthy();
   });
 });
 
@@ -90,11 +91,20 @@ describe("reader variants", () => {
 });
 
 describe("progress surah sheet", () => {
-  it("opens a surah and marks an ayah", async () => {
-    await render(<MapTab />);
-    await fireEvent.press(screen.getByLabelText(/^Al-Faatiha,/));
-    expect(screen.getByText("Ayah by ayah")).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText("Ayah 3"));
-    expect(useQuranStatus.getState().events.at(-1)).toMatchObject({ type: "ayah_status_set", memorized: true });
+  it("marks an ayah from the Mark button", async () => {
+    jest.useFakeTimers();
+    try {
+      await render(<MapTab />);
+      await fireEvent.press(screen.getByLabelText("Mark a surah"));
+      await fireEvent.press(screen.getByLabelText(/^Al-Faatiha,/));
+      await act(async () => {
+        jest.advanceTimersByTime(500);
+      });
+      expect(screen.getByText("Ayah by ayah")).toBeTruthy();
+      await fireEvent.press(screen.getByLabelText("Ayah 3"));
+      expect(useQuranStatus.getState().events.at(-1)).toMatchObject({ type: "ayah_status_set", memorized: true });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

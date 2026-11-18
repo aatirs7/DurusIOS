@@ -104,9 +104,15 @@ describe("search", () => {
   });
 
   it("names a topic under review instead of going silent", () => {
-    const r = s("verses about parents");
-    expect(r.hits.some((h) => h.kind === "theme")).toBe(false);
-    expect(r.pendingTopic).toBe("Parents");
+    const parents = THEMES.find((t) => t.id === "parents")!;
+    parents.verified = false;
+    try {
+      const r = s("honour my mother and father");
+      expect(r.hits.some((h) => h.kind === "theme" && h.theme.id === "parents")).toBe(false);
+      expect(r.pendingTopic).toBe("Parents");
+    } finally {
+      parents.verified = true;
+    }
   });
 
   it("answers general questions from the metadata", () => {

@@ -44,7 +44,10 @@ export function normalizeArabic(s: string): string {
 function normalizeLatin(s: string): string {
   return s
     .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "")
+    /* Apostrophes join ("can't" is "cant"); every other mark separates
+       ("al-kursi" is "al kursi"). */
+    .replace(/['’`]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
     .replace(/\b(surah|surat|sura)\b/g, "")
     .replace(/aa/g, "a")
     .replace(/ee/g, "i")
@@ -219,7 +222,8 @@ function prepare(): Prepared[] {
   if (!prepared) {
     prepared = THEMES.map((theme) => ({
       theme,
-      keys: theme.keywords.map((k) => normalizeLatin(k).split(" ").filter(Boolean)),
+      /* A topic always answers to its own name too. */
+      keys: [theme.label, ...theme.keywords].map((k) => normalizeLatin(k).split(" ").filter(Boolean)),
     }));
   }
   return prepared;
@@ -230,6 +234,8 @@ function prepare(): Prepared[] {
   when all its words appear in order; single words score 1. Filler is matched
   inside phrases ("cant sleep") but never on its own.
 */
+export { FILLER };
+
 export function matchThemes(normalized: string): { theme: Theme; score: number }[] {
   const all = normalized.split(" ").filter(Boolean);
   const content = all.filter((w) => !FILLER.has(w));

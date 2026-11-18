@@ -84,3 +84,31 @@ export function dotsPath(layout: FieldLayout, pick: (i: number) => boolean): str
   }
   return parts.join("");
 }
+
+/*
+  A plain grid for one range of ayahs (a juz, a surah), sized to fill a box.
+  Used by the Juz view, where each cell is a small field of its own.
+*/
+export function gridFor(width: number, height: number, count: number): { pitch: number; cols: number; dot: number } {
+  let pitch = Math.min(width, height);
+  for (; pitch > 1; pitch -= 0.25) {
+    const cols = Math.max(1, Math.floor(width / pitch));
+    if (Math.ceil(count / cols) * pitch <= height) return { pitch, cols, dot: Math.max(1, pitch * 0.72) };
+  }
+  return { pitch: 1, cols: Math.max(1, Math.floor(width)), dot: 1 };
+}
+
+export function rangePath(width: number, height: number, from: number, to: number, pick: (i: number) => boolean): string {
+  const { pitch, cols, dot } = gridFor(width, height, to - from);
+  const h = dot / 2;
+  const left = (width - cols * pitch) / 2 + pitch / 2;
+  const parts: string[] = [];
+  for (let i = from; i < to; i++) {
+    if (!pick(i)) continue;
+    const k = i - from;
+    const x = left + (k % cols) * pitch;
+    const y = pitch / 2 + Math.floor(k / cols) * pitch;
+    parts.push(`M${(x - h).toFixed(1)} ${(y - h).toFixed(1)}h${dot.toFixed(1)}v${dot.toFixed(1)}h-${dot.toFixed(1)}z`);
+  }
+  return parts.join("");
+}

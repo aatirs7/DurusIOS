@@ -121,7 +121,7 @@ export default function SurahReader() {
   const type = useQuranType();
   const look = type.look;
   const view = usePrefs((st) => st.readerView);
-  const translationId = usePrefs((st) => st.translationId) ?? 131;
+  const translationId = usePrefs((st) => st.translationId) ?? 20;
   const reciterId = usePrefs((st) => st.reciterId) ?? 7;
 
   /* Layers from Quran Foundation, loaded per surah and kept offline. */
