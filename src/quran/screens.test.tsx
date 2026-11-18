@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import Home from "@/app/(tabs)/home";
 import MapTab from "@/app/(tabs)/map";
 import SurahReader from "@/app/surah/[n]";
+import { DEFAULT_LOOK, usePrefs } from "@/state/prefs";
+import { useQuranStatus } from "@/state/quranStatus";
 
 /*
   Smoke renders for the screens a tester lands on. Search is now the launch
@@ -60,5 +62,39 @@ describe("map", () => {
     expect(screen.getByText("Surahs memorized")).toBeTruthy();
     expect(screen.getByText("Reading this week")).toBeTruthy();
     expect(screen.getByText("Al-Faatiha")).toBeTruthy();
+  });
+});
+
+describe("reader variants", () => {
+  afterEach(() => usePrefs.setState({ reader: DEFAULT_LOOK }));
+
+  it.each([
+    ["flow", "night"],
+    ["ayah", "sepia"],
+    ["flow", "paper"],
+  ] as const)("renders the %s layout on %s", async (layout, tone) => {
+    usePrefs.setState({ reader: { ...DEFAULT_LOOK, layout, tone, font: "scheherazade", spacing: "airy", align: "center", numbers: true, marks: true } });
+    params.n = "112";
+    params.ayah = undefined;
+    await render(<SurahReader />);
+    expect(screen.getByLabelText("Reading view")).toBeTruthy();
+  });
+
+  it("opens the reading view sheet", async () => {
+    params.n = "1";
+    await render(<SurahReader />);
+    await fireEvent.press(screen.getByLabelText("Reading view"));
+    expect(screen.getByText("Line spacing")).toBeTruthy();
+    expect(screen.getByText("Scheherazade")).toBeTruthy();
+  });
+});
+
+describe("progress surah sheet", () => {
+  it("opens a surah and marks an ayah", async () => {
+    await render(<MapTab />);
+    await fireEvent.press(screen.getByLabelText(/^Al-Faatiha,/));
+    expect(screen.getByText("Ayah by ayah")).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText("Ayah 3"));
+    expect(useQuranStatus.getState().events.at(-1)).toMatchObject({ type: "ayah_status_set", memorized: true });
   });
 });

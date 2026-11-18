@@ -95,6 +95,14 @@ describe("search", () => {
     for (const [q, id] of cases) expect([q, (topic(q) as { theme: { id: string } } | undefined)?.theme.id]).toEqual([q, id]);
   });
 
+  it("does not send unrelated queries to an approved topic", () => {
+    const topIds = (q: string) => s(q).hits.filter((h) => h.kind === "theme").map((h) => (h as { theme: { id: string } }).theme.id);
+    expect(topIds("night prayer")).not.toContain("sleep");
+    expect(topIds("test tomorrow")).not.toContain("patience");
+    expect(topIds("far away")).not.toContain("distant");
+    expect(topIds("table of contents")).not.toContain("gratitude");
+  });
+
   it("names a topic under review instead of going silent", () => {
     const r = s("verses about parents");
     expect(r.hits.some((h) => h.kind === "theme")).toBe(false);

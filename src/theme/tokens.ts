@@ -84,9 +84,9 @@ export const SCHEME_KEYS = ["light", "dark"] as const;
   pure black.
 */
 export type ReaderTone = "app" | "paper" | "sepia" | "night";
-export type ToneColors = Readonly<{ page: Hex; ink: Hex; soft: Hex; rule: Hex; dark: boolean }>;
+export type ToneColors = Readonly<{ page: Hex; ink: Hex; soft: Hex; rule: Hex; accent: Hex; dark: boolean }>;
 export const READER_TONES: Readonly<Record<Exclude<ReaderTone, "app">, ToneColors>> = {
-  paper: { page: "#f6f4ef", ink: "#1e356f", soft: "#56679a", rule: "#d7d9e2", dark: false },
-  sepia: { page: "#f2e8d5", ink: "#4a3520", soft: "#7a6248", rule: "#dccdb2", dark: false },
-  night: { page: "#0f1218", ink: "#d9d4c7", soft: "#8f97a6", rule: "#262c38", dark: true },
+  paper: { page: "#f6f4ef", ink: "#1e356f", soft: "#56679a", rule: "#d7d9e2", accent: "#2a4a8b", dark: false },
+  sepia: { page: "#f2e8d5", ink: "#4a3520", soft: "#7a6248", rule: "#dccdb2", accent: "#2a4a8b", dark: false },
+  night: { page: "#0f1218", ink: "#d9d4c7", soft: "#8f97a6", rule: "#262c38", accent: "#7fa0dc", dark: true },
 };

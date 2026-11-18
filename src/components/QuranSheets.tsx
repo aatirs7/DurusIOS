@@ -176,11 +176,11 @@ export const VIEWS: { key: ReaderView; label: string; line: string; available: b
 ];
 
 /* The colours the reader paints with, from the chosen tone. "app" follows the app's theme. */
-export function useReaderColors(): { page: string; ink: string; soft: string; rule: string; dark: boolean } {
+export function useReaderColors(): { page: string; ink: string; soft: string; rule: string; accent: string; dark: boolean } {
   const theme = useTheme();
   const tone = usePrefs((st) => st.reader?.tone ?? "app");
   if (tone === "app") {
-    return { page: theme.colors.paper, ink: theme.colors.ink, soft: theme.colors.inkSoft, rule: theme.colors.rule, dark: theme.dark };
+    return { page: theme.colors.paper, ink: theme.colors.ink, soft: theme.colors.inkSoft, rule: theme.colors.rule, accent: theme.colors.lapis, dark: theme.dark };
   }
   return READER_TONES[tone];
 }

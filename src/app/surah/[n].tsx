@@ -191,6 +191,9 @@ export default function SurahReader() {
   const go = (surah: number, ayah: number) => {
     pending.current = { surah, ayah };
     setNavOpen(false);
+    /* onDismiss is the right moment, but if it ever fails to fire the jump
+       still happens once the sheet has had time to close. afterSheet runs once. */
+    setTimeout(afterSheet, 650);
   };
   const afterSheet = () => {
     const to = pending.current;
@@ -222,7 +225,7 @@ export default function SurahReader() {
         {`${meta.meaning}. ${meta.place}, ${meta.ayahs} ayahs, Juz ${juzOf(meta.start)}`}
       </Text>
       <Pressable accessibilityRole="button" onPress={surahActions} hitSlop={8} style={{ paddingTop: space(1) }}>
-        <Text variant="label" color="lapis">
+        <Text variant="label" style={{ color: colors.accent }}>
           Mark this surah
         </Text>
       </Pressable>

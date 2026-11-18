@@ -49,19 +49,19 @@ export const THEMES: Theme[] = [
   ], true),
   T("feeling", "gratitude", "Gratitude", ["55", "14:7"], [
     "grateful", "gratitude", "thankful", "thanks", "thank allah", "blessed", "blessing", "blessings", "alhamdulillah", "appreciate", "appreciation",
-    "content", "contentment", "good news", "happy", "happiness", "joy", "joyful", "celebrate", "celebration",
+    "feeling content", "content with", "good news", "happy", "happiness", "joy", "joyful", "celebrate", "celebration",
   ], true),
   T("feeling", "distant", "Feeling distant from Allah", ["2:186", "39:53", "50:16"], [
-    "distant", "far from allah", "far", "disconnected", "lonely", "alone", "loneliness", "empty", "emptiness", "lost faith", "weak iman",
+    "distant", "far from allah", "feel far", "disconnected", "lonely", "alone", "loneliness", "empty", "emptiness", "lost faith", "weak iman",
     "low iman", "iman low", "spiritually dry", "numb", "no motivation to pray", "drifting", "forgotten", "abandoned", "nobody cares",
   ], true),
   T("topic", "sleep", "Before sleep", ["67", "2:255", "2:285-286", "112", "113", "114"], [
-    "sleep", "sleeping", "night", "bed", "bedtime", "before bed", "insomnia", "cant sleep", "nightmare", "nightmares", "tired at night", "night routine",
+    "sleep", "sleeping", "at night", "bed", "bedtime", "before bed", "insomnia", "cant sleep", "nightmare", "nightmares", "tired at night", "night routine",
   ], true),
   T("topic", "friday", "Friday", ["18"], ["friday", "jumuah", "jummah", "jumma", "juma", "jumah"], true),
   T("feeling", "patience", "Patience, hardship", ["94:5-6", "2:153", "3:200"], [
-    "patience", "patient", "sabr", "hardship", "hard", "hard time", "difficult", "difficulty", "struggle", "struggling", "tired", "exhausted",
-    "suffering", "pain", "trial", "trials", "test", "tested", "going through", "rough", "rough patch", "give up", "giving up", "hopeless",
+    "patience", "patient", "sabr", "hardship", "hard time", "so hard", "life is hard", "difficult", "difficulty", "struggle", "struggling", "tired", "exhausted",
+    "suffering", "pain", "trial", "trials", "being tested", "going through", "rough", "rough patch", "give up", "giving up", "hopeless",
     "everything is going wrong", "bad day", "bad week", "setback", "failure", "failed",
   ], true),
   T("feeling", "repent", "Guilt, wanting to repent", ["39:53", "4:110", "25:70"], [
