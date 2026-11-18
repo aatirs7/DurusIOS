@@ -4,13 +4,14 @@ Updated: 2026-11-18, late
 
 ## Now
 
-Latest OTA: c6868e0a. Rollback: republish a5ab553c. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: 49bf76f4. Rollback: republish c6868e0a. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Owner feedback from phone screenshots (OTA 49bf76f4): search looked heavy, and Progress was unreadable. Search: the title is smaller and set lower in a fixed spot, For you is two quiet lines, and six light chips replace the bordered cards; it still does not move while typing. Progress: every view opens with a plain sentence ("12 surahs memorized, 2% of the Quran"), the wall has a caption explaining that each square is an ayah from Al-Fatiha down to An-Nas, juz numbers run down its left side, a legend gives the counts, and juz boxes show their percentage.
 - Translation, word by word and transliteration are live (OTA c6868e0a). Prime logged in to Vercel (owner approved the device login), linked the Durus web project, added QF_CLIENT_ID, QF_CLIENT_SECRET, QF_ENV=production and DURUS_APP_KEY as production secrets, and redeployed durus.space. Live check: Ya-Sin returns 83 ayahs with word meanings, transliterations, Saheeh International and 25 footnotes; without the app key the route answers 403. The app's EAS production environment now has EXPO_PUBLIC_QURAN_API and EXPO_PUBLIC_DURUS_KEY. Reading view offers a translator choice: Saheeh International (default), Abdel Haleem, Pickthall, Yusuf Ali, Hilali and Khan, Taqi Usmani.
 - Long-press zoom: long press any ayah in the reader and it lifts into a Liquid Glass card with the ayah large, every word over its transliteration and meaning (tap a word to zoom in on it), the full transliteration and translation, and Memorized, Understood, Bookmark and Share. It scales in rather than fading, so the glass always draws.
 - Progress rebuilt as one screen with no vertical scroll (OTA a5ab553c). Swipe or tap between Wall (the whole Quran as dots), Juz (30 small fields; tap one to mark its surahs), Stats (two rings and six counts) and Week (reading bars and recent marks). A glass Mark button opens any surah for whole or ayah-by-ayah marking.
