@@ -4,13 +4,15 @@ Updated: 2026-11-18, late
 
 ## Now
 
-Latest OTA: a5ab553c. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: c6868e0a. Rollback: republish a5ab553c. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Translation, word by word and transliteration are live (OTA c6868e0a). Prime logged in to Vercel (owner approved the device login), linked the Durus web project, added QF_CLIENT_ID, QF_CLIENT_SECRET, QF_ENV=production and DURUS_APP_KEY as production secrets, and redeployed durus.space. Live check: Ya-Sin returns 83 ayahs with word meanings, transliterations, Saheeh International and 25 footnotes; without the app key the route answers 403. The app's EAS production environment now has EXPO_PUBLIC_QURAN_API and EXPO_PUBLIC_DURUS_KEY. Reading view offers a translator choice: Saheeh International (default), Abdel Haleem, Pickthall, Yusuf Ali, Hilali and Khan, Taqi Usmani.
+- Long-press zoom: long press any ayah in the reader and it lifts into a Liquid Glass card with the ayah large, every word over its transliteration and meaning (tap a word to zoom in on it), the full transliteration and translation, and Memorized, Understood, Bookmark and Share. It scales in rather than fading, so the glass always draws.
 - Progress rebuilt as one screen with no vertical scroll (OTA a5ab553c). Swipe or tap between Wall (the whole Quran as dots), Juz (30 small fields; tap one to mark its surahs), Stats (two rings and six counts) and Week (reading bars and recent marks). A glass Mark button opens any surah for whole or ayah-by-ayah marking.
 - Search holds still and answers. The mark, the question and the bar never move; results scroll above the keyboard with iOS keyboard insets instead of the screen being pushed. A short reply leads the results, written from what the app knows (your marks, where you stopped, the hour, Friday), never interpreting ayahs and never praising. Type-ahead draws on 3,693 natural phrasings built from the approved topics, each tested to return results. "For you" on the empty screen offers continue reading, Friday or late-night readings, and a daily revision pick from surahs you know. The owner approved all 97 topics (2026-11-18).
 - Quran server deployed to durus.space (Durus repo, commit 797b326): /api/v1/quran/resources and /api/v1/quran/chapter/:n. It answers "quran_not_configured" until its environment variables are set. Production credentials work: 146 translations, 12 reciters. The Clear Quran is not in this client's catalogue, so the default is Saheeh International (20); Abdel Haleem, Pickthall, Yusuf Ali, Hilali and Khan, Taqi Usmani and Maududi are also available in English.
@@ -45,7 +47,6 @@ Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Blocked on the owner
 
-- **Vercel environment variables for durus.space.** The route is deployed and waiting. Needs QF_CLIENT_ID, QF_CLIENT_SECRET, QF_ENV=production and DURUS_APP_KEY (values are in DurusIOS server/.env.local). Either the owner adds them in the Vercel dashboard, or runs `npx vercel login` on this machine so Prime can. After that Prime sets the app's EXPO_PUBLIC_QURAN_API and key and switches the layers on.
 - **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
 
 ## Questions
