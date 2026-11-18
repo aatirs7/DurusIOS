@@ -24,6 +24,9 @@ type PrefsState = Hydratable & {
   /* Reader look. */
   reader: ReaderLook;
   setReader: (patch: Partial<ReaderLook>) => void;
+  /* Ayahs read, per local day, as global indexes. Kept for 60 days. */
+  readLog: Record<string, number[]>;
+  logRead: (day: string, index: number) => void;
   /* Bookmarked ayahs, by global index, newest first. */
   bookmarks: number[];
   toggleBookmark: (index: number) => void;
@@ -60,6 +63,15 @@ export const usePrefs = create<PrefsState>()(
       setArabicSize: (arabicSize) => set({ arabicSize: Math.min(40, Math.max(22, arabicSize)) }),
       reader: DEFAULT_LOOK,
       setReader: (patch) => set((st) => ({ reader: { ...DEFAULT_LOOK, ...st.reader, ...patch } })),
+      readLog: {},
+      logRead: (day, index) =>
+        set((st) => {
+          const today = st.readLog[day] ?? [];
+          if (today.includes(index)) return {};
+          const next: Record<string, number[]> = { ...st.readLog, [day]: [...today, index] };
+          const keep = Object.keys(next).sort().slice(-60);
+          return { readLog: Object.fromEntries(keep.map((k) => [k, next[k]])) };
+        }),
       bookmarks: [],
       toggleBookmark: (index) =>
         set((st) => ({

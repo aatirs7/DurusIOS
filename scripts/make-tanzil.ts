@@ -75,6 +75,9 @@ if (surahs.length !== 114) throw new Error(`Expected 114 surahs, got ${surahs.le
 const juz = [...xml.matchAll(/<juz [^>]*\/>/g)].map((m) => surahs[Number(attr(m[0], "sura")) - 1].start + Number(attr(m[0], "aya")) - 1);
 if (juz.length !== 30) throw new Error(`Expected 30 juz, got ${juz.length}`);
 
+const pages = [...xml.matchAll(/<page [^>]*\/>/g)].map((m) => surahs[Number(attr(m[0], "sura")) - 1].start + Number(attr(m[0], "aya")) - 1);
+if (pages.length !== 604) throw new Error(`Expected 604 pages, got ${pages.length}`);
+
 const total = surahs.reduce((n, s) => n + s.ayahs, 0);
 if (total !== 6236) throw new Error(`Expected 6236 ayahs, got ${total}`);
 
@@ -181,6 +184,9 @@ export const SURAHS: SurahMeta[] = ${JSON.stringify(surahs)};
 export const JUZ_STARTS: number[] = ${JSON.stringify(juz)};
 
 export const TOTAL_AYAHS = ${total};
+
+/* Global index, from 0, of the first ayah on each of the 604 Madinah mushaf pages. */
+export const PAGE_STARTS: number[] = ${JSON.stringify(pages)};
 
 /* Surahs whose first ayah line opens with the basmala, split after word 4 for display. */
 export const BASMALA_SPLIT: number[] = ${JSON.stringify(split)};

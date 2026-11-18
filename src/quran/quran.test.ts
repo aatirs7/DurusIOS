@@ -1,3 +1,4 @@
+import { progress, readingWeek } from "./progress";
 import { normalizeArabic, search } from "./search";
 import { foldStatus, totals } from "./status";
 import { BASMALA_SPLIT, SURAHS } from "./tanzil";
@@ -146,5 +147,25 @@ describe("status fold", () => {
       { type: "surah_status_set", at: 1, surah: 1, understood: true },
     ]);
     expect(totals(maps).surahsUnderstood).toBe(0);
+  });
+});
+
+describe("progress", () => {
+  it("counts surahs, juz, pages and words", () => {
+    const maps = foldStatus(SURAHS.slice(77).map((x) => ({ type: "surah_status_set" as const, at: 1, surah: x.n, memorized: true })));
+    const p = progress(maps, quranText);
+    expect(p.surahsMemorized).toBe(37);
+    expect(p.juzMemorized).toBe(1);
+    expect(p.juz[29].memorized).toBe(1);
+    expect(p.pagesMemorized).toBeGreaterThanOrEqual(22);
+    expect(p.wordsMemorized).toBeGreaterThan(0);
+    expect(p.totalWords).toBeGreaterThan(70000);
+  });
+
+  it("builds a reading week", () => {
+    const w = readingWeek({ "2026-11-18": [1, 2, 3], "2026-11-12": [9] }, "2026-11-18");
+    expect(w).toHaveLength(7);
+    expect(w[6]).toEqual({ day: "2026-11-18", count: 3 });
+    expect(w[0]).toEqual({ day: "2026-11-12", count: 1 });
   });
 });

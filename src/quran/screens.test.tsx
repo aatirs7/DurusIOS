@@ -58,6 +58,7 @@ describe("map", () => {
   it("renders the field, counters and surahs", async () => {
     await render(<MapTab />);
     expect(screen.getByText("Surahs memorized")).toBeTruthy();
+    expect(screen.getByText("Reading this week")).toBeTruthy();
     expect(screen.getByText("Al-Faatiha")).toBeTruthy();
   });
 });

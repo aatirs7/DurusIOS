@@ -10,6 +10,7 @@ import { Text } from "@/components/Text";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { surahForDisplay } from "@/quran/text";
+import { localToday } from "@/state/barakah";
 import { usePrefs } from "@/state/prefs";
 import { useQuranStatus } from "@/state/quranStatus";
 import { FONTS } from "@/theme/typography";
@@ -111,6 +112,7 @@ export default function SurahReader() {
   const setLastRead = usePrefs((st) => st.setLastRead);
   const bookmarks = usePrefs((st) => st.bookmarks);
   const toggleBookmark = usePrefs((st) => st.toggleBookmark);
+  const logRead = usePrefs((st) => st.logRead);
   const maps = useMemo(() => foldStatus(events), [events]);
   const colors = useReaderColors();
   const type = useQuranType();
@@ -156,9 +158,13 @@ export default function SurahReader() {
   /* The reading position is saved a moment after scrolling settles, not on
      every ayah that passes. */
   useEffect(() => {
-    const id = setTimeout(() => setLastRead({ surah: n, ayah: visibleAyah }), 800);
+    const id = setTimeout(() => {
+      setLastRead({ surah: n, ayah: visibleAyah });
+      /* An ayah you stayed on counts as read, once per day. */
+      logRead(localToday(), meta.start + visibleAyah - 1);
+    }, 800);
     return () => clearTimeout(id);
-  }, [n, visibleAyah, setLastRead]);
+  }, [n, visibleAyah, setLastRead, logRead, meta.start]);
 
   const surahActions = useCallback(() => {
     let mAll = true;

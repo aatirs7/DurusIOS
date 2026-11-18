@@ -33,8 +33,8 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: "book", selected: "book.fill" }} />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="map">
-        <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="circle.grid.3x3" />
+        <NativeTabs.Trigger.Label>Progress</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: "chart.pie", selected: "chart.pie.fill" }} />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="today">
         <NativeTabs.Trigger.Label>Learn</NativeTabs.Trigger.Label>
