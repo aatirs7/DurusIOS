@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Quranic Words learning loop**, per the owner ("structured repetition, different kinds of learning, like Study Lesson"). Reviews first, each asked as either "what does this mean" or "which is the Arabic for" (new reverse drill with Arabic options). New words: their cards, then three shuffled rounds across all of them: choose the meaning (graded, the day's one review), choose the Arabic (practice), choose the meaning again (practice). Wrong answers return at the end ungraded. Spaced repetition then brings each word back over the following days; a word counts as known after two correct days.
 - **Per-word Quranic Words, from QUL** (merged from a worktree; QUL credited where word data shows).
   - assets/content/quranic-words-map.json (233 KB): per word, its track card and clitic skills, built by scripts/coverage/build_words_map.py from the QUL lemma and stem files (data-in/, git-ignored) with the corpus used offline only to map QUL lemmas to the app's cards. Clitics from surface minus QUL stem: 98.9% agree with the corpus (98.0% of words with a clitic).
   - Exact coverage replaces the lower-bound curve: the meter, followable ayahs and memorized-surah share.

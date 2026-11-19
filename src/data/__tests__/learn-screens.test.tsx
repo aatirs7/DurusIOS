@@ -101,16 +101,20 @@ describe("a first words session", () => {
       await fireEvent.press(screen.getByLabelText("Continue"));
     }
 
-    /* Five drills: reveal, choose, continue. Answering wrong brings one back. */
+    /* The learning loop: meaning, then the Arabic for the meaning, then the
+       meaning again, for every new word. Wrong answers come back at the end. */
     let guard = 0;
-    while (screen.queryByText("What does this mean?") && guard < 20) {
+    let arabicRounds = 0;
+    while ((screen.queryByText("What does this mean?") || screen.queryByText("Which is the Arabic for")) && guard < 60) {
       guard += 1;
-      await fireEvent.press(screen.getByLabelText("Show the meanings"));
-      const options = screen.getAllByRole("button").filter((b) => !["Leave this drill", "Choose one"].includes(b.props.accessibilityLabel));
+      if (screen.queryByText("What does this mean?")) await fireEvent.press(screen.getByLabelText("Show the meanings"));
+      else arabicRounds += 1;
+      const options = screen.getAllByRole("button").filter((b) => !["Leave this drill", "Choose one", "Go back"].includes(b.props.accessibilityLabel));
       await fireEvent.press(options[0]);
       expect(screen.getByText(/Heard in/)).toBeTruthy();
       await fireEvent.press(screen.getByLabelText("Continue"));
     }
+    expect(arabicRounds).toBeGreaterThanOrEqual(5);
     expect(screen.getByText("That is all for now")).toBeTruthy();
     expect(screen.getByLabelText("Learn 5 more words")).toBeTruthy();
     expect(screen.getByLabelText("Practise words you have met")).toBeTruthy();

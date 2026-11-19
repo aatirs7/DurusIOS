@@ -10,11 +10,18 @@ import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
 import { db } from "@/data/client";
 import { submitGrade } from "@/data/review";
-import { NEW_PER_DAY, buildWordsSession, refreshWordsKnown, type WordQuestion } from "@/data/words";
+import {
+  NEW_PER_DAY,
+  buildWordsSession,
+  refreshWordsKnown,
+  type WordQuestion,
+  type WordsSession as WordsSessionData,
+} from "@/data/words";
 import {
   WORDS_ATTRIBUTION,
   canShowGloss,
   canShowNote,
+  lemmaForCard,
   skillsForStage,
   stageShare,
   type WordsLemma,
@@ -32,8 +39,9 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   One Quranic Words session (spec sections 6 and 7): a stage's intro the first
   time it starts, each new word's card, then the drills, reviews first.
 
-  Drill 2 (see the Arabic, recall the meaning, then choose it) is the drill
-  for now. Drill 1 (listen, choose the meaning) needs an audio module in the
+  New words go through a learning loop (see buildSteps): meaning, then the
+  Arabic for the meaning, then the meaning again. Reviews are asked one way
+  or the other. Drill 1 (listen, choose the meaning) needs an audio module in the
   native build; canPlayWordAudio() is false until then and the session is text
   first. Grading is deterministic: the choice is right or it is not, graded by
   speed the way the book's choice rung is. A wrong answer comes back once at the
@@ -47,7 +55,40 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 type Step =
   | { kind: "intro"; stage: WordsStage }
   | { kind: "teach"; lemma: WordsLemma }
-  | { kind: "drill"; q: WordQuestion; retry: boolean };
+  /* meaning: see the Arabic, choose the meaning. arabic: see the meaning,
+     choose the Arabic. graded: whether the answer goes into the schedule. */
+  | { kind: "drill"; q: WordQuestion; retry: boolean; type: DrillType; graded: boolean };
+
+type DrillType = "meaning" | "arabic";
+
+/*
+  The session's order, built once.
+
+  Reviews first, each asked one way or the other so a word is met from both
+  sides over the days. Then the new words: each word's card, then a learning
+  loop across all of them, the way the book's Study Lesson works: choose the
+  meaning, then choose the Arabic for the meaning, then the meaning again,
+  each round shuffled. Only the first round's answer is graded into the
+  schedule (one review per word per day); the other rounds are practice. A
+  wrong answer comes back at the end of the session, ungraded.
+*/
+function buildSteps(session: WordsSessionData): Step[] {
+  const shuffle = <T,>(xs: T[]) => [...xs].sort(() => Math.random() - 0.5);
+  const reviews = session.questions.filter((q) => !q.isNew);
+  const fresh = session.questions.filter((q) => q.isNew);
+  const out: Step[] = [...session.intros.map((stage) => ({ kind: "intro" as const, stage }))];
+  for (const q of reviews) {
+    const type: DrillType = session.practice || Math.random() < 0.5 ? "meaning" : "arabic";
+    out.push({ kind: "drill", q, retry: false, type, graded: !session.practice });
+  }
+  if (fresh.length > 0) {
+    out.push(...session.newCards.map((lemma) => ({ kind: "teach" as const, lemma })));
+    for (const q of shuffle(fresh)) out.push({ kind: "drill", q, retry: false, type: "meaning", graded: true });
+    for (const q of shuffle(fresh)) out.push({ kind: "drill", q, retry: false, type: "arabic", graded: false });
+    for (const q of shuffle(fresh)) out.push({ kind: "drill", q, retry: false, type: "meaning", graded: false });
+  }
+  return out;
+}
 
 const useStyles = makeStyles((t) => ({
   body: { flexGrow: 1, alignItems: "center", gap: space(2), paddingVertical: space(2) },
@@ -112,15 +153,7 @@ export default function WordsSession() {
   );
 
 
-  const [steps, setSteps] = useState<Step[]>(() =>
-    session
-      ? [
-          ...session.intros.map((stage) => ({ kind: "intro" as const, stage })),
-          ...session.newCards.map((lemma) => ({ kind: "teach" as const, lemma })),
-          ...session.questions.map((q) => ({ kind: "drill" as const, q, retry: false })),
-        ]
-      : [],
-  );
+  const [steps, setSteps] = useState<Step[]>(() => (session ? buildSteps(session) : []));
   const [index, setIndex] = useState(0);
   /* On the way out, hand what is now known to Read and the Map. */
   useEffect(
@@ -137,6 +170,8 @@ export default function WordsSession() {
 
   const step = steps[index];
   const next = () => {
+    /* A "choose the Arabic" drill shows its options at once: time it from here. */
+    shownAt.current = Date.now();
     setRevealed(false);
     setChosen(null);
     setIndex((i) => i + 1);
@@ -188,12 +223,13 @@ export default function WordsSession() {
     );
   }
 
-  const answer = (q: WordQuestion, optionId: number, retry: boolean) => {
+  const answer = (st: Extract<Step, { kind: "drill" }>, optionId: number) => {
+    const { q, retry } = st;
     if (chosen !== null) return;
     haptics.select();
     setChosen(optionId);
     const correct = optionId === q.cardId;
-    if (!retry && !session.practice && boot.ok) {
+    if (!retry && st.graded && !session.practice && boot.ok) {
       submitGrade(db, profileId, boot.deviceId, {
         cardId: q.cardId,
         direction: "recognition",
@@ -201,7 +237,7 @@ export default function WordsSession() {
         msToAnswer: Date.now() - shownAt.current,
       });
     }
-    if (!correct && !retry) setSteps((all) => [...all, { kind: "drill", q, retry: true }]);
+    if (!correct && !retry) setSteps((all) => [...all, { ...st, retry: true, graded: false }]);
   };
 
   return (
@@ -213,13 +249,26 @@ export default function WordsSession() {
         {step.kind === "teach" ? <Teach lemma={step.lemma} /> : null}
         {step.kind === "drill" ? (
           <>
-            <Text variant="eyebrow" color="inkSoft">
-              What does this mean?
-            </Text>
-            <Arabic variant="card" style={s.face}>
-              {step.q.lemma.face}
-            </Arabic>
-            {revealed ? (
+            {step.type === "meaning" ? (
+              <>
+                <Text variant="eyebrow" color="inkSoft">
+                  What does this mean?
+                </Text>
+                <Arabic variant="card" style={s.face}>
+                  {step.q.lemma.face}
+                </Arabic>
+              </>
+            ) : (
+              <>
+                <Text variant="eyebrow" color="inkSoft">
+                  Which is the Arabic for
+                </Text>
+                <Text variant="pageTitle" style={s.center}>
+                  {step.q.english.trim()}
+                </Text>
+              </>
+            )}
+            {revealed || step.type === "arabic" ? (
               <View style={s.options}>
                 {step.q.options.map((o) => {
                   const isAnswer = o.cardId === step.q.cardId;
@@ -235,13 +284,19 @@ export default function WordsSession() {
                     <Pressable
                       key={o.cardId}
                       accessibilityRole="button"
-                      accessibilityLabel={o.english.trim()}
-                      onPress={() => answer(step.q, o.cardId, step.retry)}
+                      accessibilityLabel={step.type === "meaning" ? o.english.trim() : (lemmaForCard(o.cardId)?.face ?? o.english)}
+                      onPress={() => answer(step, o.cardId)}
                     >
                       <Glass interactive={chosen === null} tint={tint} style={s.option}>
-                        <Text color={tint ? "paper" : "ink"} style={s.center}>
-                          {o.english.trim()}
-                        </Text>
+                        {step.type === "meaning" ? (
+                          <Text color={tint ? "paper" : "ink"} style={s.center}>
+                            {o.english.trim()}
+                          </Text>
+                        ) : (
+                          <Arabic variant="inline" color={tint ? "paper" : "ink"} style={[s.face, { fontSize: 26, lineHeight: 48 }]}>
+                            {lemmaForCard(o.cardId)?.face ?? ""}
+                          </Arabic>
+                        )}
                       </Glass>
                     </Pressable>
                   );
@@ -262,7 +317,7 @@ export default function WordsSession() {
       </ScrollView>
 
       <View style={s.foot}>
-        {step.kind === "drill" && !revealed ? (
+        {step.kind === "drill" && step.type === "meaning" && !revealed ? (
           <GlassButton
             primary
             label="Show the meanings"
