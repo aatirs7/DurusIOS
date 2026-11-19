@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { View, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TabSafe } from "@/components/TabSafe";
 import { MARGIN } from "@/theme/layout";
 import { makeStyles } from "@/theme/useTheme";
 
@@ -14,12 +15,22 @@ export function Screen({
   children,
   style,
   edges = ["top", "bottom"],
+  tab = false,
 }: {
   children: ReactNode;
   style?: ViewStyle;
   edges?: ("top" | "bottom" | "left" | "right")[];
+  /* A tab root: a fixed top inset, so the first open does not jump. See TabSafe. */
+  tab?: boolean;
 }) {
   const s = useStyles();
+  if (tab) {
+    return (
+      <TabSafe style={s.safe}>
+        <View style={[s.body, style]}>{children}</View>
+      </TabSafe>
+    );
+  }
   return (
     <SafeAreaView style={s.safe} edges={edges}>
       <View style={[s.body, style]}>{children}</View>

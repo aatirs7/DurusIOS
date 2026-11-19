@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Tab first-open shift, second fix.** Each native tab has its own safe-area measurement, which reads the top inset as zero for a moment the first time a tab opens and then corrects, so the page jumped. The five tabs now use the window's top inset from launch, a fixed number in this portrait-only app (src/components/TabSafe.tsx; Screen takes a `tab` prop). Sheets and pushed screens are unchanged.
 - Licensing gate: the email to developers@quran.com is SENT (19 Nov, from the owner's elysiumcyber.com Gmail). It asks about clipping word audio from recitation segments, caching audio and text on the device, and bundling about 560 word-by-word glosses verbatim with attribution. Waiting on their reply. The QUL licence issue is still a draft.
 - **Quranic Words now sync.** Neon has the deck value and the 13 stages and 560 cards under the app's ids (durus-web e96c0d9). Prime ran it from production through a temporary token-guarded route, then removed the route (next commit) and the token env var; migration 0007 is idempotent (ADD VALUE IF NOT EXISTS), so a later db:migrate is safe. WORDS_DECK_SYNCS is on in the app; held-back reviews go up on the next sync.
 - Web (durus-web 924d2f9): the lessons list and the cron's next-lesson lookup now count book lessons only; the numbers trainer stages were leaking into both, and the words stages would have too.

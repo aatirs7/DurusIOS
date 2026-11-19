@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
@@ -10,6 +9,7 @@ import { Breath } from "@/components/Breath";
 import { Glyphs } from "@/components/Glyphs";
 import { Glass } from "@/components/Glass";
 import { Seeking } from "@/components/Seeking";
+import { TabSafe, useTabTop } from "@/components/TabSafe";
 import { Text } from "@/components/Text";
 import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { Typewriter } from "@/components/Typewriter";
@@ -273,8 +273,8 @@ export default function Home() {
   /* Start from the window size so the first frame is already centred; the
      measured height only refines it, so opening the tab does not jump. */
   const win = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const [bodyH, setBodyH] = useState(win.height - insets.top);
+  const tabTop = useTabTop();
+  const [bodyH, setBodyH] = useState(win.height - tabTop);
   const [kbH, setKbH] = useState(0);
   useEffect(() => {
     const show = Keyboard.addListener("keyboardWillShow", (e) => setKbH(e.endCoordinates.height));
@@ -318,7 +318,7 @@ export default function Home() {
   const head = useAnimatedStyle(() => ({ height: HEAD * (1 - p.value), opacity: 1 - p.value }));
 
   return (
-    <SafeAreaView style={s.safe} edges={["top"]}>
+    <TabSafe style={s.safe}>
       <Breath />
       {typing ? null : <Glyphs />}
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
@@ -411,6 +411,6 @@ export default function Home() {
           </Pressable>
         )}
       </View>
-    </SafeAreaView>
+    </TabSafe>
   );
 }

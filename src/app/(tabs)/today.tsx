@@ -189,7 +189,7 @@ export default function Today() {
   const currentStage = words.stages.findIndex((st) => st.learned < st.items);
 
   return (
-    <Screen>
+    <Screen tab>
       <Breath />
       <TopBar
         title={

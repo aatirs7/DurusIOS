@@ -214,7 +214,7 @@ export default function Read() {
 
   if (by === "juz") {
     return (
-      <Screen edges={["top"]}>
+      <Screen tab>
         <Breath />
         <TopBar title="Read" subtitle="The Quran, surah by surah" />
         <FlatList
@@ -257,7 +257,7 @@ export default function Read() {
   }
 
   return (
-    <Screen edges={["top"]}>
+    <Screen tab>
       <Breath />
       <TopBar title="Read" subtitle="The Quran, surah by surah" />
       <FlatList

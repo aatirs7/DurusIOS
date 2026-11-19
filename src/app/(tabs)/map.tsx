@@ -9,11 +9,11 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { AyahField } from "@/components/AyahField";
 import { Glass, GlassButton } from "@/components/Glass";
+import { TabSafe, useTabTop } from "@/components/TabSafe";
 import { Text } from "@/components/Text";
 import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { rangePath } from "@/onboarding/field";
@@ -592,7 +592,7 @@ export default function ProgressTab() {
   const s = useStyles();
   const theme = useTheme();
   const { width, height: winH } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const tabTop = useTabTop();
   const events = useQuranStatus((st) => st.events);
   const readLog = usePrefs((st) => st.readLog) ?? NO_LOG;
   const bookmarks = usePrefs((st) => st.bookmarks) ?? NO_BOOKMARKS;
@@ -600,7 +600,7 @@ export default function ProgressTab() {
   const [page, setPage] = useState(0);
   /* An estimate from the window first, so the pages draw on the first frame
      instead of popping in after layout; onLayout then sets the exact size. */
-  const [area, setArea] = useState({ w: width, h: Math.max(0, winH - insets.top - TOP_BAR_HEIGHT - 61) });
+  const [area, setArea] = useState({ w: width, h: Math.max(0, winH - tabTop - TOP_BAR_HEIGHT - 61) });
   const pager = useRef<ScrollView>(null);
   const [pick, setPick] = useState<{ open: boolean; juz: number | null }>({
     open: false,
@@ -653,7 +653,7 @@ export default function ProgressTab() {
   const ringSize = Math.min(150, (inner - space(3)) / 2, h * 0.36);
 
   return (
-    <SafeAreaView style={s.safe} edges={["top"]}>
+    <TabSafe style={s.safe}>
       <TopBar
         inset
         title="Progress"
@@ -1010,6 +1010,6 @@ export default function ProgressTab() {
         onPick={choose}
       />
       <SurahSheet surah={sheet} onClose={() => setSheet(null)} />
-    </SafeAreaView>
+    </TabSafe>
   );
 }

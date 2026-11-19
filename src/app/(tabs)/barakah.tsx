@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
 import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
+import { TabSafe } from "@/components/TabSafe";
 import { Text } from "@/components/Text";
 import { TopBar } from "@/components/TopBar";
 import {
@@ -266,7 +266,7 @@ export default function Barakah() {
   for (let k = 0; k < due.length; k += 2) rows.push(due.slice(k, k + 2));
 
   return (
-    <SafeAreaView style={s.safe} edges={["top"]}>
+    <TabSafe style={s.safe}>
       <Breath />
       <View style={s.body}>
         <TopBar title="Barakah" subtitle="Small daily practices" />
@@ -445,6 +445,6 @@ export default function Barakah() {
           })}
         </ScrollView>
       </Sheet>
-    </SafeAreaView>
+    </TabSafe>
   );
 }
