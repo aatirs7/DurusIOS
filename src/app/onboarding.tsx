@@ -8,6 +8,7 @@ import {
   Pressable,
   ScrollView,
   Switch,
+  TextInput,
   TouchableWithoutFeedback,
   View,
   useWindowDimensions,
@@ -47,12 +48,13 @@ import { usePrefs } from "@/state/prefs";
 import { useQuranStatus } from "@/state/quranStatus";
 import { useSession } from "@/state/session";
 import { MARGIN, RADIUS, space } from "@/theme/layout";
+import { FONTS } from "@/theme/typography";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 /*
   Onboarding v3 (issue #2).
 
-    open -> story (5 pages) -> your hifz -> reminders -> sign in -> your map
+    open -> story (5 pages) -> your name -> your hifz -> reminders -> sign in -> your map
 
   One real question, what you have memorized, because it is the one that pays
   off visually. Everything the old flow asked about the Arabic course (class or
@@ -72,7 +74,7 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   Everything here still honours Reduce Motion.
 */
 
-type Step = "open" | "story" | "hifz" | "reminders" | "signin" | "map";
+type Step = "open" | "story" | "name" | "hifz" | "reminders" | "signin" | "map";
 
 /* Al-Fatiha, then Juz Amma (78 to 114). */
 const HIFZ_CHOICES = [1, ...Array.from({ length: 37 }, (_, i) => 78 + i)];
@@ -139,6 +141,10 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space(2.5),
     overflow: "hidden",
   },
+
+  /* Name */
+  nameField: { borderRadius: RADIUS.field, paddingHorizontal: space(2.5), overflow: "hidden" },
+  nameInput: { fontFamily: FONTS.uiRegular, fontSize: 22, textAlign: "center", paddingVertical: space(2), color: t.colors.ink },
 
   /* Sign in */
   signCard: { borderRadius: 24, padding: space(2.5), overflow: "hidden" },
@@ -488,6 +494,9 @@ export default function Onboarding() {
   const profileId = useSession((st) => st.activeProfileId);
   const completeOnboarding = useSession((st) => st.completeOnboarding);
   const setAdhkarReminder = usePrefs((st) => st.setAdhkarReminder);
+  const savedName = usePrefs((st) => st.name);
+  const setName = usePrefs((st) => st.setName);
+  const [name, setNameDraft] = useState(savedName);
   const markSurahs = useQuranStatus((st) => st.markSurahs);
   const { isSignedIn } = useAuth();
 
@@ -597,7 +606,7 @@ export default function Onboarding() {
   if (step === "story") {
     return (
       <View style={s.safe}>
-        <Story onDone={() => setStep("hifz")} />
+        <Story onDone={() => setStep("name")} />
       </View>
     );
   }
@@ -608,8 +617,10 @@ export default function Onboarding() {
       <View style={s.pad}>
         <TopBar
           onBack={
-            step === "hifz"
+            step === "name"
               ? () => setStep("story")
+              : step === "hifz"
+              ? () => setStep("name")
               : step === "reminders"
                 ? () => setStep("hifz")
                 : step === "signin"
@@ -621,6 +632,44 @@ export default function Onboarding() {
         {/* A plain view, not a fade: these steps hold glass, and glass does not
             draw under an animated opacity. */}
         <View key={step} style={{ flex: 1 }}>
+          {step === "name" ? (
+            /* The keyboard must not cover the field, and tapping past it puts it away. */
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <View style={{ flex: 1, justifyContent: "center", gap: space(3) }}>
+                  <View style={s.heads}>
+                    <Text variant="pageTitle" style={s.h1}>
+                      What should we call you?
+                    </Text>
+                    <Text color="inkSoft" style={s.sub}>
+                      So Durus can greet you by name.
+                    </Text>
+                  </View>
+                  <Glass interactive style={s.nameField}>
+                    <TextInput
+                      value={name}
+                      onChangeText={setNameDraft}
+                      placeholder="Your first name"
+                      placeholderTextColor={theme.colors.inkFaint}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      autoComplete="given-name"
+                      textContentType="givenName"
+                      returnKeyType="done"
+                      maxLength={40}
+                      onSubmitEditing={() => {
+                        setName(name);
+                        setStep("hifz");
+                      }}
+                      accessibilityLabel="Your first name"
+                      style={s.nameInput}
+                    />
+                  </Glass>
+                </View>
+              </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
+          ) : null}
+
           {step === "hifz" ? <Hifz chosen={chosen} toggle={toggle} /> : null}
 
           {step === "reminders" ? (
@@ -704,6 +753,21 @@ export default function Onboarding() {
         {/* The sign in step has nothing here: its only ways forward are in the
             panel, which is what makes it a gate. */}
         <View style={s.actions}>
+          {step === "name" ? (
+            <>
+              <GlassButton
+                label="Continue"
+                primary
+                onPress={() => {
+                  setName(name);
+                  setStep("hifz");
+                }}
+              />
+              <Pressable accessibilityRole="button" onPress={() => setStep("hifz")} style={s.textButton}>
+                <Text color="lapis">Skip</Text>
+              </Pressable>
+            </>
+          ) : null}
           {step === "hifz" ? (
             <>
               <GlassButton

@@ -121,6 +121,10 @@ export default function Home() {
   const [focused, setFocused] = useState(false);
   const still = useReducedMotion();
   const lastRead = usePrefs((st) => st.lastRead);
+  /* Their name from onboarding (or, failing that, the account's first name,
+     filled in by ClerkGate). */
+  const savedName = usePrefs((st) => st.name);
+  const greetName = savedName.trim().split(/\s+/)[0] ?? "";
   const now = useMemo(() => new Date(), []);
   const hijri = useMemo(() => hijriDate(now), [now]);
   const typing = query.trim().length > 0;
@@ -282,18 +286,19 @@ export default function Home() {
   }, []);
   const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
   const activeTop = space(1);
-  /* Tapping the bar no longer throws it to the top. With nothing typed it
-     stays where it is, lifting only as far as the keyboard needs, the mark
-     and question still above it. Only once there are results to show does it
-     glide up and the head fold away to give them the room. */
+  /* Tapping the bar does not throw it to the top. With nothing typed the
+     mark, question and bar rise together to sit just under the greeting,
+     clear of the keyboard. Only once there are results to show does the head
+     fold away and the bar take the top, to give them the room. */
   let target = idleTop;
   let fold = 0;
   if (typing) {
     target = activeTop;
     fold = 1;
-  } else if (focused && kbH > 0) {
-    const lift = Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD);
-    if (lift >= activeTop) target = Math.min(idleTop, lift);
+  } else if (focused) {
+    const lift = kbH > 0 ? Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD) : idleTop;
+    const raised = Math.min(idleTop, space(2));
+    if (lift >= raised) target = raised;
     else {
       target = activeTop;
       fold = 1;
@@ -316,7 +321,7 @@ export default function Home() {
       <Breath />
       {typing ? null : <Glyphs />}
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
-        <TopBar title="Assalamu alaikum" subtitle={hijri} />
+        <TopBar title={greetName ? `Assalamu alaikum, ${greetName}` : "Assalamu alaikum"} subtitle={hijri} />
         <Animated.View style={spacer} />
         <Animated.View style={[s.head, head]} pointerEvents={typing ? "none" : "auto"}>
           <Arabic variant="title" color="lapis">

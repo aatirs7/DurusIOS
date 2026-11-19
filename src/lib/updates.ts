@@ -30,8 +30,7 @@ export function useLiveUpdates() {
       /* At most once a minute, so flicking between apps does not spam it. */
       if (s === "active" && Date.now() - last > 60_000) {
         last = Date.now();
-        /* A moment after launch, once the first screen has drawn. */
-    const first = setTimeout(() => void pull(), 2500);
+        void pull();
       }
     });
     return () => {

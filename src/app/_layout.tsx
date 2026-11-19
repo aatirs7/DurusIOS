@@ -21,6 +21,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { Button } from "@/components/Button";
 import { ClerkGate } from "@/components/ClerkGate";
+import { ThemeFade } from "@/components/ThemeFade";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
@@ -257,6 +258,7 @@ export default function RootLayout() {
           {/* A sibling ABOVE the Stack, so the app is already mounted
               underneath and the fade reveals a finished screen rather than an
               empty frame. */}
+          <ThemeFade />
           {introDone ? null : <AnimatedSplash onDone={endIntro} />}
         </SafeAreaProvider>
       </GestureHandlerRootView>

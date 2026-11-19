@@ -1,7 +1,9 @@
 import { usePathname } from "expo-router";
 import { Pressable } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
 
+import { switchTheme } from "@/components/ThemeFade";
 import { useThemeChoice } from "@/state/theme";
 import { useTheme } from "@/theme/useTheme";
 
@@ -21,6 +23,7 @@ export function ThemeToggle() {
   const theme = useTheme();
   const toggle = useThemeChoice((s) => s.toggle);
   const pathname = usePathname();
+  const still = useReducedMotion();
 
   if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
 
@@ -30,7 +33,7 @@ export function ThemeToggle() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={dark ? "Switch to light" : "Switch to dark"}
-      onPress={() => toggle(dark)}
+      onPress={() => switchTheme(!dark, () => toggle(dark), still)}
       style={({ pressed }) => ({
         width: 40,
         height: 40,

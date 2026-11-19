@@ -3,7 +3,7 @@ import { deleteDatabaseSync } from "expo-sqlite";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, Share, Switch } from "react-native";
+import { Alert, Pressable, ScrollView, Share, Switch, TextInput } from "react-native";
 
 import { BackBar } from "@/components/BackBar";
 import { Button } from "@/components/Button";
@@ -12,6 +12,7 @@ import { Screen } from "@/components/Screen";
 import { Section } from "@/components/Section";
 import { Text } from "@/components/Text";
 import { DB_NAME, db, sqlite } from "@/data/client";
+import { FONTS } from "@/theme/typography";
 import { exportAll } from "@/data/export";
 import { syncReminders } from "@/data/reminders";
 import { getSettingsFor, updateSettings } from "@/data/settings";
@@ -60,6 +61,9 @@ export default function SettingsScreen() {
   const adhkarReminder = usePrefs((st) => st.adhkarReminder);
   const setAdhkarReminder = usePrefs((st) => st.setAdhkarReminder);
   const setThemeChoice = useThemeChoice((st) => st.setChoice);
+  const name = usePrefs((st) => st.name);
+  const setName = usePrefs((st) => st.setName);
+  const [nameDraft, setNameDraft] = useState(name);
 
   const [config, setConfig] = useState(() =>
     profileId === null ? null : getSettingsFor(db, profileId),
@@ -134,6 +138,21 @@ export default function SettingsScreen() {
         <Text variant="pageTitle">Settings</Text>
 
         <Section title="Appearance">
+          <Field label="Your name" hint="For the greeting on Search">
+            <TextInput
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              onEndEditing={() => setName(nameDraft)}
+              placeholder="Name"
+              placeholderTextColor={theme.colors.inkFaint}
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="done"
+              maxLength={40}
+              accessibilityLabel="Your name"
+              style={{ minWidth: 140, textAlign: "right", fontFamily: FONTS.uiRegular, fontSize: 17, color: theme.colors.ink }}
+            />
+          </Field>
           <Field label="Theme">
             <Segmented<ThemeChoice>
               value={themeChoice}

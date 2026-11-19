@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { db } from "@/data/client";
 import { clearActiveAccount, resolveProfile } from "@/data/session";
+import { usePrefs } from "@/state/prefs";
 import { useSession } from "@/state/session";
 import { bootstrapProfile } from "@/sync/bootstrap";
 import { syncNow } from "@/sync/engine";
@@ -47,6 +48,10 @@ export function ClerkGate() {
     }
 
     if (boundTo.current === user.id) return;
+
+    /* The Search greeting's name, for anyone who signed in before onboarding
+       asked for it. A name they chose themselves is never overwritten. */
+    if (user.firstName && !usePrefs.getState().name) usePrefs.getState().setName(user.firstName);
 
     const name =
       user.firstName ??

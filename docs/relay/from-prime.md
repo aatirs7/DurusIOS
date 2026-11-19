@@ -13,6 +13,11 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Greeting by name, smoother theme, higher search**, per the owner.
+  - Onboarding asks "What should we call you?" after the story (Continue or Skip). Search says "Assalamu alaikum, Name". The name can be changed in Settings > Appearance. People already signed in get their account's first name until they set one.
+  - The corner theme toggle now fades: a veil in the new background colour rises, the theme switches under it, then it falls away (about 0.65 s). Under Reduce Motion it still switches instantly. src/components/ThemeFade.tsx.
+  - Tapping the empty search bar raises the mark, question and bar together to just under the greeting. The head still folds once you type.
+  - Fixed a stray duplicate timer in src/lib/updates.ts (foreground return now pulls straight away).
 - **Search results header and loader**, per the owner. The AI caption is centred, with a small sparkle marking it as AI; this replaces the separate "Suggested by AI" line, so the disclosure stays without the extra line. While the AI looks, a centred loader shows three turning arcs (lapis, verdigris, saffron) round a breathing dot, over "Looking through the Quran". src/components/Seeking.tsx.
 - **Search tap no longer jumps to the top**, per the owner. With nothing typed, tapping the bar keeps it, the mark and the question in place, lifting only as far as the keyboard needs. The bar glides up and the head folds only once you type and results need room.
 - **Liquid Glass on Read and Learn**, at the owner's request, so they match Search.

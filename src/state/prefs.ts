@@ -11,6 +11,9 @@ import { jsonStorage, onRehydrate, type Hydratable } from "./storage";
   columns, the next time that table changes for another reason.
 */
 type PrefsState = Hydratable & {
+  /* What to call them, asked in onboarding: "Assalamu alaikum, Name". */
+  name: string;
+  setName: (name: string) => void;
   adhkarReminder: boolean;
   setAdhkarReminder: (on: boolean) => void;
   /* Where reading stopped, for Resume. */
@@ -65,6 +68,8 @@ export const usePrefs = create<PrefsState>()(
     (set) => ({
       _hydrated: false,
       markHydrated: () => set({ _hydrated: true }),
+      name: "",
+      setName: (name) => set({ name: name.trim().slice(0, 40) }),
       adhkarReminder: false,
       setAdhkarReminder: (adhkarReminder) => set({ adhkarReminder }),
       lastRead: null,

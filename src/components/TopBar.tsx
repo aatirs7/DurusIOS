@@ -33,7 +33,7 @@ export function TopBar({ title, subtitle, left, inset = false }: { title: string
     <View style={[s.bar, inset && { paddingHorizontal: MARGIN }]}>
       <View style={[s.slot, { justifyContent: "flex-start" }]}>{left ?? null}</View>
       <View style={s.middle}>
-        <Text style={s.title} numberOfLines={1} accessibilityRole="header">
+        <Text style={s.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} accessibilityRole="header">
           {title}
         </Text>
         {subtitle ? (
