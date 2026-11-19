@@ -7,6 +7,7 @@ import Svg, { Circle, Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
 import { Breath } from "@/components/Breath";
+import { Glyphs } from "@/components/Glyphs";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
 import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
@@ -270,6 +271,7 @@ export default function Home() {
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
       <Breath />
+      {active ? null : <Glyphs />}
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
         <TopBar title="Assalamu alaikum" subtitle={hijri} />
         <Animated.View style={spacer} />
