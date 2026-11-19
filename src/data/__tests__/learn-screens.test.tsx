@@ -60,19 +60,23 @@ beforeAll(() => {
 });
 
 describe("Learn", () => {
-  it("leads with the words track and keeps the Arabic Course below", async () => {
+  it("opens on an overview, then the words path or the Arabic Course", async () => {
     await render(<Today />);
-    expect(screen.getByText("Words you know make up 0% of the words in the Quran")).toBeTruthy();
+    expect(screen.getByText("Learn the words of the Quran")).toBeTruthy();
     expect(screen.queryByText(/understand \d/i)).toBeNull();
+
+    await fireEvent.press(screen.getByLabelText("Begin"));
+    expect(screen.getByText("Words you know make up 0% of the words in the Quran")).toBeTruthy();
     expect(screen.getByText("Ayahs you can mostly follow: 0")).toBeTruthy();
     expect(screen.getByLabelText("Start")).toBeTruthy();
     expect(screen.getByText("Al-Fatiha")).toBeTruthy();
-    expect(screen.getByText("Go deeper")).toBeTruthy();
-    expect(screen.getByLabelText("Start review")).toBeTruthy();
-    expect(screen.getByLabelText("Numbers")).toBeTruthy();
-
     await fireEvent.press(screen.getByLabelText("How this is counted"));
     expect(screen.getByText(/A word counts once/)).toBeTruthy();
+
+    await fireEvent.press(screen.getByLabelText("Back to Learn"));
+    await fireEvent.press(screen.getByLabelText("Arabic Course"));
+    expect(screen.getByLabelText("Start review")).toBeTruthy();
+    expect(screen.getByLabelText("Numbers")).toBeTruthy();
   });
 });
 
