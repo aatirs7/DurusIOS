@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
@@ -260,7 +260,11 @@ export default function Home() {
   }, [active, still, p]);
   /* Idle, the mark, question and bar sit truly centred in the space between
      the greeting and the tab bar, measured rather than guessed. */
-  const [bodyH, setBodyH] = useState(0);
+  /* Start from the window size so the first frame is already centred; the
+     measured height only refines it, so opening the tab does not jump. */
+  const win = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [bodyH, setBodyH] = useState(win.height - insets.top);
   const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
   /* Plain numbers only inside a worklet: calling an ordinary function such as
      space() there runs on the UI thread and crashes a release build. */

@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
-import { Button } from "@/components/Button";
+import { Breath } from "@/components/Breath";
+import { Glass, GlassButton } from "@/components/Glass";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { TopBar } from "@/components/TopBar";
@@ -30,10 +31,21 @@ const useStyles = makeStyles((t) => ({
     the count sitting just above the button that acts on it. Centring all three
     together is what left a large void under the count.
   */
-  top: { flex: 1, alignItems: "center", justifyContent: "space-between", paddingBottom: space(4) },
+  top: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: space(4),
+  },
   /* Two buttons now: the review and the lesson. */
   middle: { flexShrink: 0, gap: space(1) },
-  bottom: { flex: 1, alignItems: "center", justifyContent: "flex-start", gap: space(2.5), paddingTop: space(3) },
+  bottom: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: space(2.5),
+    paddingTop: space(3),
+  },
 
   /* Same height as the theme toggle in the corner, so the two sit on one line
      rather than the date floating below it. */
@@ -50,7 +62,20 @@ const useStyles = makeStyles((t) => ({
     grid was sitting hard against the left of its column while everything above
     it on the screen was centred.
   */
-  gridItem: { width: "50%", alignItems: "center" },
+  gridItem: { width: "50%", alignItems: "center", padding: space(0.625) },
+  tile: {
+    height: 56,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  pill: {
+    borderRadius: 999,
+    paddingVertical: space(1),
+    paddingHorizontal: space(2.5),
+    overflow: "hidden",
+  },
 
   /*
     Flows directly under the links rather than being pushed to the bottom edge.
@@ -116,10 +141,10 @@ export default function Today() {
 
   return (
     <Screen>
+      <Breath />
       <TopBar title="Learn" subtitle={dateLine(now, config.timezone)} />
 
       <View style={s.top}>
-
         {/* The English sits under the Arabic, the way the lessons list sets it,
             and never in the same text node, or bidi reorders the two. */}
         {lesson ? (
@@ -165,7 +190,11 @@ export default function Today() {
             </Text>
           ) : null}
           {clear ? (
-            <Text variant="bodySoft" color="inkFaint" style={{ textAlign: "center" }}>
+            <Text
+              variant="bodySoft"
+              color="inkFaint"
+              style={{ textAlign: "center" }}
+            >
               {`Nothing is waiting. A review now goes back over Lessons 1 to ${config.currentLesson} without moving anything.`}
             </Text>
           ) : null}
@@ -182,7 +211,11 @@ export default function Today() {
         under Start review, where its weight matches what it is for.
       */}
       <View style={s.middle}>
-        <Button label="Start review" onPress={() => router.push("/review")} />
+        <GlassButton
+          primary
+          label="Start review"
+          onPress={() => router.push("/review")}
+        />
         {/*
           A link, not a button.
 
@@ -191,9 +224,8 @@ export default function Today() {
           competing to be the thing you press - and Start review is the thing
           you press. Being central is what this needed; being loud is not.
         */}
-        <Button
+        <GlassButton
           label={`Study Lesson ${config.currentLesson}`}
-          variant="text"
           onPress={() => router.push(`/lessons/${config.currentLesson}`)}
         />
       </View>
@@ -220,8 +252,17 @@ export default function Today() {
             ] as const
           ).map(([label, href]) => (
             <View key={href} style={s.gridItem}>
-              {/* Centred within its column, the way the web sets it. */}
-              <Button label={label} variant="text" onPress={() => router.push(href)} />
+              {/* A glass tile per drill, two by two. */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                onPress={() => router.push(href)}
+                style={{ width: "100%" }}
+              >
+                <Glass interactive style={s.tile}>
+                  <Text>{label}</Text>
+                </Glass>
+              </Pressable>
             </View>
           ))}
         </View>
@@ -240,7 +281,9 @@ export default function Today() {
                   s.tick,
                   {
                     backgroundColor:
-                      i < config.currentLesson ? theme.colors.lapis : theme.colors.rule,
+                      i < config.currentLesson
+                        ? theme.colors.lapis
+                        : theme.colors.rule,
                   },
                 ]}
               />
@@ -248,8 +291,23 @@ export default function Today() {
           </View>
 
           <View style={s.footLinks}>
-            <Button label="Stats" variant="text" onPress={() => router.push("/stats")} />
-            <Button label="Settings" variant="text" onPress={() => router.push("/settings")} />
+            {(
+              [
+                ["Stats", "/stats"],
+                ["Settings", "/settings"],
+              ] as const
+            ).map(([label, href]) => (
+              <Pressable
+                key={href}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                onPress={() => router.push(href)}
+              >
+                <Glass interactive style={s.pill}>
+                  <Text variant="label">{label}</Text>
+                </Glass>
+              </Pressable>
+            ))}
           </View>
         </View>
       </View>

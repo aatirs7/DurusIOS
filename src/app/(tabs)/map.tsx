@@ -9,13 +9,13 @@ import {
   useWindowDimensions,
   type LayoutChangeEvent,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { AyahField } from "@/components/AyahField";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { TopBar } from "@/components/TopBar";
+import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { rangePath } from "@/onboarding/field";
 import { ago, progress, readingWeek, recentMarks } from "@/quran/progress";
 import { countRange, foldStatus } from "@/quran/status";
@@ -590,13 +590,16 @@ function PickSheet({
 export default function ProgressTab() {
   const s = useStyles();
   const theme = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const events = useQuranStatus((st) => st.events);
   const readLog = usePrefs((st) => st.readLog) ?? NO_LOG;
   const bookmarks = usePrefs((st) => st.bookmarks) ?? NO_BOOKMARKS;
 
   const [page, setPage] = useState(0);
-  const [area, setArea] = useState({ w: width, h: 0 });
+  /* An estimate from the window first, so the pages draw on the first frame
+     instead of popping in after layout; onLayout then sets the exact size. */
+  const [area, setArea] = useState({ w: width, h: Math.max(0, winH - insets.top - TOP_BAR_HEIGHT - 61) });
   const pager = useRef<ScrollView>(null);
   const [pick, setPick] = useState<{ open: boolean; juz: number | null }>({
     open: false,
