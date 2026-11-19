@@ -248,7 +248,10 @@ export default function Home() {
     p.value = withTiming(active ? 1 : 0, { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) });
   }, [active, still, p]);
   const idleTop = Math.round(height * 0.24);
-  const spacer = useAnimatedStyle(() => ({ height: idleTop * (1 - p.value) + space(1) * p.value }));
+  /* Plain numbers only inside a worklet: calling an ordinary function such as
+     space() there runs on the UI thread and crashes a release build. */
+  const activeTop = space(1);
+  const spacer = useAnimatedStyle(() => ({ height: idleTop * (1 - p.value) + activeTop * p.value }));
   const head = useAnimatedStyle(() => ({ height: HEAD * (1 - p.value), opacity: 1 - p.value }));
 
   return (

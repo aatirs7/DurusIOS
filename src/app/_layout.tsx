@@ -1,5 +1,4 @@
 import { ClerkProvider } from "@clerk/clerk-expo";
-import { useLiveUpdates } from "@/lib/updates";
 import { Amiri_400Regular, Amiri_700Bold } from "@expo-google-fonts/amiri";
 import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
 import { Lateef_400Regular } from "@expo-google-fonts/lateef";
@@ -15,7 +14,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AppState, Appearance, View } from "react-native";
+import { AppState, Appearance, Text as RNText, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -32,6 +31,7 @@ import { useSession } from "@/state/session";
 import { useThemeChoice } from "@/state/theme";
 import { tokenCache } from "@/lib/tokenCache";
 import { space } from "@/theme/layout";
+import { THEMES } from "@/theme/tokens";
 import { useTheme } from "@/theme/useTheme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -48,8 +48,30 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
   instead and lets Clerk reconcile afterwards, so a cold launch in airplane mode
   reaches Today with real counts.
 */
+/*
+  If any screen throws while rendering, show what went wrong instead of
+  closing the app: a release build otherwise crashes on a render error, and
+  a crash on launch leaves the phone stuck on a broken update. Plain React
+  Native views only, so this screen cannot fail the same way.
+*/
+/* The light palette, read directly: no theme hook can fail here. */
+const SAFE = THEMES.light.colors;
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  return (
+    <View style={{ flex: 1, justifyContent: "center", padding: 32, gap: 16, backgroundColor: SAFE.paper }}>
+      <RNText style={{ fontSize: 22, color: SAFE.ink }}>Something went wrong</RNText>
+      <RNText selectable style={{ fontSize: 13, color: SAFE.inkSoft }}>
+        {String(error?.message ?? error).slice(0, 600)}
+      </RNText>
+      <RNText onPress={() => void retry()} style={{ fontSize: 17, color: SAFE.lapis, paddingVertical: 12 }}>
+        Try again
+      </RNText>
+    </View>
+  );
+}
+
 export default function RootLayout() {
-  useLiveUpdates();
   const theme = useTheme();
   const choice = useThemeChoice((s) => s.choice);
   const migration = useDurusMigrations();
