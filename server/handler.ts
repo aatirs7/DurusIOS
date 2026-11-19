@@ -7,11 +7,13 @@
     GET /quran/resources          translations and reciters available
     GET /quran/chapter/:n?translation=20&reciter=7
     GET /quran/verses?keys=13:28,94:5&translation=20
+    GET /quran/ask?q=i feel hopeless   free AI picks, refs checked (ask.ts)
 
   Access: if DURUS_APP_KEY is set, callers must send it as x-durus-key. Who may
   call this (anyone, signed-in users via Clerk, or an app key) is still the
   owner's decision; until then the key is the switch.
 */
+import { ask } from "./ask";
 import { QfClient, configFromEnv } from "./qf";
 
 let client: QfClient | null = null;
@@ -37,6 +39,10 @@ export async function handle(req: Request, env: Record<string, string | undefine
     if (route[0] === "resources") {
       const [translations, reciters] = await Promise.all([qf(env).translations(), qf(env).recitations()]);
       return json({ env: qf(env).env, translations, reciters });
+    }
+    if (route[0] === "ask") {
+      const q = url.searchParams.get("q") ?? "";
+      return json(await ask(q, env));
     }
     if (route[0] === "verses") {
       /* Up to 20 keys like 13:28, for search results. */

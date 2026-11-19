@@ -12,7 +12,7 @@ import { Text } from "@/components/Text";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Typewriter } from "@/components/Typewriter";
 import { complete } from "@/quran/phrases";
-import { loadVerseTranslations } from "@/quran/remote";
+import { askKey, askQuran, loadVerseTranslations, type AskAnswer } from "@/quran/remote";
 import { search } from "@/quran/search";
 import { SURAHS } from "@/quran/tanzil";
 import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
@@ -34,8 +34,10 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   The bar never moves: the head above it is a fixed height whether or not you
   are typing, and the list handles the keyboard with its own insets.
 
-  Deterministic and local; only the English comes from the Durus server, and
-  each ayah's English is kept on the phone once fetched.
+  Local search answers instantly. Anything typed in words is also asked of a
+  free AI on the Durus server (server/ask.ts), whose picks lead the list with
+  a line on why; the AI only names places, the text is always Tanzil's. The
+  English comes from the Durus server and is kept on the phone once fetched.
 */
 
 
@@ -44,7 +46,8 @@ const MAX_RESULTS = 30;
 const HEAD = 118;
 const PER_REF = 3;
 
-type Item = { kind: "ayah"; index: number } | { kind: "surah"; n: number };
+/* `reason` is set on AI picks: one line on why this place answers the search. */
+type Item = ({ kind: "ayah"; index: number } | { kind: "surah"; n: number }) & { reason?: string };
 
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
@@ -103,6 +106,36 @@ export default function Home() {
 
   const result = useMemo(() => search(query, searchKeys), [query]);
 
+  /*
+    Ask: anything typed in words also goes to the free AI on the Durus server,
+    after a pause in typing. Its picks lead the list; the local results follow.
+    References, juz and surah names are answered locally and never asked.
+  */
+  const [ai, setAi] = useState<{ q: string; a: AskAnswer } | null>(null);
+  const [asking, setAsking] = useState(false);
+  const askable = typing && !result.label && /[a-z]{3}/i.test(query) && !/^\s*\d/.test(query);
+  useEffect(() => {
+    if (!askable) {
+      setAsking(false);
+      return;
+    }
+    const k = askKey(query);
+    let alive = true;
+    setAsking(true);
+    const id = setTimeout(() => {
+      askQuran(k).then((a) => {
+        if (!alive) return;
+        setAsking(false);
+        if (a) setAi({ q: k, a });
+      });
+    }, 650);
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
+  }, [query, askable]);
+  const picks = askable && ai && ai.q === askKey(query) ? ai.a : null;
+
   /* Results as one list of ayahs and surahs, plus one line saying what they are. */
   const { items, caption } = useMemo(() => {
     const out: Item[] = [];
@@ -113,6 +146,7 @@ export default function Home() {
       seen.add(k);
       out.push(it);
     };
+    for (const r of picks?.results ?? []) expandRef(r.ref).forEach((it, i) => add(i === 0 ? { ...it, reason: r.reason } : it));
     const themes = result.hits.filter((h) => h.kind === "theme").slice(0, 2);
     for (const h of themes) if (h.kind === "theme") for (const r of h.theme.refs) expandRef(r).forEach(add);
     for (const h of result.hits) {
@@ -121,12 +155,14 @@ export default function Home() {
     }
     let cap: string | null = null;
     const first = themes[0];
-    if (first && first.kind === "theme") cap = first.theme.kind === "passage" ? first.theme.label : `For ${lower(first.theme.label)}`;
+    if (picks && picks.results.length > 0) cap = picks.line || "Suggested for you";
+    else if (first && first.kind === "theme") cap = first.theme.kind === "passage" ? first.theme.label : `For ${lower(first.theme.label)}`;
     else if (result.label) cap = result.label;
     else if (result.hits.some((h) => h.kind === "text")) cap = `${result.total} ${result.total === 1 ? "place" : "places"} with "${query.trim()}"`;
+    else if (typing && out.length === 0 && asking) cap = "Looking through the Quran…";
     else if (typing && out.length === 0) cap = result.pendingTopic ? `"${result.pendingTopic}" is coming soon` : "Nothing found";
     return { items: out, caption: cap };
-  }, [result, query, typing]);
+  }, [result, query, typing, picks, asking]);
 
   /* English under each ayah: from the phone if fetched before, else the server. */
   const [english, setEnglish] = useState<Record<string, string>>({});
@@ -163,6 +199,11 @@ export default function Home() {
       return (
         <Pressable accessibilityRole="button" accessibilityLabel={`Surah ${x.en}`} onPress={() => open(x.n)} style={[s.item, { flexDirection: "row", alignItems: "center", gap: space(1.5) }]}>
           <View style={{ flex: 1, gap: 2 }}>
+            {item.reason ? (
+              <Text variant="label" color="lapis">
+                {item.reason}
+              </Text>
+            ) : null}
             <Text>{x.en}</Text>
             <Text variant="label" color="inkFaint">{`Surah ${x.n}, ${x.meaning}, ${x.ayahs} ayahs`}</Text>
           </View>
@@ -177,6 +218,11 @@ export default function Home() {
     const x = SURAHS[r.surah - 1];
     return (
       <Pressable accessibilityRole="button" accessibilityLabel={`${x.en} ${key}`} onPress={() => open(r.surah, r.ayah)} style={s.item}>
+        {item.reason ? (
+          <Text variant="label" color="lapis">
+            {item.reason}
+          </Text>
+        ) : null}
         <Text selectable={false} numberOfLines={4} style={s.ayah}>
           {ayahForDisplay(item.index)}
         </Text>

@@ -41,6 +41,8 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 */
 
 const PAGES = ["Wall", "Juz", "Stats", "Week"] as const;
+/* Space kept clear above the floating tab bar. */
+const TAB_ROOM = space(11);
 const NO_LOG: Record<string, number[]> = {};
 const NO_BOOKMARKS: number[] = [];
 
@@ -635,7 +637,9 @@ export default function ProgressTab() {
     p.ayahsMemorized === 0
       ? "Nothing marked yet. Tap Mark to add what you know."
       : `${p.surahsMemorized} ${p.surahsMemorized === 1 ? "surah" : "surahs"} memorized, ${pct(p.ayahsMemorized / TOTAL_AYAHS)}% of the Quran`;
-  const h = area.h;
+  /* onLayout measures the pager with its bottom padding (room for the tab
+     bar), so a page is that much shorter, or its foot hides under the bar. */
+  const h = Math.max(0, area.h - TAB_ROOM);
 
   /* Juz grid: 5 columns, 6 rows, filling the page. */
   const gap = space(1);
@@ -683,7 +687,7 @@ export default function ProgressTab() {
       </Glass>
 
       <View
-        style={{ flex: 1, paddingBottom: space(11) }}
+        style={{ flex: 1, paddingBottom: TAB_ROOM }}
         onLayout={onArea}
         testID="progress-pager"
       >

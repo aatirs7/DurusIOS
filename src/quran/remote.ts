@@ -134,3 +134,34 @@ export async function loadVerseTranslations(keys: string[], translationId: numbe
   }
   return cache;
 }
+
+/*
+  Ask: free AI picks for anything typed (the server's /quran/ask). The AI only
+  names places; the server checks every ref before it leaves, and the app
+  shows each place with its own Tanzil text. Kept in memory per query, so
+  typing back to an earlier question is instant. Offline it returns nothing
+  and search stays local.
+*/
+export type AskAnswer = { line: string; results: { ref: string; reason: string }[] };
+const asked = new Map<string, AskAnswer>();
+
+export function askKey(q: string): string {
+  return q.toLowerCase().replace(/\s+/g, " ").trim().slice(0, 200);
+}
+
+export async function askQuran(q: string): Promise<AskAnswer | null> {
+  const k = askKey(q);
+  if (k.length < 3 || !quranApiConfigured()) return null;
+  const hit = asked.get(k);
+  if (hit) return hit;
+  try {
+    const res = await fetch(`${API.replace(/\/$/, "")}/quran/ask?q=${encodeURIComponent(k)}`, { headers: KEY ? { "x-durus-key": KEY } : {} });
+    if (!res.ok) return null;
+    const a = (await res.json()) as AskAnswer;
+    if (!a || !Array.isArray(a.results)) return null;
+    asked.set(k, a);
+    return a;
+  } catch {
+    return null;
+  }
+}
