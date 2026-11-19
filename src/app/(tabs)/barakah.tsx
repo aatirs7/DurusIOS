@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
+import Animated, { Easing, ZoomIn, useReducedMotion } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
@@ -83,6 +84,8 @@ const useStyles = makeStyles((t) => ({
   bar: { alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
   pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(16) },
   pill: { flex: 1, minHeight: 46, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  focusWrap: { flex: 1, justifyContent: "center", paddingHorizontal: MARGIN },
+  focusCard: { alignItems: "center", gap: space(1.25), borderRadius: 28, padding: space(3), backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule },
   sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(3) },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: space(2) },
   chooseRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: space(1.25), gap: space(2), borderBottomWidth: 1, borderBottomColor: t.colors.rule },
@@ -208,6 +211,7 @@ export default function Barakah() {
   const [sheet, setSheet] = useState<"month" | "edit" | null>(null);
   /* Long press on a tile: what the practice is and how the app counts it. */
   const [info, setInfo] = useState<Practice | null>(null);
+  const still = useReducedMotion();
   /* The page is held to the window's height: the tab's own view measured
      taller than the screen, which pushed the bottom pills under the tab bar. */
   const { height: winH } = useWindowDimensions();
@@ -443,48 +447,42 @@ export default function Barakah() {
         </View>
       </View>
 
-      <Sheet visible={info !== null} onClose={() => setInfo(null)} title={info?.title ?? ""}>
+      {/* Long press: the practice comes forward as a card in the middle of the
+          screen, the page blurred behind it (a full-screen glass layer).
+          Tap anywhere to put it back. Only the card's scale animates, never
+          the glass's opacity, so the glass always draws. */}
+      <Modal visible={info !== null} transparent animationType="none" onRequestClose={() => setInfo(null)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setInfo(null)} style={StyleSheet.absoluteFill}>
+          <Glass style={StyleSheet.absoluteFill} />
+        </Pressable>
         {info ? (
-          <View style={{ alignItems: "center", gap: space(2), paddingTop: space(2) }}>
-            <PracticeIcon id={info.id} color={theme.colors.lapis} />
-            <Text color="inkSoft" style={{ textAlign: "center" }}>
-              {info.line}
-            </Text>
-            {BENEFITS[info.id] ? (
-              <View style={{ alignItems: "center", gap: space(0.75), paddingVertical: space(1) }}>
-                <Text variant="eyebrow" color="inkSoft">
-                  Why
-                </Text>
-                <Text style={{ textAlign: "center", fontSize: 19, lineHeight: 28 }}>{BENEFITS[info.id].why}</Text>
-                <Text variant="label" color="lapis" style={{ textAlign: "center" }}>
-                  {BENEFITS[info.id].source}
-                </Text>
-              </View>
-            ) : null}
-            <View style={{ alignItems: "center", gap: space(0.75) }}>
-              <Text variant="eyebrow" color="inkSoft">
-                When
+          <View pointerEvents="box-none" style={s.focusWrap}>
+            <Animated.View entering={still ? undefined : ZoomIn.duration(240).easing(Easing.out(Easing.cubic))} style={s.focusCard}>
+              <PracticeIcon id={info.id} color={theme.colors.lapis} />
+              <Text variant="pageTitle" style={{ textAlign: "center" }}>
+                {info.title}
               </Text>
               <Text color="inkSoft" style={{ textAlign: "center" }}>
+                {info.line}
+              </Text>
+              {BENEFITS[info.id] ? (
+                <View style={{ alignItems: "center", gap: space(0.75), paddingTop: space(1) }}>
+                  <Text variant="eyebrow" color="inkSoft">
+                    Why
+                  </Text>
+                  <Text style={{ textAlign: "center", fontSize: 18, lineHeight: 27 }}>{BENEFITS[info.id].why}</Text>
+                  <Text variant="label" color="lapis" style={{ textAlign: "center" }}>
+                    {BENEFITS[info.id].source}
+                  </Text>
+                </View>
+              ) : null}
+              <Text variant="label" color="inkFaint" style={{ textAlign: "center", paddingTop: space(1) }}>
                 {whenOf(info)}
               </Text>
-            </View>
-            <View style={{ alignItems: "center", gap: space(0.75) }}>
-              <Text variant="eyebrow" color="inkSoft">
-                How it is counted
-              </Text>
-              <Text color="inkSoft" style={{ textAlign: "center" }}>
-                {howOf(info)}
-              </Text>
-            </View>
-            {info.quranRef ? (
-              <Text variant="label" color="lapis">
-                {info.quranRef}
-              </Text>
-            ) : null}
+            </Animated.View>
           </View>
         ) : null}
-      </Sheet>
+      </Modal>
 
       <Sheet visible={sheet === "month"} onClose={() => setSheet(null)} title="This month">
         <Text color="inkSoft" style={{ paddingBottom: space(2) }}>
