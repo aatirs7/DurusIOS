@@ -13,6 +13,12 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Issue #4, Quranic Words, step 1: coverage numbers. STOPPED for owner review.** Full write-up: docs/quranic-words/coverage.md. Computed offline from the Quranic Arabic Corpus (not in the repo, never shipped). A word counts as known only when its lemma and every clitic on it are taught.
+  - Lemmas needed: 25% = 9, 50% = 54, 60% = 109, 70% = 220, 80% = 441, 90% = 1,061. The top 500 reach 81.6%, so "500 words, about 80%" holds.
+  - 55% of words carry a clitic. Without the parsing skills, 500 lemmas cover only 37%. Function words are 32% of all words.
+  - Per stage the path is slower than the spec guessed: Al-Fatiha 10% (spec 25 to 30%), Glue I 28%, salah 36.5%, Glue II 42%, stage 12 at 500 lemmas 78.4%. The rare salah-surah words cost about 3 points, so 80% on the path takes about 540 lemmas.
+  - Flag: wa-, bi- and li- are counted in stage 0 because Al-Fatiha needs them; the spec has them in stage 3.
+  - Licensing: the email to developers@quran.com and the QUL licence issue are drafted, not sent (Gmail draft; docs/quranic-words/qul-licence-issue.md). QUL morphology downloads need a QUL login, so the QUL cross-check waits for the owner to download the Word lemma sqlite.
 - **New AI loader**, per the owner ("more modern, 3D, blue and white"): a glowing blue-white orb inside three thin rings turning in 3D on different tilts, with the caption breathing beneath. It shows only when nothing else is on screen yet (no results and no suggestions).
 - **Search layout and theme fade, second pass**, per the owner. Search stays centred on tap (lifting only for the keyboard); typing folds the mark and question and the bar rises halfway, not to the very top. The theme fade no longer flashes: the veil gathers in the old background colour, shades to the new one while covering, then falls away (about 1 s, all eased).
 - **Greeting by name, smoother theme, higher search**, per the owner.
@@ -109,6 +115,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 - **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
 
 ## Questions
+
+- Issue #4 copy: say "500 words, about 80% of the Quran's words" (true in frequency order), or keep the thematic path and say "about 540"? And may I send the Quran.com email and post the QUL issue as drafted?
 
 - Free smarter search: the owner's Quran Foundation console lists a "Search" permission as available. Requesting it (Permissions, Production, tick Search, submit) would let Durus send open-ended queries to Quran Foundation's own index, free, as a fallback when the built-in matcher finds nothing. Gemini's free embedding tier is the backup option. No paid API needed.
 
