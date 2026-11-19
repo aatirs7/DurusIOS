@@ -102,7 +102,9 @@ export function search(raw: string, keys: () => string[]): SearchResult {
     return empty;
   }
 
-  const num = /^(?:surah|surat|sura)?\s*(\d{1,3})$/i.exec(q);
+  const num =
+    /^(?:surah|surat|sura)?\s*(?:number\s*)?(\d{1,3})$/i.exec(q) ??
+    /^(?:the\s+)?(\d{1,3})(?:st|nd|rd|th)(?:\s+(?:surah|surat|sura|chapter))?$/i.exec(q);
   if (num) {
     const n = Number(num[1]);
     return n >= 1 && n <= 114 ? { hits: [{ kind: "surah", surah: n }], total: 1, pendingTopic: null } : empty;
@@ -206,11 +208,12 @@ function editDistanceAtMostOne(a: string, b: string): boolean {
   return edits + (a.length - i) + (b.length - j) <= 1;
 }
 
-function wordMatches(queryWord: string, keyWord: string): boolean {
+function wordMatches(queryWord: string, keyWord: string, fuzzy = true): boolean {
   if (queryWord === keyWord) return true;
   const a = stem(queryWord);
   const b = stem(keyWord);
   if (a === b) return true;
+  if (!fuzzy) return false;
   /* One typo is forgiven only in longer words, where it cannot turn one real
      word into another. */
   return a.length >= 5 && b.length >= 5 && editDistanceAtMostOne(a, b);
@@ -239,6 +242,9 @@ export { FILLER };
 export function matchThemes(normalized: string): { theme: Theme; score: number }[] {
   const all = normalized.split(" ").filter(Boolean);
   const content = all.filter((w) => !FILLER.has(w));
+  /* A word that already matches some keyword exactly is not also read as a
+     typo of a different one ("hopeless" is not "homeless"). */
+  const exact = new Set(content.filter((w) => prepare().some((p) => p.keys.some((k) => k.some((kw) => wordMatches(w, kw, false))))));
   const out: { theme: Theme; score: number }[] = [];
   for (const p of prepare()) {
     let best = 0;
@@ -246,12 +252,12 @@ export function matchThemes(normalized: string): { theme: Theme; score: number }
       if (key.length === 0) continue;
       if (key.length === 1) {
         if (FILLER.has(key[0])) continue;
-        if (content.some((w) => wordMatches(w, key[0]))) best = Math.max(best, 1);
+        if (content.some((w) => wordMatches(w, key[0], !exact.has(w)))) best = Math.max(best, 1);
         continue;
       }
       /* Phrase: its words in order, allowing filler between them. */
       let k = 0;
-      for (const w of all) if (k < key.length && wordMatches(w, key[k])) k++;
+      for (const w of all) if (k < key.length && wordMatches(w, key[k], !exact.has(w))) k++;
       if (k === key.length) best = Math.max(best, key.length + 1);
     }
     if (best > 0) out.push({ theme: p.theme, score: best });

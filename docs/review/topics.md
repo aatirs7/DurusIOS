@@ -92,6 +92,7 @@ Approve by setting `verified: true` in src/quran/themes.ts, or reply "approve al
 - [approved] **The story of Nuh**: 71, 11:25-49
 - [approved] **The people of the cave**: 18:9-26
 - [approved] **Stories of the prophets**: 12, 18, 19, 28, 21
+- [approved] **The battle of Badr**: 8, 3:123
 - [approved] **The Prophet Muhammad**: 33:21, 21:107, 68:4, 48:29
 
 ## Passages
@@ -108,4 +109,4 @@ Approve by setting `verified: true` in src/quran/themes.ts, or reply "approve al
 - [approved] **The dua of Yunus**: 21:87
 - [approved] **Musa's dua for an open heart**: 20:25-28
 
-97 topics, 97 approved, 0 to review. 770 keywords and phrases.
+98 topics, 98 approved, 0 to review. 775 keywords and phrases.

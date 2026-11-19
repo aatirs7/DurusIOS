@@ -53,3 +53,10 @@ describe("natural search", () => {
     expect(ask("qwertyuiop")?.tone).toBe("nothing");
   });
 });
+
+describe("the typing placeholder", () => {
+  it("only ever shows searches that find something", () => {
+    const { EXAMPLES } = jest.requireActual("@/components/Typewriter") as { EXAMPLES: string[] };
+    for (const q of EXAMPLES) expect([q, search(q, searchKeys).hits.length > 0]).toEqual([q, true]);
+  });
+});

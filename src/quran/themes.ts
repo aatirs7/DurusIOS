@@ -92,7 +92,7 @@ export const THEMES: Theme[] = [
   T("feeling", "fear", "Fear", ["20:46", "3:173", "3:175"], ["fear", "afraid", "scared", "frightened", "terrified", "phobia", "unsafe", "danger"]),
   T("feeling", "sad", "Sadness", ["9:40", "3:139", "93"], ["depressed", "depression", "down", "low", "feeling low", "blue", "miserable", "unhappy", "gloomy"]),
   T("feeling", "anger", "Anger", ["3:134", "42:37", "41:34"], ["angry", "anger", "furious", "rage", "mad", "irritated", "frustrated", "frustration", "annoyed", "temper"]),
-  T("feeling", "hope", "Hope", ["12:87", "39:53", "15:56", "65:7"], ["hope", "hopeful", "despair", "despairing", "no way out", "losing hope", "lost hope", "optimism"]),
+  T("feeling", "hope", "Hope", ["12:87", "39:53", "15:56", "65:7"], ["hope", "hopeful", "hopelessness", "despair", "despairing", "no way out", "losing hope", "lost hope", "optimism"]),
   T("feeling", "mercy", "The mercy of Allah", ["39:53", "7:156", "6:54"], ["mercy", "merciful", "rahma", "rahmah", "compassion", "will allah forgive", "is it too late"]),
   T("feeling", "trust", "Trusting Allah", ["65:3", "3:159", "9:51"], ["trust", "tawakkul", "rely on allah", "reliance", "leave it to allah", "out of my control", "letting go"]),
   T("feeling", "provision", "Money and provision", ["65:2-3", "11:6", "51:22"], [
@@ -184,5 +184,7 @@ export const THEMES: Theme[] = [
   T("topic", "nuh", "The story of Nuh", ["71", "11:25-49"], ["nuh", "noah", "the ark", "flood"]),
   T("topic", "cave", "The people of the cave", ["18:9-26"], ["people of the cave", "ashab al kahf", "sleepers of the cave", "companions of the cave"]),
   T("topic", "prophets", "Stories of the prophets", ["12", "18", "19", "28", "21"], ["prophets", "stories", "stories of the prophets", "prophet stories", "qasas"]),
+  /* Added 2026-11-18 at the owner request. */
+  T("topic", "badr", "The battle of Badr", ["8", "3:123"], ["badr", "battle of badr", "ghazwa badr", "yawm al furqan"]),
   T("topic", "prophet-muhammad", "The Prophet Muhammad", ["33:21", "21:107", "68:4", "48:29"], ["prophet muhammad", "muhammad", "rasulullah", "the prophet", "mercy to the worlds"]),
 ];

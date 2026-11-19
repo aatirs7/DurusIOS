@@ -1,27 +1,30 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Keyboard, Pressable, TextInput, View, useWindowDimensions } from "react-native";
+import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
+import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Typewriter } from "@/components/Typewriter";
 import { complete } from "@/quran/phrases";
 import { loadVerseTranslations } from "@/quran/remote";
 import { search } from "@/quran/search";
-import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
 import { usePrefs } from "@/state/prefs";
-import { useQuranStatus } from "@/state/quranStatus";
 import { FONTS } from "@/theme/typography";
 import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 /*
-  Search: type anything, get ayahs and surahs.
+  Search: type anything, get ayahs and surahs. The app opens here: a centred
+  bar over a slow breathing light, with example searches typing themselves
+  into the bar instead of a list of suggestions.
 
   One clean list. Every result is either an ayah (the Arabic, its English
   underneath, and where it is from) or a surah. A feeling or topic expands
@@ -35,17 +38,10 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   each ayah's English is kept on the phone once fetched.
 */
 
-const SUGGESTIONS: { label: string; query: string }[] = [
-  { label: "Al-Kahf", query: "kahf" },
-  { label: "Ayat al-Kursi", query: "ayat al kursi" },
-  { label: "Feeling anxious", query: "feeling anxious" },
-  { label: "Before sleep", query: "before sleep" },
-  { label: "Juz Amma", query: "juz amma" },
-  { label: "Surprise me", query: "surprise me" },
-];
 
-const NO_RECENTS: string[] = [];
 const MAX_RESULTS = 30;
+/* Height of the mark and question above the bar, folded away while searching. */
+const HEAD = 118;
 const PER_REF = 3;
 
 type Item = { kind: "ayah"; index: number } | { kind: "surah"; n: number };
@@ -54,7 +50,7 @@ const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
   toggle: { position: "absolute", right: MARGIN, top: space(1), zIndex: 2 },
-  head: { alignItems: "center", gap: space(0.75), paddingBottom: space(2.5) },
+  head: { alignItems: "center", justifyContent: "flex-end", gap: space(0.75), paddingBottom: space(2.5), overflow: "hidden" },
   title: { fontSize: 24, lineHeight: 30, textAlign: "center" },
   bar: { flexDirection: "row", alignItems: "center", borderRadius: 28, minHeight: 54, paddingLeft: space(2), paddingRight: space(1), gap: space(1), overflow: "hidden" },
   input: { flex: 1, fontFamily: FONTS.uiRegular, fontSize: 17, color: t.colors.ink, paddingVertical: space(1.5) },
@@ -98,13 +94,11 @@ export default function Home() {
   const theme = useTheme();
   const router = useRouter();
   const { height } = useWindowDimensions();
-  const lastRead = usePrefs((st) => st.lastRead);
-  const recents = usePrefs((st) => st.recentSearches) ?? NO_RECENTS;
   const rememberSearch = usePrefs((st) => st.rememberSearch);
   const translationId = usePrefs((st) => st.translationId) ?? 20;
-  const events = useQuranStatus((st) => st.events);
-  const maps = useMemo(() => foldStatus(events), [events]);
   const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+  const still = useReducedMotion();
   const typing = query.trim().length > 0;
 
   const result = useMemo(() => search(query, searchKeys), [query]);
@@ -163,29 +157,6 @@ export default function Home() {
     openTo(surah, ayah);
   };
 
-  /* Two personal starting points when the bar is empty. */
-  const forYou = useMemo(() => {
-    const now = new Date();
-    const hour = now.getHours();
-    const out: { label: string; line: string; onPress: () => void }[] = [];
-    if (lastRead) {
-      const x = SURAHS[lastRead.surah - 1];
-      out.push({ label: `Continue ${x.en}`, line: `Ayah ${lastRead.ayah}`, onPress: () => openTo(lastRead.surah, lastRead.ayah) });
-    }
-    if (now.getDay() === 5) out.push({ label: "Al-Kahf", line: "It is Friday", onPress: () => openTo(18) });
-    else if (hour >= 21 || hour < 4) out.push({ label: "Before sleep", line: "Readings for the end of the day", onPress: () => setQuery("before sleep") });
-    const carried = SURAHS.filter((x) => {
-      for (let i = x.start; i < x.start + x.ayahs; i++) if (!maps.memorized[i]) return false;
-      return true;
-    });
-    if (carried.length > 0) {
-      const pick = carried[Math.floor(now.getTime() / 86_400_000) % carried.length];
-      out.push({ label: `Revise ${pick.en}`, line: "From what you know by heart", onPress: () => openTo(pick.n) });
-    }
-    return out.slice(0, 2);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastRead, maps]);
-
   const renderItem = ({ item }: { item: Item }) => {
     if (item.kind === "surah") {
       const x = SURAHS[item.n - 1];
@@ -219,51 +190,76 @@ export default function Home() {
     );
   };
 
+  /*
+    Idle, the bar rests in the middle of the screen under the mark and the
+    question. Tap it and it glides to the top, the head folding away, and
+    results gather beneath. A glide rather than a jump, and the bar itself is
+    only ever moved, never faded, so its glass always draws.
+  */
+  const active = focused || typing;
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = withTiming(active ? 1 : 0, { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) });
+  }, [active, still, p]);
+  const idleTop = Math.round(height * 0.24);
+  const spacer = useAnimatedStyle(() => ({ height: idleTop * (1 - p.value) + space(1) * p.value }));
+  const head = useAnimatedStyle(() => ({ height: HEAD * (1 - p.value), opacity: 1 - p.value }));
+
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
+      <Breath />
       <View style={s.toggle}>
         <ThemeToggle />
       </View>
       <View style={s.body}>
-        {/* Fixed height in both states, so the bar never moves. */}
-        <View style={[s.head, { paddingTop: Math.round(height * 0.1) }]}>
+        <Animated.View style={spacer} />
+        <Animated.View style={[s.head, head]} pointerEvents={active ? "none" : "auto"}>
           <Arabic variant="title" color="lapis">
             دُرُوس
           </Arabic>
           <Text variant="pageTitle" style={s.title}>
             What would you like to read?
           </Text>
-        </View>
+        </Animated.View>
 
         <Glass interactive style={s.bar}>
           <SearchIcon color={theme.colors.inkSoft} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Anything: a feeling, a surah, 2:255, Arabic"
-            placeholderTextColor={theme.colors.inkFaint}
-            style={s.input}
-            returnKeyType="search"
-            autoCorrect={false}
-            autoCapitalize="none"
-            clearButtonMode="while-editing"
-            accessibilityLabel="Search the Quran"
-          />
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            {query.length === 0 ? (
+              <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                <View style={{ flex: 1, justifyContent: "center" }}>
+                  <Typewriter style={{ fontSize: 17 }} />
+                </View>
+              </View>
+            ) : null}
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              style={s.input}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoCapitalize="none"
+              clearButtonMode="while-editing"
+              accessibilityLabel="Search the Quran"
+            />
+          </View>
         </Glass>
 
-        <FlatList
-          style={{ flex: 1 }}
-          data={typing ? items : []}
-          keyExtractor={(it) => (it.kind === "ayah" ? `a${it.index}` : `s${it.n}`)}
-          renderItem={renderItem}
-          ItemSeparatorComponent={() => <View style={s.rule} />}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: space(12) }}
-          ListHeaderComponent={
-            typing ? (
+        {typing ? (
+          <FlatList
+            style={{ flex: 1 }}
+            data={items}
+            keyExtractor={(it) => (it.kind === "ayah" ? `a${it.index}` : `s${it.n}`)}
+            renderItem={renderItem}
+            ItemSeparatorComponent={() => <View style={s.rule} />}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: space(12) }}
+            ListHeaderComponent={
               <View>
                 {caption ? (
                   <Text variant="label" color="inkSoft" style={s.caption}>
@@ -277,41 +273,11 @@ export default function Home() {
                   </Pressable>
                 ))}
               </View>
-            ) : (
-              <View style={{ gap: space(3), paddingTop: space(2) }}>
-                {forYou.length > 0 ? (
-                  <View>
-                    {forYou.map((f, i) => (
-                      <Pressable key={f.label} accessibilityRole="button" onPress={f.onPress} style={[s.quiet, i > 0 && s.quietRule]}>
-                        <View style={{ flex: 1 }}>
-                          <Text>{f.label}</Text>
-                          <Text variant="label" color="inkFaint">
-                            {f.line}
-                          </Text>
-                        </View>
-                        <Text color="inkFaint">{"›"}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : null}
-                <View style={s.chips}>
-                  {recents
-                    .slice(0, 2)
-                    .map((r) => ({ label: r, query: r }))
-                    .concat(SUGGESTIONS)
-                    .slice(0, 6)
-                    .map((x) => (
-                      <Pressable key={x.label} accessibilityRole="button" onPress={() => setQuery(x.query)} style={s.chip}>
-                        <Text variant="label" color="inkSoft">
-                          {x.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                </View>
-              </View>
-            )
-          }
-        />
+            }
+          />
+        ) : (
+          <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss} accessible={false} />
+        )}
       </View>
     </SafeAreaView>
   );
