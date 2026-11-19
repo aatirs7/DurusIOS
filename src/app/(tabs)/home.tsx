@@ -286,17 +286,14 @@ export default function Home() {
   }, []);
   const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
   const activeTop = space(1);
-  /* The group stays centred. Tapping the bar keeps it there, lifting only if
-     the keyboard would cover it. Typing folds the mark and question away and
-     the bar rises part of the way, to the upper middle, never to the very
-     top: enough room for results beneath, without leaping. */
+  /* The group stays centred, mark and question included, while tapping and
+     while typing (the owner's call): it lifts only if the keyboard would
+     cover the bar, and folds the head only on a phone too short to fit it.
+     Results gather beneath the bar. */
   let target = idleTop;
   let fold = 0;
   const lift = kbH > 0 ? Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD) : idleTop;
-  if (typing) {
-    target = Math.max(activeTop, Math.round((idleTop + HEAD) * 0.5));
-    fold = 1;
-  } else if (focused) {
+  if (focused || typing) {
     if (lift >= activeTop) target = Math.min(idleTop, lift);
     else {
       target = activeTop;
@@ -322,7 +319,7 @@ export default function Home() {
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
         <TopBar title={greetName ? `Assalamu alaikum, ${greetName}` : "Assalamu alaikum"} subtitle={hijri} />
         <Animated.View style={spacer} />
-        <Animated.View style={[s.head, head]} pointerEvents={typing ? "none" : "auto"}>
+        <Animated.View style={[s.head, head]} pointerEvents={fold ? "none" : "auto"}>
           <Arabic variant="title" color="lapis">
             دُرُوس
           </Arabic>

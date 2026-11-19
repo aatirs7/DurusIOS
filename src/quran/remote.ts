@@ -54,18 +54,54 @@ async function download(surah: number, translationId: number | null, reciterId: 
   The stored copy if fresh, a new download if not, and the stale stored copy
   if the download fails (offline). Throws only when there is nothing at all.
 */
+/*
+  Kept in memory too, and a stale stored copy is shown at once while the
+  fresh one downloads behind it (the next open uses it), so a surah opened
+  before never waits on the network. Requests for the same surah share one
+  download.
+*/
+const memory = new Map<string, QfChapter>();
+const inflight = new Map<string, Promise<QfChapter>>();
+
+function fetchAndStore(key: string, f: File, surah: number, translationId: number | null, reciterId: number | null): Promise<QfChapter> {
+  const running = inflight.get(key);
+  if (running) return running;
+  const p = download(surah, translationId, reciterId)
+    .then((fresh) => {
+      f.write(JSON.stringify(fresh));
+      memory.set(key, fresh);
+      return fresh;
+    })
+    .finally(() => inflight.delete(key));
+  inflight.set(key, p);
+  return p;
+}
+
 export async function loadChapter(surah: number, translationId: number | null, reciterId: number | null): Promise<QfChapter> {
   if (!quranApiConfigured()) throw new Error("Quran Foundation content is not connected yet");
+  const key = `${surah}-${translationId ?? 0}-${reciterId ?? 0}`;
+  const hot = memory.get(key);
+  if (hot) return hot;
   const f = fileFor(surah, translationId, reciterId);
   const stored = await readStored(f);
-  if (stored && !isStale(stored, Date.now())) return stored;
-  try {
-    const fresh = await download(surah, translationId, reciterId);
-    f.write(JSON.stringify(fresh));
-    return fresh;
-  } catch (e) {
-    if (stored) return stored;
-    throw e;
+  if (stored) {
+    memory.set(key, stored);
+    if (isStale(stored, Date.now())) fetchAndStore(key, f, surah, translationId, reciterId).catch(() => undefined);
+    return stored;
+  }
+  return fetchAndStore(key, f, surah, translationId, reciterId);
+}
+
+/* Fetch surahs ahead of need, one at a time, quietly. */
+export async function prefetchChapters(surahs: number[], translationId: number | null, reciterId: number | null) {
+  if (!quranApiConfigured()) return;
+  for (const n of surahs) {
+    if (n < 1 || n > 114) continue;
+    try {
+      await loadChapter(n, translationId, reciterId);
+    } catch {
+      return;
+    }
   }
 }
 
@@ -82,6 +118,7 @@ export function storedChapters(): string[] {
 }
 
 export function clearStoredChapters() {
+  memory.clear();
   try {
     const d = new Directory(Paths.document, "quran-foundation");
     if (d.exists) d.delete();

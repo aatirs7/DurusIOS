@@ -10,7 +10,7 @@ import { FootnoteCard, TranslationLine, TransliterationLine, WordGrid } from "@/
 import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
 import { Text } from "@/components/Text";
 import { translationName, type QfChapter } from "@/quran/qf";
-import { loadChapter, quranApiConfigured } from "@/quran/remote";
+import { loadChapter, prefetchChapters, quranApiConfigured } from "@/quran/remote";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { surahForDisplay } from "@/quran/text";
@@ -132,7 +132,21 @@ export default function SurahReader() {
   const [footnote, setFootnote] = useState<number | null>(null);
   /* The long-press zoom, and whether its layers are loading. */
   const [zoom, setZoom] = useState<number | null>(null);
-  const needLayers = wantsLayers || (zoom !== null && quranApiConfigured());
+  /* Tapping an ayah reveals its translation, a second tap adds the
+     transliteration, a third goes back to the Arabic alone. The layers are
+     loaded with the surah, whatever the view, so a tap never waits, and the
+     next surah is fetched behind it. */
+  const [reveal, setReveal] = useState<Record<number, 1 | 2>>({});
+  const cycle = (ayah: number) =>
+    setReveal((r) => {
+      const next = { ...r };
+      const now = r[ayah] ?? 0;
+      if (now === 2) delete next[ayah];
+      else next[ayah] = (now + 1) as 1 | 2;
+      return next;
+    });
+  useEffect(() => setReveal({}), [n]);
+  const needLayers = quranApiConfigured();
   useEffect(() => {
     if (!needLayers) return;
     let alive = true;
@@ -142,6 +156,7 @@ export default function SurahReader() {
         if (!alive) return;
         setQf(c);
         setQfState("idle");
+        void prefetchChapters([n + 1], translationId, reciterId);
       })
       .catch(() => alive && setQfState("error"));
     return () => {
@@ -283,7 +298,7 @@ export default function SurahReader() {
   const footer = (
     <View style={s.foot}>
       <Text variant="label" style={{ textAlign: "center", color: colors.soft }}>
-        Arabic text from Tanzil. Translation arrives with Quran.com.
+        Arabic text from Tanzil. Translation and transliteration from Quran.com, provided by Quran Foundation.
       </Text>
       {n < 114 ? (
         <Pressable accessibilityRole="button" onPress={() => router.replace(`/surah/${n + 1}`)} style={[s.next, { borderColor: colors.rule }]}>
@@ -300,16 +315,15 @@ export default function SurahReader() {
     const u = look.marks && maps.understood[g] === 1;
     const isSel = selected === ayah;
     const qa = wantsLayers && qf ? qf.ayahs[index] : undefined;
+    const layer = qf ? qf.ayahs[index] : undefined;
+    const shown = reveal[ayah] ?? 0;
     return (
       <Pressable
-        onPress={() => setSelected(isSel ? null : ayah)}
-        onLongPress={() => {
-          setSelected(null);
-          setZoom(ayah);
-        }}
+        onPress={() => cycle(ayah)}
+        onLongPress={() => setSelected(isSel ? null : ayah)}
         delayLongPress={320}
         accessibilityLabel={`Ayah ${ayah}`}
-        accessibilityHint="Tap for actions, long press to zoom in"
+        accessibilityHint="Tap to show the translation, then the transliteration. Long press for actions."
         style={[s.ayah, (highlight === ayah || isSel) && { backgroundColor: selColor }]}
       >
         {qa && (view === "wordTranslation" || view === "wordTransliteration") ? (
@@ -321,6 +335,16 @@ export default function SurahReader() {
         )}
         {qa && view === "translation" ? <TranslationLine ayah={qa} colors={colors} onFootnote={setFootnote} /> : null}
         {qa && view === "transliteration" ? <TransliterationLine ayah={qa} colors={colors} /> : null}
+        {shown >= 1 && view !== "translation" ? (
+          layer ? (
+            <TranslationLine ayah={layer} colors={colors} onFootnote={setFootnote} />
+          ) : (
+            <Text variant="label" style={{ color: colors.soft, paddingTop: space(1) }}>
+              {qfState === "error" || !quranApiConfigured() ? "Translation needs a connection the first time." : "Loading the translation"}
+            </Text>
+          )
+        ) : null}
+        {shown >= 2 && view !== "transliteration" && layer ? <TransliterationLine ayah={layer} colors={colors} /> : null}
         {look.numbers || m || u || bookmarks.includes(g) ? (
           <View style={s.meta}>
             <View style={s.chips}>
@@ -481,6 +505,18 @@ export default function SurahReader() {
               style={[s.tool, selB && { backgroundColor: theme.colors.lapis }]}
             >
               <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={selB ? theme.colors.paper : theme.colors.lapis} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Zoom in"
+              onPress={() => {
+                const a = selected;
+                setSelected(null);
+                setZoom(a);
+              }}
+              style={s.tool}
+            >
+              <Icon d="M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13zM15.5 15.5L20 20M10.5 8v5M8 10.5h5" color={theme.colors.lapis} />
             </Pressable>
             <Pressable
               accessibilityRole="button"

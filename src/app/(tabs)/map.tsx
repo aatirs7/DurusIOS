@@ -13,7 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Circle, Path } from "react-native-svg";
 
 import { AyahField } from "@/components/AyahField";
-import { Glass } from "@/components/Glass";
+import { Glass, GlassButton } from "@/components/Glass";
 import { Text } from "@/components/Text";
 import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { rangePath } from "@/onboarding/field";
@@ -29,8 +29,9 @@ import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
 /*
-  Progress: one screen, no scrolling down. Swipe sideways between four views.
+  Progress: one screen, no scrolling down. Swipe sideways between five views.
 
+    Overview  a calm first look: one ring, a few plain lines, what each view is
     Wall    every ayah as a dot, the whole Quran at once
     Juz     thirty small fields, one per juz; tap one to mark its surahs
     Stats   the two rings and the counts that matter
@@ -40,7 +41,7 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   scrolls. Marking any surah is one tap away in the glass Mark button.
 */
 
-const PAGES = ["Wall", "Juz", "Stats", "Week"] as const;
+const PAGES = ["Overview", "Wall", "Juz", "Stats", "Week"] as const;
 /* Space kept clear above the floating tab bar. */
 const TAB_ROOM = space(11);
 const NO_LOG: Record<string, number[]> = {};
@@ -78,7 +79,7 @@ const useStyles = makeStyles((t) => ({
   },
   segItem: {
     paddingVertical: 7,
-    paddingHorizontal: space(2),
+    paddingHorizontal: space(1.5),
     borderRadius: RADIUS.pill,
   },
   segOn: { backgroundColor: t.colors.lapisWash },
@@ -705,9 +706,39 @@ export default function ProgressTab() {
               )
             }
           >
+            {/* Overview */}
+            <View style={[s.page, { width: area.w, height: h, alignItems: "center", justifyContent: "center", gap: space(2.5) }]}>
+              <Ring fraction={p.ayahsMemorized / TOTAL_AYAHS} color={theme.colors.saffron} size={Math.min(190, inner * 0.52, h * 0.34)} stroke={10}>
+                <Text variant="numeral" style={{ fontSize: 30, lineHeight: 36 }}>{`${pct(p.ayahsMemorized / TOTAL_AYAHS)}%`}</Text>
+                <Text variant="label" color="inkSoft">
+                  memorized
+                </Text>
+              </Ring>
+              <View style={{ alignItems: "center", gap: space(0.75) }}>
+                <Text style={s.headline}>
+                  {p.ayahsMemorized === 0
+                    ? "Your progress starts with what you already know"
+                    : `${p.surahsMemorized} ${p.surahsMemorized === 1 ? "surah" : "surahs"} memorized`}
+                </Text>
+                {p.ayahsMemorized > 0 || p.ayahsUnderstood > 0 || weekTotal > 0 ? (
+                  <Text variant="label" color="inkSoft" style={{ textAlign: "center" }}>
+                    {`${fmt(p.ayahsUnderstood)} ayahs understood. ${fmt(weekTotal)} read this week.`}
+                  </Text>
+                ) : null}
+              </View>
+              <Text variant="label" color="inkSoft" style={[s.caption, { maxWidth: 320 }]}>
+                Mark the surahs you know and they light up here. Swipe across for the whole Quran ayah by ayah, each juz, your numbers and your week.
+              </Text>
+              {p.ayahsMemorized === 0 ? (
+                <View style={{ alignSelf: "stretch" }}>
+                  <GlassButton label="Mark what you know" primary onPress={() => setPick({ open: true, juz: null })} />
+                </View>
+              ) : null}
+            </View>
+
             {/* Wall */}
             <View style={[s.page, { width: area.w, height: h }]}>
-              <Text style={s.headline}>{headline}</Text>
+              <Text style={s.headline}>{p.ayahsMemorized === 0 ? "Every ayah of the Quran" : headline}</Text>
               <Text variant="label" color="inkSoft" style={s.caption}>
                 Each square is one ayah, all 6,236 in order: Al-Fatiha at the
                 top, An-Nas at the bottom. Numbers on the left are juz.

@@ -13,6 +13,12 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Owner round, 19 Nov evening.**
+  - Search: the mark, question and bar no longer move or fold while typing; they lift only if the keyboard would cover the bar.
+  - Reader: tap an ayah to show its translation, tap again to add the transliteration, a third tap returns to the Arabic. Long press now opens the ayah bar (memorized, understood, bookmark, a new Zoom button, share). Translation layers load with every surah whatever the view, the next surah prefetches behind it, and a stored surah opens at once from memory or the phone (a stale copy refreshes in the background instead of blocking). Footer credit fixed to "Translation and transliteration from Quran.com, provided by Quran Foundation".
+  - Progress: a calm Overview page comes first (one ring, a plain line or two, what each view is, and "Mark what you know" when nothing is marked). The Wall moves to the second page.
+  - Tab flash: each native tab's first frame was painted in React Navigation's default pale background. A navigation theme now paints it in the app's paper colour (light and dark). Added @react-navigation/native 7.3.17 as a direct dependency (already installed through expo-router, JS only, OTA safe).
+  - Quranic Words (issue #4): the owner said build the whole track without stopping for review, keeping the current Learn look. In progress in a separate worktree.
 - **Issue #4, Quranic Words, step 1: coverage numbers. STOPPED for owner review.** Full write-up: docs/quranic-words/coverage.md. Computed offline from the Quranic Arabic Corpus (not in the repo, never shipped). A word counts as known only when its lemma and every clitic on it are taught.
   - Lemmas needed: 25% = 9, 50% = 54, 60% = 109, 70% = 220, 80% = 441, 90% = 1,061. The top 500 reach 81.6%, so "500 words, about 80%" holds.
   - 55% of words carry a clitic. Without the parsing skills, 500 lemmas cover only 37%. Function words are 32% of all words.

@@ -8,6 +8,11 @@ import {
   IBMPlexMono_400Regular,
   IBMPlexMono_500Medium,
 } from "@expo-google-fonts/ibm-plex-mono";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavThemeProvider,
+} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -59,14 +64,33 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 /* The light palette, read directly: no theme hook can fail here. */
 const SAFE = THEMES.light.colors;
 
-export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+export function ErrorBoundary({
+  error,
+  retry,
+}: {
+  error: Error;
+  retry: () => Promise<void>;
+}) {
   return (
-    <View style={{ flex: 1, justifyContent: "center", padding: 32, gap: 16, backgroundColor: SAFE.paper }}>
-      <RNText style={{ fontSize: 22, color: SAFE.ink }}>Something went wrong</RNText>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        padding: 32,
+        gap: 16,
+        backgroundColor: SAFE.paper,
+      }}
+    >
+      <RNText style={{ fontSize: 22, color: SAFE.ink }}>
+        Something went wrong
+      </RNText>
       <RNText selectable style={{ fontSize: 13, color: SAFE.inkSoft }}>
         {String(error?.message ?? error).slice(0, 600)}
       </RNText>
-      <RNText onPress={() => void retry()} style={{ fontSize: 17, color: SAFE.lapis, paddingVertical: 12 }}>
+      <RNText
+        onPress={() => void retry()}
+        style={{ fontSize: 17, color: SAFE.lapis, paddingVertical: 12 }}
+      >
         Try again
       </RNText>
     </View>
@@ -204,7 +228,8 @@ export default function RootLayout() {
             <Text variant="pageTitle">Durus could not start.</Text>
             <Text color="inkSoft">{failure.message}</Text>
             <Text color="inkFaint" variant="label">
-              Your progress is on the server. Resetting this device downloads it again.
+              Your progress is on the server. Resetting this device downloads it
+              again.
             </Text>
             <Button
               label="Reset local data"
@@ -227,6 +252,19 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
+  const base = theme.dark ? DarkTheme : DefaultTheme;
+  const navTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: theme.colors.paper,
+      card: theme.colors.paper,
+      text: theme.colors.ink,
+      border: theme.colors.rule,
+      primary: theme.colors.lapis,
+    },
+  };
+
   return (
     /*
       ClerkProvider wraps the tree but gates nothing. The splash was already
@@ -240,26 +278,31 @@ export default function RootLayout() {
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <ClerkGate />
-          <StatusBar style={theme.dark ? "light" : "dark"} />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: theme.colors.paper },
-            }}
-          >
-            {/* Spec section 7.4: motion is limited to four animations, so
+          {/* The navigation theme paints each screen's first frame, before
+              its own content draws. Left at the default it is a pale grey,
+              which flashed on every tab opened for the first time. */}
+          <NavThemeProvider value={navTheme}>
+            <ClerkGate />
+            <StatusBar style={theme.dark ? "light" : "dark"} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: theme.colors.paper },
+              }}
+            >
+              {/* Spec section 7.4: motion is limited to four animations, so
                 entering a drill does not slide. */}
-            <Stack.Screen name="review" options={{ animation: "none" }} />
-            <Stack.Screen name="speed" options={{ animation: "none" }} />
-            <Stack.Screen name="cases" options={{ animation: "none" }} />
-            <Stack.Screen name="cards" options={{ animation: "none" }} />
-          </Stack>
-          {/* A sibling ABOVE the Stack, so the app is already mounted
+              <Stack.Screen name="review" options={{ animation: "none" }} />
+              <Stack.Screen name="speed" options={{ animation: "none" }} />
+              <Stack.Screen name="cases" options={{ animation: "none" }} />
+              <Stack.Screen name="cards" options={{ animation: "none" }} />
+            </Stack>
+            {/* A sibling ABOVE the Stack, so the app is already mounted
               underneath and the fade reveals a finished screen rather than an
               empty frame. */}
-          <ThemeFade />
-          {introDone ? null : <AnimatedSplash onDone={endIntro} />}
+            <ThemeFade />
+            {introDone ? null : <AnimatedSplash onDone={endIntro} />}
+          </NavThemeProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ClerkProvider>
