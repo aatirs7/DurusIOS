@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/clerk-expo";
+import { useLiveUpdates } from "@/lib/updates";
 import { Amiri_400Regular, Amiri_700Bold } from "@expo-google-fonts/amiri";
 import { AmiriQuran_400Regular } from "@expo-google-fonts/amiri-quran";
 import { Lateef_400Regular } from "@expo-google-fonts/lateef";
@@ -48,6 +49,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
   reaches Today with real counts.
 */
 export default function RootLayout() {
+  useLiveUpdates();
   const theme = useTheme();
   const choice = useThemeChoice((s) => s.choice);
   const migration = useDurusMigrations();

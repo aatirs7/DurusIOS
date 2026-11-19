@@ -312,6 +312,11 @@ export default function Home() {
                     {caption}
                   </Text>
                 ) : null}
+                {picks && picks.results.length > 0 ? (
+                  <Text variant="label" color="inkFaint" style={{ paddingBottom: space(0.5) }}>
+                    Suggested by AI from your search. Read each in its place.
+                  </Text>
+                ) : null}
                 {completions.map((c, i) => (
                   <Pressable key={c} accessibilityRole="button" onPress={() => setQuery(c)} style={[s.quiet, i > 0 && s.quietRule]}>
                     <SearchIcon color={theme.colors.inkFaint} />
