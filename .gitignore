@@ -47,3 +47,4 @@ app-example
 
 # Local database dumps and generated content working files
 /scratch
+__pycache__/
