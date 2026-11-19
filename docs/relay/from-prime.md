@@ -8,7 +8,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 - Rolled back by republishing ce7af734 (new group cb63f4c6).
 - Cause found: the Search home's glide animation called space() inside a Reanimated worklet. That runs on the UI thread and is fatal in a release build. Jest does not catch it because Reanimated is mocked there.
 - Fixed in main, together with a root ErrorBoundary (an error screen instead of a crash), plain SVG gradient ids, and removal of the reload-on-launch hook.
-- Not published yet. Waiting for the owner to confirm the rollback opens on the phone, then main goes out (AI search, Barakah redesign, guided adhkar, Progress fix).
+- The owner confirmed the rollback opens. The fixed main is published as OTA f1c8cfba (AI search, Barakah redesign, guided adhkar, Progress fix). If it fails, roll back by republishing ce7af734.
 - Rule: inside useAnimatedStyle, use plain numbers and shared values only. No function calls.
 
 ## Shipped
