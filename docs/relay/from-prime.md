@@ -1,17 +1,44 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-18, night
+Updated: 2026-11-18, late night
 
 ## Now
 
-NEXT (resume here): AI search ("Ask"). Owner wants to type anything and get surah and ayah suggestions from a free AI, with no Anthropic cost. Plan agreed in chat: Groq free tier first, Gemini Flash free tier as fallback, called from durus.space. Add a route GET /api/v1/quran/ask?q= (write it in DurusIOS server/ first, then copy into the Durus web repo's lib/quran). It returns strict JSON {line, results:[{ref, reason}]}. Every ref is checked against the Tanzil metadata and invalid ones are dropped; the AI never writes Quran text. Answers are cached per normalized query. Keys go in Vercel as GROQ_API_KEY and GEMINI_API_KEY (Prime has the Vercel CLI logged in and linked in ../durus-web). In the app, Search shows its local results instantly, then the AI picks above them after a short debounce, rendered with the local Arabic and the cached English. Waiting on: the owner to paste a Groq key (console.groq.com/keys) and, optionally, a Gemini key (aistudio.google.com/apikey). Nothing has been started yet; the working tree is clean.
+- Barakah redesign and guided adhkar are live (OTA 8a52cb55).
+- Next: the App Store blockers in docs/app-store-audit.md.
+  - Guest mode, so sign-in is not forced.
+  - Clerk production instance.
+  - Privacy and support links in the app.
+  - Rewrite the store copy.
+  - Ask consent notice.
+  - Fresh native build for review.
 
-Latest OTA: 5c337f90. Rollback: republish ce7af734. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: 8a52cb55. Rollback: republish 92e007e6 (before the Barakah redesign) or 5c337f90 (before AI search).
+Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
+
+- **Barakah redesign (OTA 8a52cb55).**
+  - One screen of glass tiles over the breathing light: a ring, the day's count, consistency, and the last seven days as dots.
+  - Tap a tile to tick it. The Quran tile shows ayahs read against the goal and opens the reader.
+  - The month view and "Choose practices" (with the daily goal) are sheets.
+- **Guided morning and evening adhkar.**
+  - One dhikr per page, 22 for each time: the Arabic (Quran passages from Tanzil), how to say it, what it means, why it is said, and the source.
+  - The selection and order follow Hisn al-Muslim. Where the evening wording differs, it is written out in full.
+  - A glass counter counts the repetitions and moves on by itself. Progress is kept for the day.
+  - Finishing ticks the practice in Barakah.
+- **Updates apply immediately.** The app checks for an update on launch and when it comes back to the foreground, then restarts into it. A fresh TestFlight install still opens on its built-in code once.
+- **Text scaling** is capped at 1.3x so the one-screen layouts fit an iPhone SE with large text.
+- **Progress fix.** Pages were 88pt too tall and ran under the tab bar (Week's Recent box was cut off).
+- **AI search.**
+  - Anything typed in words is sent, after a short pause, to GET durus.space/api/v1/quran/ask, which uses Groq's free tier (gpt-oss-120b, then 20b; Gemini is the fallback if GEMINI_API_KEY is set).
+  - The AI only names refs. The server drops any ref that is not a real place, and the app shows Tanzil text.
+  - The picks lead the list with a one-line reason, labelled "Suggested by AI".
+  - GROQ_API_KEY is set in Vercel production.
+- **App Store audit** saved to docs/app-store-audit.md.
 
 - Search home, per the owner (OTA 5c337f90): centred and clean with no suggestions, no "continue" and no chips. Example searches type themselves into the bar in grey and erase ("Surah about the battle of Badr", "Surah for hopelessness", "32nd surah"...), each one tested to return results. Behind it a slow breathing light (lapis, saffron, teal washes swelling about every eight seconds; still under Reduce Motion). Tapping the bar glides it to the top instead of jumping. Search now reads ordinals ("32nd surah", "the 18th surah") and no longer treats a real word as a typo of another ("hopeless" was matching "homeless"). Badr topic added (Al-Anfal and 3:123); the owner asked not to wait on approval for new topics, so new ones ship live.
 - Search rebuilt as one clean list (OTA ce7af734), after the owner said it had drifted from what they wanted. Type anything and the results are ayahs and surahs only: each ayah shows the Arabic, its English (Saheeh International by default, fetched from durus.space once and then kept on the phone) and its reference. A feeling or topic expands into the ayahs it points to, so "i feel sad" shows ayahs, not a topic box. One quiet caption line replaces the reply bubble, topic cards and headings. New server route on durus.space: GET /api/v1/quran/verses?keys=13:28,94:5&translation=20.
@@ -52,6 +79,9 @@ Issue #2 stays open until someone records the onboarding on a phone.
 - Chat bridge on. The connector can read this relay and the task queue.
 
 ## Blocked on the owner
+
+- App Store decisions (see docs/app-store-audit.md): whether to allow guest mode (Apple requires the Quran features to work without an account), moving Clerk to a production instance, and screenshots and metadata in App Store Connect.
+- Rotate the Groq key later; it was shared in chat.
 
 - **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
 
