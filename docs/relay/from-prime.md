@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah long-press backdrop: a faint lapis tint in light mode (owner).
 - Barakah: the pills now measure their real position on screen (measureInWindow) and lift by exactly the overlap with the tab bar; padding alone never moved them because the tab view does not end at the screen edge. The long-press card is Liquid Glass with a glass Done pill.
 - Reader: long press zooms into the ayah again (its sheet has memorized, understood and bookmark); the extra Zoom button that pushed the ayah bar off the screen is gone. Barakah long press shows the practice as a centred card over a blurred page.
 - Barakah long press now leads with "Why": one paraphrased line per practice with its source (Sahih Muslim, al-Bukhari, Abu Dawud, Tirmidhi, Quran 33:41-42), in src/barakah/benefits.ts, at the owner's request. Needs owner or teacher review like the other religious copy. Pills raised further above the tab bar.

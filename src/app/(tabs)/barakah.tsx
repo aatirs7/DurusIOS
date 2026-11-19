@@ -294,7 +294,6 @@ function whenOf(p: Practice): string {
   return "Every day";
 }
 
-
 /* The pills' bottom edge sits this far above the screen's bottom, clear of
    the floating tab bar with a little air. */
 const TAB_CLEAR = 104;
@@ -774,7 +773,11 @@ export default function Barakah() {
           onPress={() => setInfo(null)}
           style={StyleSheet.absoluteFill}
         >
-          <Glass style={StyleSheet.absoluteFill} />
+          {/* In light mode the blur carries a faint lapis tint. */}
+          <Glass
+            style={StyleSheet.absoluteFill}
+            tint={theme.dark ? undefined : theme.colors.lapisWash}
+          />
         </Pressable>
         {info ? (
           <View pointerEvents="box-none" style={s.focusWrap}>
