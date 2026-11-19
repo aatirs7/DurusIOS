@@ -15,7 +15,7 @@ import { complete } from "@/quran/phrases";
 import { askKey, askQuran, loadVerseTranslations, type AskAnswer } from "@/quran/remote";
 import { search } from "@/quran/search";
 import { SURAHS } from "@/quran/tanzil";
-import { ayahForDisplay, globalIndex, refOf, searchKeys } from "@/quran/text";
+import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
 import { hijriDate } from "@/lib/time";
 import { usePrefs } from "@/state/prefs";
 import { FONTS } from "@/theme/typography";
@@ -47,22 +47,6 @@ const MAX_RESULTS = 30;
 const HEAD = 118;
 const PER_REF = 3;
 
-/*
-  The ayah for today: short, well known ayahs of comfort and remembrance,
-  one per day in turn. Shown from the Tanzil text with its English.
-*/
-const DAILY: [number, number][] = [
-  [2, 152], [2, 186], [2, 286], [3, 139], [3, 173], [9, 51], [13, 28], [14, 7], [20, 114], [29, 69],
-  [39, 53], [40, 60], [65, 3], [94, 5], [94, 6], [93, 5], [2, 153], [8, 46], [16, 128], [21, 87],
-  [25, 63], [33, 41], [49, 13], [57, 4], [64, 11], [2, 45], [3, 8], [7, 23], [2, 201], [20, 25],
-  [28, 24], [3, 159], [6, 162], [11, 88], [12, 87], [15, 99], [18, 10], [33, 56], [50, 16], [51, 56],
-];
-
-function todaysAyah(now: Date): { surah: number; ayah: number } {
-  const day = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(2026, 0, 1)) / 86400000);
-  const [surah, ayah] = DAILY[((day % DAILY.length) + DAILY.length) % DAILY.length];
-  return { surah, ayah };
-}
 
 
 /* `reason` is set on AI picks: one line on why this place answers the search. */
@@ -71,9 +55,9 @@ type Item = ({ kind: "ayah"; index: number } | { kind: "surah"; n: number }) & {
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
-  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space(1), minHeight: 48 },
+  topRow: { alignItems: "center", justifyContent: "center", paddingTop: space(1), minHeight: 52 },
+  toggle: { position: "absolute", right: 0, top: space(1.25) },
   pill: { flexDirection: "row", alignItems: "center", gap: space(1), alignSelf: "center", borderRadius: RADIUS.pill, paddingVertical: space(1.125), paddingHorizontal: space(2), overflow: "hidden" },
-  daily: { borderRadius: 24, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(2), paddingHorizontal: space(2.25), gap: space(1), marginBottom: space(12) },
   head: { alignItems: "center", justifyContent: "flex-end", gap: space(0.75), paddingBottom: space(2.5), overflow: "hidden" },
   title: { fontSize: 24, lineHeight: 30, textAlign: "center" },
   bar: { flexDirection: "row", alignItems: "center", borderRadius: 28, minHeight: 54, paddingLeft: space(2), paddingRight: space(1), gap: space(1), overflow: "hidden" },
@@ -126,16 +110,6 @@ export default function Home() {
   const lastRead = usePrefs((st) => st.lastRead);
   const now = useMemo(() => new Date(), []);
   const hijri = useMemo(() => hijriDate(now), [now]);
-  const daily = useMemo(() => todaysAyah(now), [now]);
-  const dailyKey = `${daily.surah}:${daily.ayah}`;
-  const [dailyEnglish, setDailyEnglish] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    loadVerseTranslations([dailyKey], translationId).then((c) => alive && setDailyEnglish(c[dailyKey] ?? null));
-    return () => {
-      alive = false;
-    };
-  }, [dailyKey, translationId]);
   const typing = query.trim().length > 0;
 
   const result = useMemo(() => search(query, searchKeys), [query]);
@@ -281,7 +255,7 @@ export default function Home() {
   useEffect(() => {
     p.value = withTiming(active ? 1 : 0, { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) });
   }, [active, still, p]);
-  const idleTop = Math.round(height * 0.13);
+  const idleTop = Math.round(height * 0.2);
   /* Plain numbers only inside a worklet: calling an ordinary function such as
      space() there runs on the UI thread and crashes a release build. */
   const activeTop = space(1);
@@ -293,7 +267,7 @@ export default function Home() {
       <Breath />
       <View style={s.body}>
         <View style={s.topRow}>
-          <View style={{ gap: 1 }}>
+          <View style={{ alignItems: "center", gap: 1 }}>
             <Text>Assalamu alaikum</Text>
             {hijri ? (
               <Text variant="label" color="inkSoft">
@@ -301,7 +275,9 @@ export default function Home() {
               </Text>
             ) : null}
           </View>
-          <ThemeToggle />
+          <View style={s.toggle}>
+            <ThemeToggle />
+          </View>
         </View>
         <Animated.View style={spacer} />
         <Animated.View style={[s.head, head]} pointerEvents={active ? "none" : "auto"}>
@@ -372,7 +348,7 @@ export default function Home() {
             }
           />
         ) : (
-          <Pressable style={{ flex: 1, justifyContent: "space-between" }} onPress={Keyboard.dismiss} accessible={false}>
+          <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss} accessible={false}>
             {!active && lastRead ? (
               <Pressable
                 accessibilityRole="button"
@@ -387,31 +363,6 @@ export default function Home() {
                   <Text variant="label">{`Continue ${SURAHS[lastRead.surah - 1]?.en ?? "reading"}`}</Text>
                   <Text variant="label" color="inkFaint">{`${lastRead.surah}:${lastRead.ayah}`}</Text>
                 </Glass>
-              </Pressable>
-            ) : (
-              <View />
-            )}
-            {!active ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Ayah for today, ${SURAHS[daily.surah - 1].en} ${dailyKey}`}
-                onPress={() => openTo(daily.surah, daily.ayah)}
-                style={s.daily}
-              >
-                <Text variant="eyebrow" color="inkSoft" style={{ textAlign: "center" }}>
-                  Ayah for today
-                </Text>
-                <Text selectable={false} numberOfLines={height < 760 ? 2 : 3} style={[s.ayah, { textAlign: "center", fontSize: 21, lineHeight: 42 }]}>
-                  {ayahForDisplay(globalIndex(daily.surah, daily.ayah))}
-                </Text>
-                {dailyEnglish ? (
-                  <Text numberOfLines={height < 760 ? 2 : 3} style={[s.english, { textAlign: "center" }]}>
-                    {dailyEnglish}
-                  </Text>
-                ) : null}
-                <Text variant="label" color="lapis" style={{ textAlign: "center" }}>
-                  {`${SURAHS[daily.surah - 1].en} ${dailyKey}`}
-                </Text>
               </Pressable>
             ) : null}
           </Pressable>

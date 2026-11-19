@@ -6,9 +6,9 @@ import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { useTheme } from "@/theme/useTheme";
 
 /*
-  A slow breathing light behind the search page: two soft washes, lapis above
-  and saffron below, swelling and settling about once every eight seconds, out
-  of step with each other. Calm, never busy. It sits behind everything and
+  A slow breathing light behind the search page: soft washes, lapis above,
+  saffron below and teal at the side, swelling and settling every five to
+  eight seconds, out of step with each other, clearly visible but calm. Calm, never busy. It sits behind everything and
   never wraps glass, so its fading is safe. Under Reduce Motion it holds still.
 */
 
@@ -26,8 +26,8 @@ function Wash({ id, color, size, top, left, period, delay, peak }: { id: string;
     };
   }, [still, t, period, delay]);
   const style = useAnimatedStyle(() => ({
-    opacity: 0.55 + 0.45 * t.value,
-    transform: [{ scale: 0.92 + 0.12 * t.value }],
+    opacity: 0.3 + 0.7 * t.value,
+    transform: [{ scale: 0.82 + 0.3 * t.value }],
   }));
   const r = size / 2;
   return (
@@ -50,12 +50,12 @@ export function Breath() {
   const theme = useTheme();
   const { width, height } = useWindowDimensions();
   const big = Math.round(Math.max(width, height) * 0.9);
-  const peak = theme.dark ? 0.22 : 0.16;
+  const peak = theme.dark ? 0.34 : 0.3;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Wash id="breathLapis" color={theme.colors.lapis} size={big} top={-big * 0.38} left={-big * 0.25} period={7600} delay={0} peak={peak} />
-      <Wash id="breathSaffron" color={theme.colors.saffron} size={big * 0.85} top={height - big * 0.5} left={width - big * 0.6} period={9200} delay={1800} peak={peak * 0.8} />
-      <Wash id="breathTeal" color={theme.colors.verdigris} size={big * 0.55} top={height * 0.38} left={-big * 0.3} period={11000} delay={3600} peak={peak * 0.6} />
+      <Wash id="breathLapis" color={theme.colors.lapis} size={big} top={-big * 0.38} left={-big * 0.25} period={5200} delay={0} peak={peak} />
+      <Wash id="breathSaffron" color={theme.colors.saffron} size={big * 0.85} top={height - big * 0.62} left={width - big * 0.6} period={6400} delay={1400} peak={peak * 0.8} />
+      <Wash id="breathTeal" color={theme.colors.verdigris} size={big * 0.55} top={height * 0.38} left={-big * 0.3} period={7800} delay={2800} peak={peak * 0.6} />
     </View>
   );
 }
