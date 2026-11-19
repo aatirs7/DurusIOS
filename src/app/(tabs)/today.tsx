@@ -100,7 +100,7 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space(1.5),
     overflow: "hidden",
   },
-  stageText: { flex: 1, gap: space(0.25) },
+  stageText: { flex: 1, gap: space(0.25), alignItems: "center" },
 
   deeper: { alignItems: "center", gap: space(2), paddingTop: space(2) },
   lesson: { alignItems: "center", gap: space(0.5) },
@@ -357,13 +357,16 @@ export default function Today() {
                             ? "ink"
                             : "inkSoft"
                         }
+                        style={s.center}
                       >
                         {st.titleEn}
                       </Text>
-                      <Text variant="label" color="inkFaint">
+                      <Text variant="label" color="inkFaint" style={s.center}>
                         {stageLine(st, i === currentStage)}
                       </Text>
                     </View>
+                    {/* Balances the ring, so the words sit in the true centre. */}
+                    <View style={{ width: 36 }} />
                   </Glass>
                 ))}
               </View>

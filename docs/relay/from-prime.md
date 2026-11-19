@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Quranic Words: a session with nothing due no longer dead-ends. It offers "Learn 5 more words" (past the day's five) and "Practise words you have met" (12 met words, not graded into the schedule, so practising early never pushes reviews out). Stage rows on the path are centred.
+- Barakah: tile titles and lines centred; the tiles sit centred between the header and the pills; the header is roomier (ring 148) with two rows of practices and shrinks (120, 100) as more are chosen; the This month and Choose practices pills clear the tab bar again.
 - Breathing light: the yellow (saffron) wash is replaced with a soft blue-grey (inkSoft), per the owner.
 - Progress Mark: closing a surah picked from the list brings the list back at the same scroll position, so several surahs can be marked in a row (owner request).
 - **Tab first-open shift, second fix.** Each native tab has its own safe-area measurement, which reads the top inset as zero for a moment the first time a tab opens and then corrects, so the page jumped. The five tabs now use the window's top inset from launch, a fixed number in this portrait-only app (src/components/TabSafe.tsx; Screen takes a `tab` prop). Sheets and pushed screens are unchanged.

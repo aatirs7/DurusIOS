@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
@@ -10,7 +10,7 @@ import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
 import { db } from "@/data/client";
 import { submitGrade } from "@/data/review";
-import { buildWordsSession, type WordQuestion } from "@/data/words";
+import { NEW_PER_DAY, buildWordsSession, type WordQuestion } from "@/data/words";
 import {
   WORDS_ATTRIBUTION,
   canShowGloss,
@@ -90,10 +90,15 @@ export default function WordsSession() {
   const boot = useRef(bootOnce()).current;
 
   /* Built once on mount, so answering does not reshuffle the session. */
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   const session = useMemo(
-    () => (profileId === null ? null : buildWordsSession(db, profileId)),
-    [profileId],
+    () =>
+      profileId === null
+        ? null
+        : buildWordsSession(db, profileId, mode === "more" ? { extraNew: NEW_PER_DAY } : mode === "practice" ? { practice: true } : {}),
+    [profileId, mode],
   );
+
 
   const [steps, setSteps] = useState<Step[]>(() =>
     session
@@ -124,6 +129,8 @@ export default function WordsSession() {
   };
 
   if (!step) {
+    /* Whether there is anything to practise: any word met, this session included. */
+    const canPractice = buildWordsSession(db, profileId, { practice: true }).questions.length > 0;
     const reviewed = session.questions.filter((q) => !q.isNew).length;
     const learnt = session.newCards.length;
     return (
@@ -131,18 +138,24 @@ export default function WordsSession() {
         <BackBar fallback="/today" />
         <View style={[s.body, { justifyContent: "center" }]}>
           <Text variant="pageTitle" style={s.center}>
-            {steps.length === 0 ? "Nothing is waiting." : "That is all for now."}
+            {steps.length === 0 ? "Nothing is due right now" : "That is all for now"}
           </Text>
           <Text color="inkSoft" style={s.center}>
             {steps.length === 0
-              ? "New words come again tomorrow, and words you have met come back when they are due."
-              : [learnt ? `${learnt} new ${learnt === 1 ? "word" : "words"}` : null, reviewed ? `${reviewed} reviewed` : null]
-                  .filter(Boolean)
-                  .join(", ") + "."}
+              ? "Words you have met come back when they are due. You can keep going whenever you like."
+              : session.practice
+                ? `${reviewed} practised. Practice does not move when words come back.`
+                : [learnt ? `${learnt} new ${learnt === 1 ? "word" : "words"}` : null, reviewed ? `${reviewed} reviewed` : null]
+                    .filter(Boolean)
+                    .join(", ") + "."}
           </Text>
         </View>
         <View style={s.foot}>
-          <GlassButton primary label="Back to Learn" onPress={finish} />
+          <GlassButton primary label={`Learn ${NEW_PER_DAY} more words`} onPress={() => router.replace("/words?mode=more")} />
+          {canPractice ? <GlassButton label="Practise words you have met" onPress={() => router.replace("/words?mode=practice")} /> : null}
+          <Pressable accessibilityRole="button" onPress={finish} style={{ alignSelf: "center", paddingVertical: space(1) }}>
+            <Text color="lapis">Back to Learn</Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -153,7 +166,7 @@ export default function WordsSession() {
     haptics.select();
     setChosen(optionId);
     const correct = optionId === q.cardId;
-    if (!retry && boot.ok) {
+    if (!retry && !session.practice && boot.ok) {
       submitGrade(db, profileId, boot.deviceId, {
         cardId: q.cardId,
         direction: "recognition",

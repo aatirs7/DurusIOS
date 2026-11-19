@@ -103,6 +103,8 @@ describe("a first words session", () => {
       expect(screen.getByText(/Heard in/)).toBeTruthy();
       await fireEvent.press(screen.getByLabelText("Continue"));
     }
-    expect(screen.getByText("That is all for now.")).toBeTruthy();
+    expect(screen.getByText("That is all for now")).toBeTruthy();
+    expect(screen.getByLabelText("Learn 5 more words")).toBeTruthy();
+    expect(screen.getByLabelText("Practise words you have met")).toBeTruthy();
   });
 });

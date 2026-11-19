@@ -71,15 +71,16 @@ const useStyles = makeStyles((t) => ({
   week: { flexDirection: "row", gap: 6, paddingTop: space(1) },
   dot: { width: 22, alignItems: "center", gap: 3 },
   dotFill: { width: 14, height: 14, borderRadius: 7 },
-  grid: { flexGrow: 1, gap: space(1.25), paddingBottom: space(1.25) },
+  /* The tiles sit centred in the space between the header and the pills. */
+  grid: { flexGrow: 1, justifyContent: "center", gap: space(1.25), paddingBottom: space(1.25) },
   row: { flex: 1, flexDirection: "row", gap: space(1.25), minHeight: 104, maxHeight: 160 },
   tile: { flex: 1, borderRadius: 24, padding: space(1.75), justifyContent: "space-between", overflow: "hidden" },
   tileTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   mark: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.colors.inkFaint, alignItems: "center", justifyContent: "center" },
   markOn: { borderColor: t.colors.verdigris, backgroundColor: t.colors.verdigris },
   chip: { flexDirection: "row", alignItems: "center", gap: 2, borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingVertical: 3, paddingHorizontal: space(1) },
-  bar: { height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
-  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(11) },
+  bar: { alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
+  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(14) },
   pill: { flex: 1, minHeight: 46, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(3) },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: space(2) },
@@ -244,11 +245,11 @@ export default function Barakah() {
               </Text>
             ) : null}
           </View>
-          <View>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} color={done ? "verdigris" : "ink"}>
+          <View style={{ alignItems: "center" }}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} color={done ? "verdigris" : "ink"} style={{ textAlign: "center" }}>
               {p.title}
             </Text>
-            <Text variant="label" color="inkSoft" numberOfLines={1}>
+            <Text variant="label" color="inkSoft" numberOfLines={1} style={{ textAlign: "center" }}>
               {line}
             </Text>
             {progress !== null ? (
@@ -264,6 +265,8 @@ export default function Barakah() {
 
   const rows: Practice[][] = [];
   for (let k = 0; k < due.length; k += 2) rows.push(due.slice(k, k + 2));
+  const roomy = rows.length <= 2;
+  const ringSize = rows.length <= 2 ? 148 : rows.length === 3 ? 120 : 100;
 
   return (
     <TabSafe style={s.safe}>
@@ -294,16 +297,18 @@ export default function Barakah() {
           </Pressable>
         </View>
 
-        <View style={s.hero}>
+        {/* A roomy header while there are few practices; it gives the space
+            back as more are chosen, so the tiles never need to scroll. */}
+        <View style={[s.hero, { paddingVertical: roomy ? space(4) : space(2) }]}>
           <View style={{ alignItems: "center", justifyContent: "center" }}>
-            <BarakahRing fills={fills} size={112} stroke={10} />
+            <BarakahRing fills={fills} size={ringSize} stroke={roomy ? 12 : 10} />
             <View style={s.ringCenter}>
-              <Text variant="numeral" style={{ fontSize: 30, lineHeight: 34 }}>{`${summary.done}`}</Text>
+              <Text variant="numeral" style={{ fontSize: roomy ? 40 : 30, lineHeight: roomy ? 44 : 34 }}>{`${summary.done}`}</Text>
               <Text variant="label" color="inkSoft">{`of ${summary.applicable}`}</Text>
             </View>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Open the month" onPress={() => setSheet("month")} style={{ flex: 1, gap: 2 }}>
-            <Text>
+            <Text style={roomy ? { fontSize: 20, lineHeight: 26 } : undefined}>
               {summary.applicable === 0
                 ? "Nothing tracked this day"
                 : summary.done === summary.applicable

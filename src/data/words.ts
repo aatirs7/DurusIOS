@@ -41,6 +41,8 @@ export const KNOWN_REPS = 2;
 
 /* About five new words a day (spec 7.1). */
 export const NEW_PER_DAY = 5;
+/* How many words one practice round asks. */
+export const PRACTICE_SIZE = 12;
 
 /* Past this many due reviews, new words pause on their own. Calm, not a
    penalty: the Start button simply brings reviews. */
@@ -151,6 +153,10 @@ export type WordsSession = {
   newCards: WordsLemma[];
   questions: WordQuestion[];
   reviews: number;
+  /* Practice: words already met, asked again for the learner's own sake.
+     Not graded into the schedule, so practising early never pushes a word's
+     next review further out than it has earned. */
+  practice: boolean;
 };
 
 /* When each words card was first answered, for what counts as met today. */
@@ -195,7 +201,14 @@ function startOfDay(now: Date): Date {
 export function buildWordsSession(
   db: Db,
   profileId: number,
-  opts: { now?: Date; random?: () => number } = {},
+  opts: {
+    now?: Date;
+    random?: () => number;
+    /* "Learn more": this many new words now, past the day's usual five. */
+    extraNew?: number;
+    /* "Practice": words already met, whether due or not. */
+    practice?: boolean;
+  } = {},
 ): WordsSession {
   const now = opts.now ?? new Date();
   const random = opts.random ?? Math.random;
@@ -223,7 +236,14 @@ export function buildWordsSession(
   /* Groups of words first met today, so the picker does not pair a
      near-synonym with one learnt this morning. */
   const groupsToday = new Set(metToday.map((r) => lemmaForCard(r.cardId)?.group).filter((g): g is string => !!g));
-  const room = dueRows.length >= PAUSE_NEW_AT_DUE ? 0 : Math.max(0, NEW_PER_DAY - metToday.length);
+  const room =
+    opts.practice
+      ? 0
+      : opts.extraNew
+        ? opts.extraNew
+        : dueRows.length >= PAUSE_NEW_AT_DUE
+          ? 0
+          : Math.max(0, NEW_PER_DAY - metToday.length);
 
   const fresh = db
     .select({ cardId: cards.id, english: cards.english })
@@ -277,10 +297,16 @@ export function buildWordsSession(
     return { cardId, lemma, english: lemma.gloss.text, isNew, options };
   };
 
+  if (opts.practice) {
+    const met = shuffle(states.map((st) => st.cardId), random).slice(0, PRACTICE_SIZE);
+    const qs = met.map((id) => toQuestion(id, false)).filter((q): q is WordQuestion => q !== null);
+    return { intros: [], newCards: [], questions: qs, reviews: 0, practice: true };
+  }
+
   const questions = [
     ...shuffle(dueRows.map((r) => toQuestion(r.cardId, false)), random),
     ...shuffle(picked.map((id) => toQuestion(id, true)), random),
   ].filter((q): q is WordQuestion => q !== null);
 
-  return { intros, newCards, questions, reviews: dueRows.length };
+  return { intros, newCards, questions, reviews: dueRows.length, practice: false };
 }
