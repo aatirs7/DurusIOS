@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah: each tile has a small line icon above its title (sunrise, sun, moon, book and so on; verdigris when done), and the tile area no longer scrolls or bounces unless more than three rows of practices are chosen.
 - Quranic Words: a session with nothing due no longer dead-ends. It offers "Learn 5 more words" (past the day's five) and "Practise words you have met" (12 met words, not graded into the schedule, so practising early never pushes reviews out). Stage rows on the path are centred.
 - Barakah: tile titles and lines centred; the tiles sit centred between the header and the pills; the header is roomier (ring 148) with two rows of practices and shrinks (120, 100) as more are chosen; the This month and Choose practices pills clear the tab bar again.
 - Breathing light: the yellow (saffron) wash is replaced with a soft blue-grey (inkSoft), per the owner.
