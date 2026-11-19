@@ -4,20 +4,12 @@ Updated: 2026-11-18, late night
 
 ## Now
 
-- Barakah redesign and guided adhkar are live (OTA 8a52cb55).
-- Next: the App Store blockers in docs/app-store-audit.md.
-  - Guest mode, so sign-in is not forced.
-  - Clerk production instance.
-  - Privacy and support links in the app.
-  - Rewrite the store copy.
-  - Ask consent notice.
-  - Fresh native build for review.
-
-Latest OTA: 8a52cb55. Rollback: republish 92e007e6 (before the Barakah redesign) or 5c337f90 (before AI search).
-Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
-Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
-Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
-Issue #2 stays open until someone records the onboarding on a phone.
+INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
+- Rolled back by republishing ce7af734 (new group cb63f4c6).
+- Cause found: the Search home's glide animation called space() inside a Reanimated worklet. That runs on the UI thread and is fatal in a release build. Jest does not catch it because Reanimated is mocked there.
+- Fixed in main, together with a root ErrorBoundary (an error screen instead of a crash), plain SVG gradient ids, and removal of the reload-on-launch hook.
+- Not published yet. Waiting for the owner to confirm the rollback opens on the phone, then main goes out (AI search, Barakah redesign, guided adhkar, Progress fix).
+- Rule: inside useAnimatedStyle, use plain numbers and shared values only. No function calls.
 
 ## Shipped
 
