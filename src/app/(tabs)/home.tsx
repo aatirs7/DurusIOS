@@ -176,7 +176,7 @@ export default function Home() {
     }
     let cap: string | null = null;
     const first = themes[0];
-    if (picks && picks.results.length > 0) cap = picks.line || "Suggested for you";
+    if (picks && picks.results.length > 0) cap = (picks.line || "Suggested for you").replace(/[:\s]+$/, "");
     else if (first && first.kind === "theme") cap = first.theme.kind === "passage" ? first.theme.label : `For ${lower(first.theme.label)}`;
     else if (result.label) cap = result.label;
     else if (result.hits.some((h) => h.kind === "text")) cap = `${result.total} ${result.total === 1 ? "place" : "places"} with "${query.trim()}"`;

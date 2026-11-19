@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Search results header and loader**, per the owner. The AI caption is centred, with a small sparkle marking it as AI; this replaces the separate "Suggested by AI" line, so the disclosure stays without the extra line. While the AI looks, a centred loader shows three turning arcs (lapis, verdigris, saffron) round a breathing dot, over "Looking through the Quran". src/components/Seeking.tsx.
 - **Search tap no longer jumps to the top**, per the owner. With nothing typed, tapping the bar keeps it, the mark and the question in place, lifting only as far as the keyboard needs. The bar glides up and the head folds only once you type and results need room.
 - **Liquid Glass on Read and Learn**, at the owner's request, so they match Search.
   - Read: every surah and juz row is a glass card over the breathing light, as are the continue card, the bookmark chips and the Surah/Juz switch.
