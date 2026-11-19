@@ -13,6 +13,12 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Search home, fuller (OTA 2cece299).**
+  - Top row: a greeting ("Good evening"), today's Hijri date, and the theme toggle. The toggle had been sitting inside the status bar, out of reach.
+  - Under the bar, a "Continue <surah>" glass pill when there is a last-read place.
+  - At the foot, "Ayah for today": a short, well-known ayah that changes daily (40 in rotation), in Arabic and English. Tap it to open the ayah.
+  - The pill and the ayah fold away when searching.
+
 - **Barakah redesign (OTA 8a52cb55).**
   - One screen of glass tiles over the breathing light: a ring, the day's count, consistency, and the last seven days as dots.
   - Tap a tile to tick it. The Quran tile shows ayahs read against the goal and opens the reader.
