@@ -13,6 +13,10 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Liquid Glass on Read and Learn**, at the owner's request, so they match Search.
+  - Read: every surah and juz row is a glass card over the breathing light, as are the continue card, the bookmark chips and the Surah/Juz switch.
+  - Learn: Start review is a primary glass button and Study Lesson a glass button. The four drills are a two-by-two grid of glass tiles, and Stats and Settings are glass pills.
+- **First-open jump fixed.** Search and Progress start from a size estimated from the window instead of waiting for layout. This removes the "flash to adjust" the first time a tab is opened.
 - Background words (OTA b1a40f0b): the stars are removed (the owner wants words only). Each word now drifts 40pt up and down with a slight sideways sway on a 5 to 6.6 s cycle, so the movement is visible.
 - Search home background (OTA 3bf64a02): eight faint Arabic words (رحمة صبر نور توكل سكينة هدى شكر ذكر) and two eight-pointed stars, each drifting slowly, kept off the middle band and hidden while searching. src/components/Glyphs.tsx.
 - The top bar sits 16pt lower on every tab (72pt tall). The breathing light is stronger in light mode (0.62); dark mode is back to 0.34. The owner said it was visible in dark mode and barely visible in light mode, and the previous change had been made the wrong way round.
