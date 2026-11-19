@@ -348,16 +348,18 @@ function Sheet({
 function SurahSheet({
   surah,
   onClose,
+  onRead,
 }: {
   surah: number | null;
   onClose: () => void;
+  /* Open the surah in Read: the screen closes every sheet first. */
+  onRead: (n: number) => void;
 }) {
   const s = useStyles();
   const theme = useTheme();
-  const router = useRouter();
   const events = useQuranStatus((st) => st.events);
   const setSurah = useQuranStatus((st) => st.setSurah);
-  const setAyah = useQuranStatus((st) => st.setAyah);
+  const setAyahs = useQuranStatus((st) => st.setAyahs);
   const [mode, setMode] = useState<"memorized" | "understood">("memorized");
   const maps = useMemo(() => foldStatus(events), [events]);
   if (surah === null) return null;
@@ -426,9 +428,14 @@ function SurahSheet({
             paddingTop: space(3),
           }}
         >
-          <Text variant="eyebrow" color="inkSoft">
-            Ayah by ayah
-          </Text>
+          <View style={{ gap: 2 }}>
+            <Text variant="eyebrow" color="inkSoft">
+              Ayah by ayah
+            </Text>
+            <Text variant="label" color="inkFaint">
+              Tap an ayah to fill up to it
+            </Text>
+          </View>
           <View style={{ flexDirection: "row", gap: space(1) }}>
             {(["memorized", "understood"] as const).map((f) => (
               <Pressable
@@ -453,7 +460,20 @@ function SurahSheet({
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
                 accessibilityLabel={`Ayah ${i + 1}`}
-                onPress={() => setAyah(x.start + i, mode, !on)}
+                /* Fill up to here: tapping ayah 4 marks 1 to 4. Tapping a
+                   marked ayah clears it and every marked ayah after it. */
+                onPress={() => {
+                  const idx: number[] = [];
+                  if (!on) {
+                    for (let k = x.start; k <= x.start + i; k++)
+                      if (map[k] !== 1) idx.push(k);
+                    setAyahs(idx, mode, true);
+                  } else {
+                    for (let k = x.start + i; k < x.start + x.ayahs; k++)
+                      if (map[k] === 1) idx.push(k);
+                    setAyahs(idx, mode, false);
+                  }
+                }}
                 style={[
                   s.dot,
                   on && { backgroundColor: color, borderColor: color },
@@ -468,10 +488,7 @@ function SurahSheet({
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => {
-            onClose();
-            setTimeout(() => router.push(`/surah/${x.n}`), 350);
-          }}
+          onPress={() => onRead(x.n)}
           style={[
             s.pill,
             {
@@ -495,6 +512,7 @@ function PickSheet({
   onClose,
   onPick,
   offset,
+  children,
 }: {
   juz: number | null;
   visible: boolean;
@@ -503,6 +521,8 @@ function PickSheet({
   /* Where the list was scrolled to, kept by the screen, so coming back from
      a surah opens the list at the same place. */
   offset: { current: number };
+  /* The surah sheet, presented on top of this one so the list never closes. */
+  children?: React.ReactNode;
 }) {
   const s = useStyles();
   const theme = useTheme();
@@ -591,6 +611,7 @@ function PickSheet({
           );
         }}
       />
+      {children}
     </Sheet>
   );
 }
@@ -609,14 +630,16 @@ export default function ProgressTab() {
   const [page, setPage] = useState(0);
   /* An estimate from the window first, so the pages draw on the first frame
      instead of popping in after layout; onLayout then sets the exact size. */
-  const [area, setArea] = useState({ w: width, h: Math.max(0, winH - tabTop - TOP_BAR_HEIGHT - 61) });
+  const [area, setArea] = useState({
+    w: width,
+    h: Math.max(0, winH - tabTop - TOP_BAR_HEIGHT - 61),
+  });
   const pager = useRef<ScrollView>(null);
   const [pick, setPick] = useState<{ open: boolean; juz: number | null }>({
     open: false,
     juz: null,
   });
   const [sheet, setSheet] = useState<number | null>(null);
-  const pending = useRef<number | null>(null);
 
   const maps = useMemo(() => foldStatus(events), [events]);
   const p = useMemo(() => progress(maps, quranText), [maps]);
@@ -632,31 +655,21 @@ export default function ProgressTab() {
   const onArea = (e: LayoutChangeEvent) =>
     setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
 
-  /* Picking a surah closes the list first, then opens its sheet once the list is gone. */
-  /* Picking from the list opens the surah; closing the surah brings the list
-     back, scrolled where it was, so marking several in a row stays easy. */
+  /* Picking a surah opens its sheet ON TOP of the list, which stays open
+     underneath: closing the surah shows the list exactly where it was, so
+     marking several in a row stays easy. */
   const listOffset = useRef(0);
-  const fromList = useRef(false);
   const openPick = (juz: number | null) => {
     if (juz !== pick.juz) listOffset.current = 0;
     setPick({ open: true, juz });
   };
-  const closeSurah = () => {
+  const choose = (n: number) => setSheet(n);
+  const router = useRouter();
+  /* Open in Read closes both sheets before moving to the reader. */
+  const openRead = (n: number) => {
     setSheet(null);
-    if (!fromList.current) return;
-    fromList.current = false;
-    setTimeout(() => setPick((x) => ({ ...x, open: true })), 450);
-  };
-  const choose = (n: number) => {
-    fromList.current = true;
-    pending.current = n;
     setPick((x) => ({ ...x, open: false }));
-    setTimeout(() => {
-      if (pending.current !== null) {
-        setSheet(pending.current);
-        pending.current = null;
-      }
-    }, 450);
+    setTimeout(() => router.push(`/surah/${n}`), 600);
   };
 
   const inner = area.w - MARGIN * 2;
@@ -731,9 +744,28 @@ export default function ProgressTab() {
             }
           >
             {/* Overview */}
-            <View style={[s.page, { width: area.w, height: h, alignItems: "center", justifyContent: "center", gap: space(2.5) }]}>
-              <Ring fraction={p.ayahsMemorized / TOTAL_AYAHS} color={theme.colors.saffron} size={Math.min(190, inner * 0.52, h * 0.34)} stroke={10}>
-                <Text variant="numeral" style={{ fontSize: 30, lineHeight: 36 }}>{`${pct(p.ayahsMemorized / TOTAL_AYAHS)}%`}</Text>
+            <View
+              style={[
+                s.page,
+                {
+                  width: area.w,
+                  height: h,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: space(2.5),
+                },
+              ]}
+            >
+              <Ring
+                fraction={p.ayahsMemorized / TOTAL_AYAHS}
+                color={theme.colors.saffron}
+                size={Math.min(190, inner * 0.52, h * 0.34)}
+                stroke={10}
+              >
+                <Text
+                  variant="numeral"
+                  style={{ fontSize: 30, lineHeight: 36 }}
+                >{`${pct(p.ayahsMemorized / TOTAL_AYAHS)}%`}</Text>
                 <Text variant="label" color="inkSoft">
                   memorized
                 </Text>
@@ -744,25 +776,43 @@ export default function ProgressTab() {
                     ? "Your progress starts with what you already know"
                     : `${p.surahsMemorized} ${p.surahsMemorized === 1 ? "surah" : "surahs"} memorized`}
                 </Text>
-                {p.ayahsMemorized > 0 || p.ayahsUnderstood > 0 || weekTotal > 0 ? (
-                  <Text variant="label" color="inkSoft" style={{ textAlign: "center" }}>
+                {p.ayahsMemorized > 0 ||
+                p.ayahsUnderstood > 0 ||
+                weekTotal > 0 ? (
+                  <Text
+                    variant="label"
+                    color="inkSoft"
+                    style={{ textAlign: "center" }}
+                  >
                     {`${fmt(p.ayahsUnderstood)} ayahs understood. ${fmt(weekTotal)} read this week.`}
                   </Text>
                 ) : null}
               </View>
-              <Text variant="label" color="inkSoft" style={[s.caption, { maxWidth: 320 }]}>
-                Mark the surahs you know and they light up here. Swipe across for the whole Quran ayah by ayah, each juz, your numbers and your week.
+              <Text
+                variant="label"
+                color="inkSoft"
+                style={[s.caption, { maxWidth: 320 }]}
+              >
+                Mark the surahs you know and they light up here. Swipe across
+                for the whole Quran ayah by ayah, each juz, your numbers and
+                your week.
               </Text>
               {p.ayahsMemorized === 0 ? (
                 <View style={{ alignSelf: "stretch" }}>
-                  <GlassButton label="Mark what you know" primary onPress={() => openPick(null)} />
+                  <GlassButton
+                    label="Mark what you know"
+                    primary
+                    onPress={() => openPick(null)}
+                  />
                 </View>
               ) : null}
             </View>
 
             {/* Wall */}
             <View style={[s.page, { width: area.w, height: h }]}>
-              <Text style={s.headline}>{p.ayahsMemorized === 0 ? "Every ayah of the Quran" : headline}</Text>
+              <Text style={s.headline}>
+                {p.ayahsMemorized === 0 ? "Every ayah of the Quran" : headline}
+              </Text>
               <Text variant="label" color="inkSoft" style={s.caption}>
                 Each square is one ayah, all 6,236 in order: Al-Fatiha at the
                 top, An-Nas at the bottom. Numbers on the left are juz.
@@ -1033,8 +1083,13 @@ export default function ProgressTab() {
         onClose={() => setPick((x) => ({ ...x, open: false }))}
         onPick={choose}
         offset={listOffset}
-      />
-      <SurahSheet surah={sheet} onClose={closeSurah} />
+      >
+        <SurahSheet
+          surah={sheet}
+          onClose={() => setSheet(null)}
+          onRead={openRead}
+        />
+      </PickSheet>
     </TabSafe>
   );
 }

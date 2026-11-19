@@ -21,6 +21,8 @@ type QuranStatusState = Hydratable & {
   markSurahs: (surahs: number[], memorized: boolean) => void;
   setSurah: (surah: number, field: Field, on: boolean) => void;
   setAyah: (index: number, field: Field, on: boolean) => void;
+  /* Several ayahs in one go (the "fill up to here" tap), as one update. */
+  setAyahs: (indexes: number[], field: Field, on: boolean) => void;
 };
 
 export const useQuranStatus = create<QuranStatusState>()(
@@ -39,6 +41,11 @@ export const useQuranStatus = create<QuranStatusState>()(
         set({ events: [...get().events, { type: "surah_status_set", at: Date.now(), surah, [field]: on }] }),
       setAyah: (index, field, on) =>
         set({ events: [...get().events, { type: "ayah_status_set", at: Date.now(), index, [field]: on }] }),
+      setAyahs: (indexes, field, on) => {
+        if (indexes.length === 0) return;
+        const at = Date.now();
+        set({ events: [...get().events, ...indexes.map((index) => ({ type: "ayah_status_set" as const, at, index, [field]: on }))] });
+      },
     }),
     {
       name: "durus:quran-status",
