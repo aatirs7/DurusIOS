@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Search, per the owner after trying both: typing folds the mark and question and the bar glides to the top again (results were cut off when it stayed centred). A tap alone still keeps it centred.
 - **Owner round, 19 Nov evening.**
   - Search: the mark, question and bar no longer move or fold while typing; they lift only if the keyboard would cover the bar.
   - Reader: tap an ayah to show its translation, tap again to add the transliteration, a third tap returns to the Arabic. Long press now opens the ayah bar (memorized, understood, bookmark, a new Zoom button, share). Translation layers load with every surah whatever the view, the next surah prefetches behind it, and a stored surah opens at once from memory or the phone (a stale copy refreshes in the background instead of blocking). Footer credit fixed to "Translation and transliteration from Quran.com, provided by Quran Foundation".

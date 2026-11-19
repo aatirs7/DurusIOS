@@ -286,14 +286,19 @@ export default function Home() {
   }, []);
   const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
   const activeTop = space(1);
-  /* The group stays centred, mark and question included, while tapping and
-     while typing (the owner's call): it lifts only if the keyboard would
-     cover the bar, and folds the head only on a phone too short to fit it.
-     Results gather beneath the bar. */
+  /* The group stays centred while the bar is only tapped, lifting just
+     enough to clear the keyboard. Once typing starts the mark and question
+     fold away and the bar glides to the top, so results have the screen. */
   let target = idleTop;
   let fold = 0;
   const lift = kbH > 0 ? Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD) : idleTop;
-  if (focused || typing) {
+  if (typing) {
+    /* Results need the room (the standard search pattern, and the owner's
+       pick after trying the alternatives): the head folds away and the bar
+       takes the top under the greeting. */
+    target = activeTop;
+    fold = 1;
+  } else if (focused) {
     if (lift >= activeTop) target = Math.min(idleTop, lift);
     else {
       target = activeTop;
