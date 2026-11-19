@@ -296,6 +296,7 @@ export default function RootLayout() {
               <Stack.Screen name="speed" options={{ animation: "none" }} />
               <Stack.Screen name="cases" options={{ animation: "none" }} />
               <Stack.Screen name="cards" options={{ animation: "none" }} />
+              <Stack.Screen name="words" options={{ animation: "none" }} />
             </Stack>
             {/* A sibling ABOVE the Stack, so the app is already mounted
               underneath and the fade reveals a finished screen rather than an

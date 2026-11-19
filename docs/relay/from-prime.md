@@ -18,7 +18,21 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
   - Reader: tap an ayah to show its translation, tap again to add the transliteration, a third tap returns to the Arabic. Long press now opens the ayah bar (memorized, understood, bookmark, a new Zoom button, share). Translation layers load with every surah whatever the view, the next surah prefetches behind it, and a stored surah opens at once from memory or the phone (a stale copy refreshes in the background instead of blocking). Footer credit fixed to "Translation and transliteration from Quran.com, provided by Quran Foundation".
   - Progress: a calm Overview page comes first (one ring, a plain line or two, what each view is, and "Mark what you know" when nothing is marked). The Wall moves to the second page.
   - Tab flash: each native tab's first frame was painted in React Navigation's default pale background. A navigation theme now paints it in the app's paper colour (light and dark). Added @react-navigation/native 7.3.17 as a direct dependency (already installed through expo-router, JS only, OTA safe).
-  - Quranic Words (issue #4): the owner said build the whole track without stopping for review, keeping the current Learn look. In progress in a separate worktree.
+  - **Quranic Words (issue #4) shipped**, built without a review stop at the owner's word, with the current Learn look kept.
+    - Learn leads with the track: "Words you know make up X% of the words in the Quran" (marker at 80%, "How this is counted"), followable ayahs, memorized-surah line, one Start button, the stage path with rings, then the Arabic Course below as "Go deeper".
+    - Content: assets/content/quranic-words.json, 13 stages, 560 lemmas reaching exactly 80.0%, 31 parsing skills, 19 interference groups, anchor ayahs, word audio paths. Built by scripts/coverage/build_words.py. Only counts and lemma groupings derived offline from the corpus ship; no corpus text, headwords or roots.
+    - Glosses are Quran Foundation word-by-word text, verbatim, all verified:false, shown with QF attribution (owner's call). Mini-notes are empty and hidden until written and verified. No AI content.
+    - Model follows the Numbers trainer: stages are lessons with deck "words" (ids 1000+, numbers 200+), lemmas are cards (ids 100000 + frequency rank, stable). Seeded on launch from the bundled file in its own transaction; a failed seed leaves the rest of the app working. Not in lessons.json (content:build rewrites it from Neon).
+    - Session at /words: stage intro, new word cards, drill 2 (see the Arabic, choose the meaning), reviews first, about 5 new a day, pause at 40 due, anti-interference picker, rule-based distractors.
+    - Coverage on the phone uses precomputed curves (exact in path order, a lower bound otherwise), because a shippable per-word table needs a licence (QUL login or the QUL issue).
+    - Also fixed: the Lessons list showed Numbers stages; the Jest node project named a missing preset.
+
+## Blocked on the owner (Quranic Words)
+
+- Neon: run ALTER TYPE deck ADD VALUE 'words' and seed the words lessons and cards with the same ids; then flip WORDS_DECK_SYNCS in src/sync/outbox.ts. Until then the track's reviews stay on the phone and sync later.
+- Native build: add expo-audio, which unlocks drill 1 (listen, choose the meaning); src/lib/wordAudio.ts has the switch.
+- Send the developers@quran.com draft (now also covers bundling the glosses) and approve posting the QUL licence issue.
+- Review the stage lists, interference groups and glosses.
 - **Issue #4, Quranic Words, step 1: coverage numbers. STOPPED for owner review.** Full write-up: docs/quranic-words/coverage.md. Computed offline from the Quranic Arabic Corpus (not in the repo, never shipped). A word counts as known only when its lemma and every clitic on it are taught.
   - Lemmas needed: 25% = 9, 50% = 54, 60% = 109, 70% = 220, 80% = 441, 90% = 1,061. The top 500 reach 81.6%, so "500 words, about 80%" holds.
   - 55% of words carry a clitic. Without the parsing skills, 500 lemmas cover only 37%. Function words are 32% of all words.

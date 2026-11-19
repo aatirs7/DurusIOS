@@ -194,6 +194,20 @@ const COLUMN_ONLY_IN_SQLITE: Record<string, string> = {
   "card_suspensions.dirty": "set sync, spec section 4.3",
 };
 
+/*
+  Enum values the device has and Postgres does not have YET, with the reason.
+
+  lessons.deck "words" is the Quranic Words track. Its content ships bundled
+  (assets/content/quranic-words.json) under fixed ids, and its reviews are held
+  back from sync until the server has the rows (WORDS_DECK_SYNCS in
+  src/sync/engine.ts), so nothing written with the value crosses the wire. The
+  web repo needs `ALTER TYPE deck ADD VALUE 'words'` and a seed with the same
+  ids before this entry comes out.
+*/
+const ENUM_VALUES_PENDING_IN_PG: Record<string, string[]> = {
+  "lessons.deck": ["words"],
+};
+
 const keyOf = (table: string, column: string) => `${table}.${column}`;
 
 describe("the two schemas are in lockstep", () => {
@@ -301,7 +315,9 @@ describe("the two schemas are in lockstep", () => {
       for (const [name, sqliteColumn] of Object.entries(columns)) {
         const pgColumn = pgTables[table][name];
         if (!pgColumn || sqliteColumn.kind !== "enum" || pgColumn.kind !== "enum") continue;
-        if (JSON.stringify(sqliteColumn.values) !== JSON.stringify(pgColumn.values)) {
+        const pending = ENUM_VALUES_PENDING_IN_PG[keyOf(table, name)] ?? [];
+        const values = (sqliteColumn.values ?? []).filter((v) => !pending.includes(v));
+        if (JSON.stringify(values) !== JSON.stringify(pgColumn.values)) {
           mismatches.push(
             `${table}.${name}: sqlite [${sqliteColumn.values}], pg [${pgColumn.values}]`,
           );

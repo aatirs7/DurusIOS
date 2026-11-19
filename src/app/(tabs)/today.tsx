@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
+import { BarakahRing } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass, GlassButton } from "@/components/Glass";
 import { Screen } from "@/components/Screen";
@@ -13,55 +14,67 @@ import { db } from "@/data/client";
 import { countDue, countNewAvailable } from "@/data/queue";
 import { lessons } from "@/data/schema";
 import { getSettingsFor } from "@/data/settings";
+import { memorizedCoverage, wordsProgress, type WordsStageView } from "@/data/words";
+import { WORDS } from "@/data/wordsContent";
 import { TOTAL_LESSONS } from "@/engine/constants";
 import { dateLine } from "@/lib/time";
+import { countRange, foldStatus } from "@/quran/status";
+import { SURAHS } from "@/quran/tanzil";
+import { useQuranStatus } from "@/state/quranStatus";
 import { useSession } from "@/state/session";
 import { TICK, space } from "@/theme/layout";
 import { textStyles } from "@/theme/typography";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
+/*
+  Learn: the Quranic Words track first, the Arabic Course below it as "Go
+  deeper" (spec section 3).
+
+  The same page as before in its parts: the breathing light, the shared top
+  bar, glass buttons, the two-by-two glass tiles and the glass pills. What
+  changed is the order. The words track leads with its coverage line, its one
+  Start and its path of stages; the course keeps every control it had, under
+  it, now that the page scrolls.
+
+  The coverage line says "words you know make up", never "understand": 80% of
+  the words is not 80% comprehension (spec section 1).
+*/
+
 const useStyles = makeStyles((t) => ({
-  /*
-    Three rows, 1fr auto 1fr, so Start review sits on the exact centre line of
-    the screen regardless of how much sits above or below it. Centring the whole
-    stack instead drifts the button every time a line appears or disappears.
+  scroll: { paddingBottom: space(6), gap: space(3) },
+  center: { textAlign: "center" },
 
-    The top row spreads its three groups across the row rather than stacking
-    them centred: date at the top, where you are in the book in the middle, and
-    the count sitting just above the button that acts on it. Centring all three
-    together is what left a large void under the count.
-  */
-  top: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: space(4),
+  meter: { alignItems: "center", gap: space(1), paddingTop: space(2) },
+  track: {
+    width: "100%",
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: t.colors.surfaceSunk,
+    overflow: "hidden",
   },
-  /* Two buttons now: the review and the lesson. */
-  middle: { flexShrink: 0, gap: space(1) },
-  bottom: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    gap: space(2.5),
-    paddingTop: space(3),
-  },
+  fill: { height: 8, borderRadius: 999, backgroundColor: t.colors.lapis },
+  markRow: { width: "100%", height: 14 },
+  mark: { position: "absolute", top: 0, width: 1, height: 8, backgroundColor: t.colors.inkSoft },
+  lines: { alignItems: "center", gap: space(0.5) },
 
-  /* Same height as the theme toggle in the corner, so the two sit on one line
-     rather than the date floating below it. */
-  dateRow: { height: 40, justifyContent: "center" },
+  path: { gap: space(0.5) },
+  stage: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space(1.5),
+    paddingVertical: space(1),
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.rule,
+  },
+  stageText: { flex: 1, gap: space(0.25) },
+
+  deeper: { alignItems: "center", gap: space(2), paddingTop: space(2) },
   lesson: { alignItems: "center", gap: space(0.5) },
   count: { alignItems: "center", gap: space(0.5) },
   numeral: { ...textStyles.numeral, color: t.colors.ink },
+  buttons: { width: "100%", gap: space(1) },
 
   grid: { flexDirection: "row", flexWrap: "wrap", width: "100%" },
-  /*
-    alignItems, not just width. The web's ButtonLink is `inline-flex
-    justify-center` at `w-full`, so each label centres inside its own column.
-    A React Native Pressable does not centre its child for free, so half the
-    grid was sitting hard against the left of its column while everything above
-    it on the screen was centred.
-  */
   gridItem: { width: "50%", alignItems: "center", padding: space(0.625) },
   tile: {
     height: 56,
@@ -76,24 +89,26 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space(2.5),
     overflow: "hidden",
   },
-
-  /*
-    Flows directly under the links rather than being pushed to the bottom edge.
-    marginTop:auto drove the ticks and Stats/Settings onto the home indicator
-    and left a hole in the middle; the web leaves its slack BELOW this cluster.
-  */
   foot: { alignItems: "center", gap: space(2.5), width: "100%" },
   ticks: { flexDirection: "row", justifyContent: "center", gap: TICK.gap },
   tick: { width: TICK.width, height: TICK.height, borderRadius: 999 },
   footLinks: { flexDirection: "row", justifyContent: "center", gap: space(3) },
-  toggle: { position: "absolute", right: 0, top: 0, zIndex: 1 },
 }));
+
+/* The quiet line under a stage: a fact, never praise. */
+function stageLine(st: WordsStageView, current: boolean): string {
+  if (st.items > 0 && st.learned >= st.items) return `${st.titleEn}: every word known`;
+  if (current || st.introduced > 0) return `${st.learned} of ${st.items} words known`;
+  return `${st.items} words`;
+}
 
 export default function Today() {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
   const profileId = useSession((st) => st.activeProfileId);
+  const events = useQuranStatus((st) => st.events);
+  const [howOpen, setHowOpen] = useState(false);
 
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick((n) => n + 1), []);
@@ -102,215 +117,207 @@ export default function Today() {
   const view = useMemo(() => {
     if (profileId === null) return null;
     const config = getSettingsFor(db, profileId);
-    const due = countDue(db, profileId);
+    /* The book's own due count: trainer and words dues are never drawn by
+       its review, so they must not swell this number. */
+    const due = countDue(db, profileId, new Date(), "book");
     const newAvailable = countNewAvailable(db, profileId, config.currentLesson);
-    /* What a session would actually introduce today, not the whole backlog. */
     const newToday = Math.min(newAvailable, config.newPerDay);
     const lesson = db
       .select()
       .from(lessons)
       .where(eq(lessons.number, config.currentLesson))
       .get();
-    return { config, due, newToday, lesson };
+    const words = wordsProgress(db, profileId);
+    return { config, due, newToday, lesson, words };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, tick]);
 
+  /* Whole surahs marked memorized on the Map. */
+  const memorized = useMemo(() => {
+    const maps = foldStatus(events);
+    return SURAHS.filter((m) => countRange(maps.memorized, m.start, m.start + m.ayahs) === m.ayahs).map((m) => m.n);
+  }, [events]);
+
   if (!view) return null;
-  const { config, due, newToday, lesson } = view;
+  const { config, due, newToday, lesson, words } = view;
   const now = new Date();
-
-  /*
-    Nothing scheduled. The screen does not change shape for it: the same count,
-    the same button, the same links. Finishing what is loaded is not a different
-    mode, it just means review goes over the lessons you have rather than a
-    queue the scheduler picked.
-  */
   const clear = due === 0 && newToday === 0;
-  /*
-    There is no "Add Lesson" here any more.
 
-    Which lesson you are on is answered once in onboarding and changed in
-    Settings, which is where a setting belongs. As a button on Today it was a
-    control you could press by accident on the screen you open most, and it
-    silently changed what the app would show you for the next fortnight - the
-    lesson cap keys off currentLessonSince, so a stray tap restarted that clock.
-
-    The tick strip below stays: it says where you are in the book without
-    offering to move you.
-  */
+  const memorizedShare = words.ready && memorized.length > 0 ? memorizedCoverage(words.prefix, memorized) : null;
+  const currentStage = words.stages.findIndex((st) => st.learned < st.items);
 
   return (
     <Screen>
       <Breath />
       <TopBar title="Learn" subtitle={dateLine(now, config.timezone)} />
 
-      <View style={s.top}>
-        {/* The English sits under the Arabic, the way the lessons list sets it,
-            and never in the same text node, or bidi reorders the two. */}
-        {lesson ? (
-          <View style={s.lesson}>
-            <Arabic variant="title" showHarakat={config.showHarakat}>
-              {lesson.titleAr}
-            </Arabic>
-            <Text variant="eyebrow" color="inkSoft">
-              {`Lesson ${config.currentLesson}`}
-            </Text>
-          </View>
-        ) : (
-          <View />
-        )}
-
-        {/*
-          The number is the SESSION, not the scheduler's backlog.
-
-          It used to be the due count with "due" under it and "N new to learn"
-          below that - two numbers, neither explained, and the larger of the
-          two usually the one in small text. "Due" is a word about the
-          scheduler's internals: it means a word you have met before whose turn
-          has come round again, and nothing on the screen said so.
-
-          So the headline is what you will actually sit down and do, and the
-          line under it says what it is made of, in words that explain
-          themselves. "Coming back" is a fact about the word rather than a term
-          of art.
-        */}
-        <View style={s.count}>
-          <Text style={s.numeral}>{String(due + newToday)}</Text>
-          <Text variant="eyebrow" color="inkSoft">
-            {due + newToday === 1 ? "word today" : "words today"}
-          </Text>
-          {due + newToday > 0 ? (
-            <Text color="inkSoft">
-              {[
-                newToday > 0 ? `${newToday} new` : null,
-                due > 0 ? `${due} coming back` : null,
-              ]
-                .filter(Boolean)
-                .join("  ·  ")}
-            </Text>
-          ) : null}
-          {clear ? (
-            <Text
-              variant="bodySoft"
-              color="inkFaint"
-              style={{ textAlign: "center" }}
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        {words.ready ? (
+          <>
+            {/* The coverage meter. Tap for how it is counted. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="How this is counted"
+              onPress={() => setHowOpen((o) => !o)}
+              style={s.meter}
             >
-              {`Nothing is waiting. A review now goes back over Lessons 1 to ${config.currentLesson} without moving anything.`}
-            </Text>
-          ) : null}
-        </View>
-      </View>
+              <Text variant="pageTitle" style={s.center}>
+                {`Words you know make up ${words.percent}% of the words in the Quran`}
+              </Text>
+              <View style={s.track}>
+                <View style={[s.fill, { width: `${Math.min(100, words.percent)}%` }]} />
+              </View>
+              {/* A calm marker at 80%, the figure the path is built to reach. */}
+              <View style={s.markRow}>
+                <View style={[s.mark, { left: "80%" }]} />
+              </View>
+              {howOpen ? (
+                <Text variant="bodySoft" color="inkSoft" style={s.center}>
+                  {`A word counts once you have chosen its meaning correctly twice, and only when every part joined to it, such as wa-, bi- or al-, has been taught too. The figure is the share of the Quran's ${WORDS.totals.words.toLocaleString("en-US")} words that are known along the path in order, so it can lag behind but never runs ahead. The mark is at 80%. Knowing most of the words is a step toward following an ayah, not the same as understanding it.`}
+                </Text>
+              ) : (
+                <Text variant="label" color="inkFaint">
+                  How this is counted
+                </Text>
+              )}
+            </Pressable>
 
-      {/*
-        The centre line, and under it the lesson.
-
-        "Lesson 4" used to sit in the bottom right of the drill grid, below
-        Flashcards, which read as the least important of four alternatives -
-        when it is the page that says what the class is actually on and holds
-        the grammar and the word list. It has its own button now, directly
-        under Start review, where its weight matches what it is for.
-      */}
-      <View style={s.middle}>
-        <GlassButton
-          primary
-          label="Start review"
-          onPress={() => router.push("/review")}
-        />
-        {/*
-          A link, not a button.
-
-          As a quiet button it sat directly under Start review at the same
-          width and nearly the same weight, so the page had two things
-          competing to be the thing you press - and Start review is the thing
-          you press. Being central is what this needed; being loud is not.
-        */}
-        <GlassButton
-          label={`Study Lesson ${config.currentLesson}`}
-          onPress={() => router.push(`/lessons/${config.currentLesson}`)}
-        />
-      </View>
-
-      <View style={s.bottom}>
-        {/*
-          A fixed grid rather than a row of links left to wrap wherever they run
-          out of width. A wrapped row puts a different number of items on each
-          line depending on the text, which is what made this read as
-          unfinished: the layout was an accident of the labels.
-
-          Two columns and four drills, which fills the grid exactly.
-        */}
-        <View style={s.grid}>
-          {(
-            [
-              ["Speed drill", "/speed"],
-              ["Flashcards", "/cards"],
-              ["Case drill", "/cases"],
-              /* The slot the lesson left. Counting is the one piece of Book 1
-                 grammar with no drill of its own, and the numbers themselves
-                 are not cards - the book assumes a teacher said them aloud. */
-              ["Numbers", "/numbers"],
-            ] as const
-          ).map(([label, href]) => (
-            <View key={href} style={s.gridItem}>
-              {/* A glass tile per drill, two by two. */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={label}
-                onPress={() => router.push(href)}
-                style={{ width: "100%" }}
-              >
-                <Glass interactive style={s.tile}>
-                  <Text>{label}</Text>
-                </Glass>
-              </Pressable>
+            <View style={s.lines}>
+              <Text color="inkSoft" style={s.center}>
+                {`Ayahs you can mostly follow: ${words.followable.toLocaleString("en-US")}`}
+              </Text>
+              {memorizedShare !== null ? (
+                <Text color="inkSoft" style={s.center}>
+                  {`Your memorized surahs: ${Math.floor(100 * memorizedShare + 1e-9)}% of words known`}
+                </Text>
+              ) : null}
             </View>
-          ))}
-        </View>
 
-        <View style={s.foot}>
-          {/*
-            Twenty three tick marks, no numbers. A progress bar that happens to
-            be honest about how far the book goes. Decoration only - a two pixel
-            tap target is not a control.
-          */}
-          <View style={s.ticks}>
-            {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
-              <View
-                key={i}
-                style={[
-                  s.tick,
-                  {
-                    backgroundColor:
-                      i < config.currentLesson
-                        ? theme.colors.lapis
-                        : theme.colors.rule,
-                  },
-                ]}
-              />
-            ))}
+            {/* The one Start: reviews first, then new words. */}
+            <GlassButton primary label="Start" onPress={() => router.push("/words")} />
+
+            <View style={s.path}>
+              {words.stages.map((st, i) => (
+                <View key={st.stage} style={s.stage}>
+                  <BarakahRing fills={[st.items ? st.learned / st.items : 0]} size={36} stroke={4} />
+                  <View style={s.stageText}>
+                    <Text color={i <= currentStage || currentStage === -1 ? "ink" : "inkSoft"}>{st.titleEn}</Text>
+                    <Text variant="label" color="inkFaint">
+                      {stageLine(st, i === currentStage)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {/* Go deeper: the Arabic Course, every control it had. */}
+        <View style={s.deeper}>
+          <View style={s.lesson}>
+            <Text variant="eyebrow" color="inkSoft">
+              Go deeper
+            </Text>
+            <Text style={s.center}>Arabic Course: grammar and full sentences</Text>
           </View>
 
-          <View style={s.footLinks}>
+          {lesson ? (
+            <View style={s.lesson}>
+              <Arabic variant="title" showHarakat={config.showHarakat}>
+                {lesson.titleAr}
+              </Arabic>
+              <Text variant="eyebrow" color="inkSoft">
+                {`Lesson ${config.currentLesson}`}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={s.count}>
+            <Text style={s.numeral}>{String(due + newToday)}</Text>
+            <Text variant="eyebrow" color="inkSoft">
+              {due + newToday === 1 ? "word today" : "words today"}
+            </Text>
+            {due + newToday > 0 ? (
+              <Text color="inkSoft">
+                {[newToday > 0 ? `${newToday} new` : null, due > 0 ? `${due} coming back` : null]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </Text>
+            ) : null}
+            {clear ? (
+              <Text variant="bodySoft" color="inkFaint" style={s.center}>
+                {`Nothing is waiting. A review now goes back over Lessons 1 to ${config.currentLesson} without moving anything.`}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={s.buttons}>
+            <GlassButton label="Start review" onPress={() => router.push("/review")} />
+            <GlassButton
+              label={`Study Lesson ${config.currentLesson}`}
+              onPress={() => router.push(`/lessons/${config.currentLesson}`)}
+            />
+          </View>
+
+          <View style={s.grid}>
             {(
               [
-                ["Stats", "/stats"],
-                ["Settings", "/settings"],
+                ["Speed drill", "/speed"],
+                ["Flashcards", "/cards"],
+                ["Case drill", "/cases"],
+                ["Numbers", "/numbers"],
               ] as const
             ).map(([label, href]) => (
-              <Pressable
-                key={href}
-                accessibilityRole="button"
-                accessibilityLabel={label}
-                onPress={() => router.push(href)}
-              >
-                <Glass interactive style={s.pill}>
-                  <Text variant="label">{label}</Text>
-                </Glass>
-              </Pressable>
+              <View key={href} style={s.gridItem}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  onPress={() => router.push(href)}
+                  style={{ width: "100%" }}
+                >
+                  <Glass interactive style={s.tile}>
+                    <Text>{label}</Text>
+                  </Glass>
+                </Pressable>
+              </View>
             ))}
           </View>
+
+          <View style={s.foot}>
+            <View style={s.ticks}>
+              {Array.from({ length: TOTAL_LESSONS }, (_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    s.tick,
+                    { backgroundColor: i < config.currentLesson ? theme.colors.lapis : theme.colors.rule },
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={s.footLinks}>
+              {(
+                [
+                  ["Stats", "/stats"],
+                  ["Settings", "/settings"],
+                ] as const
+              ).map(([label, href]) => (
+                <Pressable
+                  key={href}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  onPress={() => router.push(href)}
+                >
+                  <Glass interactive style={s.pill}>
+                    <Text variant="label">{label}</Text>
+                  </Glass>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }

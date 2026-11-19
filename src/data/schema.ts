@@ -55,7 +55,14 @@ const GENDER = ["m", "f"] as const;
   and every query that needs the filter is already joining lessons to read its
   number.
 */
-const DECK = ["book", "numbers"] as const;
+/*
+  "words" is the Quranic Words track (docs/from-chat/durus-quranic-words-spec.md):
+  its stages are lessons 200 and up, its lemmas ordinary cards. The Postgres
+  enum does not have the value yet, so the lockstep test declares it as
+  pending; see ENUM_VALUES_PENDING_IN_PG there.
+*/
+const DECK = ["book", "numbers", "words"] as const;
+export type Deck = (typeof DECK)[number];
 
 /*
   Which direction a drill asks in.

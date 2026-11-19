@@ -26,17 +26,10 @@ module.exports = {
       displayName: 'node',
       testEnvironment: 'node',
       testMatch: ['<rootDir>/src/**/*.node.test.ts'],
-      transform: {
-        '^.+\.tsx?$': [
-          'babel-jest',
-          {
-            presets: [
-              ['@babel/preset-env', { targets: { node: 'current' } }],
-              '@babel/preset-typescript',
-            ],
-          },
-        ],
-      },
+      /* The repo's own babel.config.js (babel-preset-expo). @babel/preset-env,
+         which this used to name, is not installed, so the project could not
+         run at all. */
+      transform: { '^.+\.tsx?$': 'babel-jest' },
       moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
     },
   ],

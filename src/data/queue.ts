@@ -69,15 +69,28 @@ function notSuspended(profileId: number) {
   )`;
 }
 
-export function countDue(db: Db, profileId: number, now = new Date()): number {
+/*
+  Due cards. With a deck, only that deck's: Learn's Arabic Course card counts
+  the book alone, so numbers trainer and Quranic Words dues (which the book's
+  review never draws) cannot inflate it. Without one, every deck, as before.
+*/
+export function countDue(
+  db: Db,
+  profileId: number,
+  now = new Date(),
+  deck?: "book" | "numbers" | "words",
+): number {
   const row = db
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
     .from(cardStates)
+    .innerJoin(cards, eq(cards.id, cardStates.cardId))
+    .innerJoin(lessons, eq(lessons.id, cards.lessonId))
     .where(
       and(
         eq(cardStates.profileId, profileId),
         lte(cardStates.dueAt, now),
         notSuspended(profileId),
+        deck ? eq(lessons.deck, deck) : undefined,
       ),
     )
     .get();

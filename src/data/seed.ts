@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 
 import content from "../../assets/content/lessons.json";
 import type { Db } from "./client";
-import { cards, lessons, meta } from "./schema";
+import { cards, lessons, meta, type Deck } from "./schema";
 
 const CONTENT_VERSION_KEY = "contentVersion";
 
@@ -69,7 +69,7 @@ export function seedContent(db: Db): SeedResult {
             The generator writes the column verbatim out of Postgres, where it
             is an enum, so the value is one of the two by construction.
           */
-          deck: l.deck as "book" | "numbers",
+          deck: l.deck as Deck,
         })
         .onConflictDoUpdate({
           target: lessons.id,
@@ -78,7 +78,7 @@ export function seedContent(db: Db): SeedResult {
             titleAr: l.titleAr,
             titleEn: l.titleEn,
             grammarNote: l.grammarNote,
-            deck: l.deck as "book" | "numbers",
+            deck: l.deck as Deck,
           },
         })
         .run();
