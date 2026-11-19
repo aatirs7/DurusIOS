@@ -13,7 +13,7 @@ import { cards, lessons, reviews } from "@/data/schema";
   instead, they stay unsynced and go up on the first sync after this flips to
   true, in the content update that ships with the server seed.
 */
-export const WORDS_DECK_SYNCS = false;
+export const WORDS_DECK_SYNCS = true;
 
 export function outboxWhere(profileId: number, wordsSync = WORDS_DECK_SYNCS) {
   return and(

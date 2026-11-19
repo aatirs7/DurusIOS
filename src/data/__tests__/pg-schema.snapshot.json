@@ -250,7 +250,8 @@
         "hasDefault": true,
         "values": [
           "book",
-          "numbers"
+          "numbers",
+          "words"
         ]
       },
       "unlocked_at": {

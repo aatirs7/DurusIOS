@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Quranic Words now sync.** Neon has the deck value and the 13 stages and 560 cards under the app's ids (durus-web e96c0d9). Prime ran it from production through a temporary token-guarded route, then removed the route (next commit) and the token env var; migration 0007 is idempotent (ADD VALUE IF NOT EXISTS), so a later db:migrate is safe. WORDS_DECK_SYNCS is on in the app; held-back reviews go up on the next sync.
 - Web (durus-web 924d2f9): the lessons list and the cron's next-lesson lookup now count book lessons only; the numbers trainer stages were leaking into both, and the words stages would have too.
 - **Adhkar walkthrough, cleaner**, per the owner ("too condensed"): one dhikr per screen with no page scroll. A glass switch picks one part at a time (Arabic, Say it, Meaning, Origin), centred above the counter; the counter row now sits below the content instead of floating over it. Only a very long passage scrolls inside its own space.
 - **Learn opens on an overview**, per the owner: a ring (share of words known), "Learn the words of the Quran" with a three-sentence explanation, Begin (or Continue) and Arabic Course buttons, Stats and Settings pills. Begin shows the coverage meter, Start and the stage path (now glass rows); Arabic Course shows the course screen as before. A glass Back pill in the top bar returns to the overview.
@@ -33,7 +34,6 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Blocked on the owner (Quranic Words)
 
-- Neon, for Quranic Words sync. The web repo now has everything (commit 924d2f9): migration 0007 (ALTER TYPE deck ADD VALUE 'words') and scripts/seed-quranic-words.ts (same ids as the app). Prime cannot reach Neon: the Vercel pull leaves the sensitive DATABASE_URL empty. Two steps for the owner in durus-web, with DATABASE_URL in .env.local: run the one line `ALTER TYPE "public"."deck" ADD VALUE 'words';` in the Neon SQL editor (or npm run db:migrate), then `npx tsx --env-file=.env.local scripts/seed-quranic-words.ts`. Tell Prime and it flips WORDS_DECK_SYNCS. DurusIOS content:build now skips the words deck, so run it only after the migration.
 - Native build: add expo-audio, which unlocks drill 1 (listen, choose the meaning); src/lib/wordAudio.ts has the switch.
 - Send the developers@quran.com draft (now also covers bundling the glosses) and approve posting the QUL licence issue.
 - Review the stage lists, interference groups and glosses.

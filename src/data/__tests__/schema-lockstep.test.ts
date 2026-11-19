@@ -205,7 +205,7 @@ const COLUMN_ONLY_IN_SQLITE: Record<string, string> = {
   ids before this entry comes out.
 */
 const ENUM_VALUES_PENDING_IN_PG: Record<string, string[]> = {
-  "lessons.deck": ["words"],
+
 };
 
 const keyOf = (table: string, column: string) => `${table}.${column}`;

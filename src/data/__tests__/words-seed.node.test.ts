@@ -180,13 +180,13 @@ describe("a words session", () => {
   });
 });
 
-describe("the outbox holds the words track back", () => {
-  it("sends book reviews and keeps words reviews unsent", () => {
+describe("the outbox and the words track", () => {
+  it("holds words reviews back only while the flag is off", () => {
     const { db, profileId } = populated();
     seedWords(db);
     submitGrade(db, profileId, "device-a", { cardId: PATH_CARD_IDS[0], direction: "recognition", grade: "good", msToAnswer: 2000 }, { random: rng });
 
-    const pending = db.select({ cardId: reviews.cardId }).from(reviews).where(outboxWhere(profileId)).all();
+    const pending = db.select({ cardId: reviews.cardId }).from(reviews).where(outboxWhere(profileId, false)).all();
     expect(pending.length).toBeGreaterThan(0);
     expect(pending.some((r) => r.cardId === PATH_CARD_IDS[0])).toBe(false);
 
