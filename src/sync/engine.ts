@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/data/client";
 import { refoldCard } from "@/data/review";
@@ -18,6 +18,7 @@ import {
   type WireReview,
   type WireSetRow,
 } from "./wire";
+import { outboxWhere } from "./outbox";
 
 const API = process.env.EXPO_PUBLIC_DURUS_API ?? "";
 
@@ -138,13 +139,8 @@ function collect(profileId: number, deviceId: string, since: number): SyncReques
   const pending = db
     .select()
     .from(reviews)
-    .where(
-      and(
-        eq(reviews.profileId, profileId),
-        isNull(reviews.syncedAt),
-        isNull(reviews.syncError),
-      ),
-    )
+    /* Includes holding back the Quranic Words track; see outbox.ts. */
+    .where(outboxWhere(profileId))
     .limit(PAGE)
     .all();
 
@@ -402,13 +398,7 @@ export function pendingCount(profileId: number): number {
   const row = db
     .select({ n: sql<number>`count(*)`.mapWith(Number) })
     .from(reviews)
-    .where(
-      and(
-        eq(reviews.profileId, profileId),
-        isNull(reviews.syncedAt),
-        isNull(reviews.syncError),
-      ),
-    )
+    .where(outboxWhere(profileId))
     .get();
   return row?.n ?? 0;
 }

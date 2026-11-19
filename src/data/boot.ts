@@ -1,5 +1,6 @@
 import { db, sqlite } from "./client";
 import { seedContent } from "./seed";
+import { seedWords } from "./seedWords";
 import { ensureDeviceId, ensureLocalProfile } from "./session";
 
 export type BootResult =
@@ -45,6 +46,16 @@ export function bootOnce(): BootResult {
 
     const deviceId = ensureDeviceId(db);
     seedContent(db);
+    /*
+      The Quranic Words track seeds in its own transaction and may not take the
+      app down with it: if it fails it rolls back, the track shows nothing, and
+      every other part of the app opens as before. The next launch tries again.
+    */
+    try {
+      seedWords(db);
+    } catch (e) {
+      console.warn("Quranic Words seed failed", e);
+    }
     /*
       A profile must exist before Clerk has loaded: a cold launch with no
       network is a supported state and the queue has to be buildable. Binding

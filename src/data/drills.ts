@@ -266,6 +266,7 @@ export function listLessons(db: Db, profileId: number): LessonRow[] {
         eq(cardStates.profileId, profileId),
       ),
     )
+    .where(eq(lessons.deck, "book"))
     .groupBy(lessons.number, lessons.titleAr, lessons.titleEn)
     .orderBy(asc(lessons.number))
     .all();
