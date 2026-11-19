@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
 import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
-import { TabSafe } from "@/components/TabSafe";
+import { TabSafe, useTabTop } from "@/components/TabSafe";
 import { Text } from "@/components/Text";
 import { TopBar } from "@/components/TopBar";
 import {
@@ -80,7 +80,7 @@ const useStyles = makeStyles((t) => ({
   markOn: { borderColor: t.colors.verdigris, backgroundColor: t.colors.verdigris },
   chip: { flexDirection: "row", alignItems: "center", gap: 2, borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingVertical: 3, paddingHorizontal: space(1) },
   bar: { alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
-  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(16) },
+  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(12) },
   pill: { flex: 1, minHeight: 46, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(3) },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: space(2) },
@@ -116,6 +116,25 @@ function PracticeIcon({ id, color }: { id: string; color: string }) {
       <Path d={d} stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
+}
+
+/* Plain facts for the long-press sheet, from the practice's own settings. */
+function whenOf(p: Practice): string {
+  const sc = p.schedule as { kind: string; days?: number[] };
+  if (sc.kind === "weekdays") {
+    const names = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+    const d = (sc.days ?? []).map((n) => names[n]);
+    return d.length > 1 ? `${d.slice(0, -1).join(", ")} and ${d[d.length - 1]}` : d[0] ?? "Some days";
+  }
+  if (sc.kind === "hijriDays") return `The ${SHORT[p.id] ?? "set days"} of each Hijri month`;
+  return "Every day";
+}
+
+function howOf(p: Practice): string {
+  if (p.id === "morningAdhkar" || p.id === "eveningAdhkar") return "Tap the tile for the guided walkthrough. Finishing it ticks the day; you can also tick the circle yourself.";
+  if (p.id === "quran") return "Ayahs you stay on in the reader count toward your daily goal, which you set in Choose practices. Reaching it ticks the day.";
+  if (p.input === "count") return p.max ? `Tap the tile once for each, up to ${p.max}. Any count marks the day.` : "Tap the tile once for each. Any count marks the day.";
+  return "Tap the tile or its circle when done. Tap again to undo.";
 }
 
 function localDate(day: string): Date {
@@ -186,6 +205,12 @@ export default function Barakah() {
   const readOn = (d: string) => readLog[d]?.length ?? 0;
   const [day, setDay] = useState(today);
   const [sheet, setSheet] = useState<"month" | "edit" | null>(null);
+  /* Long press on a tile: what the practice is and how the app counts it. */
+  const [info, setInfo] = useState<Practice | null>(null);
+  /* The page is held to the window's height: the tab's own view measured
+     taller than the screen, which pushed the bottom pills under the tab bar. */
+  const { height: winH } = useWindowDimensions();
+  const tabTop = useTabTop();
   const isToday = day === today;
 
   const values = useMemo(() => fold(events), [events]);
@@ -247,7 +272,16 @@ export default function Barakah() {
     const opens = !!time || p.id === "quran";
 
     return (
-      <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ flex: 1 }}>
+      <Pressable
+        key={p.id}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint="Long press for what this is"
+        onPress={onPress}
+        onLongPress={() => setInfo(p)}
+        delayLongPress={350}
+        style={{ flex: 1 }}
+      >
         <Glass interactive style={[s.tile, { flex: 1 }]}>
           <View style={s.tileTop}>
             <Pressable
@@ -302,7 +336,7 @@ export default function Barakah() {
   return (
     <TabSafe style={s.safe}>
       <Breath />
-      <View style={s.body}>
+      <View style={[s.body, { flex: 0, height: winH - tabTop }]}>
         <TopBar title="Barakah" subtitle="Small daily practices" />
 
         <View style={s.dateRow}>
@@ -407,6 +441,36 @@ export default function Barakah() {
           </Pressable>
         </View>
       </View>
+
+      <Sheet visible={info !== null} onClose={() => setInfo(null)} title={info?.title ?? ""}>
+        {info ? (
+          <View style={{ alignItems: "center", gap: space(2), paddingTop: space(2) }}>
+            <PracticeIcon id={info.id} color={theme.colors.lapis} />
+            <Text style={{ textAlign: "center", fontSize: 18, lineHeight: 27 }}>{info.line}</Text>
+            <View style={{ alignItems: "center", gap: space(0.75) }}>
+              <Text variant="eyebrow" color="inkSoft">
+                When
+              </Text>
+              <Text color="inkSoft" style={{ textAlign: "center" }}>
+                {whenOf(info)}
+              </Text>
+            </View>
+            <View style={{ alignItems: "center", gap: space(0.75) }}>
+              <Text variant="eyebrow" color="inkSoft">
+                How it is counted
+              </Text>
+              <Text color="inkSoft" style={{ textAlign: "center" }}>
+                {howOf(info)}
+              </Text>
+            </View>
+            {info.quranRef ? (
+              <Text variant="label" color="lapis">
+                {info.quranRef}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+      </Sheet>
 
       <Sheet visible={sheet === "month"} onClose={() => setSheet(null)} title="This month">
         <Text color="inkSoft" style={{ paddingBottom: space(2) }}>
