@@ -46,6 +46,11 @@ const MAX_RESULTS = 30;
 /* Height of the mark and question above the bar, folded away while searching. */
 const HEAD = 118;
 const PER_REF = 3;
+/* Heights used to centre the idle search: the greeting row, the bar, and the
+   room the floating tab bar takes at the bottom. */
+const TOP_ROW = 56;
+const BAR_H = 54;
+const TAB_ROOM = 88;
 
 
 
@@ -55,7 +60,7 @@ type Item = ({ kind: "ayah"; index: number } | { kind: "surah"; n: number }) & {
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
-  topRow: { alignItems: "center", justifyContent: "center", paddingTop: space(1), minHeight: 52 },
+  topRow: { alignItems: "center", justifyContent: "center", paddingTop: space(1), height: 56 },
   toggle: { position: "absolute", right: 0, top: space(1.25) },
   pill: { flexDirection: "row", alignItems: "center", gap: space(1), alignSelf: "center", borderRadius: RADIUS.pill, paddingVertical: space(1.125), paddingHorizontal: space(2), overflow: "hidden" },
   head: { alignItems: "center", justifyContent: "flex-end", gap: space(0.75), paddingBottom: space(2.5), overflow: "hidden" },
@@ -255,7 +260,10 @@ export default function Home() {
   useEffect(() => {
     p.value = withTiming(active ? 1 : 0, { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) });
   }, [active, still, p]);
-  const idleTop = Math.round(height * 0.2);
+  /* Idle, the mark, question and bar sit truly centred in the space between
+     the greeting and the tab bar, measured rather than guessed. */
+  const [bodyH, setBodyH] = useState(0);
+  const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
   /* Plain numbers only inside a worklet: calling an ordinary function such as
      space() there runs on the UI thread and crashes a release build. */
   const activeTop = space(1);
@@ -265,7 +273,7 @@ export default function Home() {
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
       <Breath />
-      <View style={s.body}>
+      <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
         <View style={s.topRow}>
           <View style={{ alignItems: "center", gap: 1 }}>
             <Text>Assalamu alaikum</Text>
