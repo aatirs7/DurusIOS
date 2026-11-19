@@ -64,10 +64,6 @@ function todaysAyah(now: Date): { surah: number; ayah: number } {
   return { surah, ayah };
 }
 
-function greeting(now: Date): string {
-  const h = now.getHours();
-  return h >= 4 && h < 12 ? "Good morning" : h >= 12 && h < 17 ? "Good afternoon" : "Good evening";
-}
 
 /* `reason` is set on AI picks: one line on why this place answers the search. */
 type Item = ({ kind: "ayah"; index: number } | { kind: "surah"; n: number }) & { reason?: string };
@@ -298,7 +294,7 @@ export default function Home() {
       <View style={s.body}>
         <View style={s.topRow}>
           <View style={{ gap: 1 }}>
-            <Text>{greeting(now)}</Text>
+            <Text>Assalamu alaikum</Text>
             {hijri ? (
               <Text variant="label" color="inkSoft">
                 {hijri}
