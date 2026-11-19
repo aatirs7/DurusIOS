@@ -9,6 +9,7 @@ import { Arabic } from "@/components/Arabic";
 import { Breath } from "@/components/Breath";
 import { Glyphs } from "@/components/Glyphs";
 import { Glass } from "@/components/Glass";
+import { Seeking } from "@/components/Seeking";
 import { Text } from "@/components/Text";
 import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { Typewriter } from "@/components/Typewriter";
@@ -66,7 +67,7 @@ const useStyles = makeStyles((t) => ({
   title: { fontSize: 24, lineHeight: 30, textAlign: "center" },
   bar: { flexDirection: "row", alignItems: "center", borderRadius: 28, minHeight: 54, paddingLeft: space(2), paddingRight: space(1), gap: space(1), overflow: "hidden" },
   input: { flex: 1, fontFamily: FONTS.uiRegular, fontSize: 17, color: t.colors.ink, paddingVertical: space(1.5) },
-  caption: { paddingTop: space(2), paddingBottom: space(0.5) },
+  caption: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space(0.75), paddingTop: space(2), paddingBottom: space(0.5), paddingHorizontal: space(1) },
   item: { paddingVertical: space(2), gap: space(0.75) },
   rule: { height: 1, backgroundColor: t.colors.rule },
   ayah: { fontFamily: FONTS.quran, fontSize: 22, lineHeight: 46, color: t.colors.ink, textAlign: "right", writingDirection: "rtl" },
@@ -83,6 +84,15 @@ function SearchIcon({ color }: { color: string }) {
     <Svg width={20} height={20} viewBox="0 0 24 24">
       <Circle cx={11} cy={11} r={6.5} stroke={color} strokeWidth={1.8} fill="none" />
       <Path d="M16 16l4.5 4.5" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/* Marks a caption as the AI's suggestion, in place of a separate line saying so. */
+function Sparkle({ color }: { color: string }) {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24">
+      <Path d="M12 2.5l2.1 6.4 6.4 2.1-6.4 2.1L12 19.5l-2.1-6.4L3.5 11l6.4-2.1zM19 16l.9 2.1 2.1.9-2.1.9L19 22l-.9-2.1-2.1-.9 2.1-.9z" fill={color} />
     </Svg>
   );
 }
@@ -170,7 +180,7 @@ export default function Home() {
     else if (first && first.kind === "theme") cap = first.theme.kind === "passage" ? first.theme.label : `For ${lower(first.theme.label)}`;
     else if (result.label) cap = result.label;
     else if (result.hits.some((h) => h.kind === "text")) cap = `${result.total} ${result.total === 1 ? "place" : "places"} with "${query.trim()}"`;
-    else if (typing && out.length === 0 && asking) cap = "Looking through the Quran…";
+    else if (typing && out.length === 0 && asking) cap = null;
     else if (typing && out.length === 0) cap = result.pendingTopic ? `"${result.pendingTopic}" is coming soon` : "Nothing found";
     return { items: out, caption: cap };
   }, [result, query, typing, picks, asking]);
@@ -356,15 +366,14 @@ export default function Home() {
             contentContainerStyle={{ paddingBottom: space(12) }}
             ListHeaderComponent={
               <View>
+                {typing && asking && items.length === 0 ? <Seeking /> : null}
                 {caption ? (
-                  <Text variant="label" color="inkSoft" style={s.caption}>
-                    {caption}
-                  </Text>
-                ) : null}
-                {picks && picks.results.length > 0 ? (
-                  <Text variant="label" color="inkFaint" style={{ paddingBottom: space(0.5) }}>
-                    Suggested by AI from your search. Read each in its place.
-                  </Text>
+                  <View style={s.caption} accessible accessibilityLabel={picks && picks.results.length > 0 ? `Suggested by AI. ${caption}` : caption}>
+                    {picks && picks.results.length > 0 ? <Sparkle color={theme.colors.lapis} /> : null}
+                    <Text variant="label" color="inkSoft" style={{ textAlign: "center", flexShrink: 1 }}>
+                      {caption}
+                    </Text>
+                  </View>
                 ) : null}
                 {completions.map((c, i) => (
                   <Pressable key={c} accessibilityRole="button" onPress={() => setQuery(c)} style={[s.quiet, i > 0 && s.quietRule]}>
