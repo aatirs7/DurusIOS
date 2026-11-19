@@ -38,7 +38,7 @@ spec = importlib.util.spec_from_file_location("qac", os.path.join(here, "qac_cov
 qac = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(qac)
 
-EM_DASH = "—"
+EM_DASH = chr(0x2014)
 LESSON_ID_BASE = 1000  # lessons.id = 1000 + stage
 LESSON_NUMBER_BASE = 200  # lessons.number = 200 + stage (numbers trainer uses 101+)
 CARD_ID_BASE = 100000  # cards.id = 100000 + position on the path (1-based)

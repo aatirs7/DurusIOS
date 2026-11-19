@@ -7,7 +7,7 @@ import { WORDS, canShowGloss, canShowNote } from "../wordsContent";
 */
 describe("the Quranic Words content", () => {
   it("has no em dash anywhere", () => {
-    expect(JSON.stringify(WORDS).includes("—")).toBe(false);
+    expect(JSON.stringify(WORDS).includes(String.fromCharCode(0x2014))).toBe(false);
   });
 
   it("takes every gloss and example verbatim from Quran Foundation, unverified", () => {
