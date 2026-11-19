@@ -64,7 +64,7 @@ it("shows each word over its meaning, and over its reading", async () => {
   expect(screen.getByText("al-ḥamdu")).toBeTruthy();
 });
 
-it("tap cycles translation then transliteration, long press opens the bar", async () => {
+it("tap cycles translation then transliteration and back", async () => {
   usePrefs.setState({ readerView: "arabic" });
   await render(<SurahReader />);
   await act(async () => {});
@@ -76,10 +76,9 @@ it("tap cycles translation then transliteration, long press opens the bar", asyn
   expect(screen.queryByText("Praise belongs to God, Lord of the Worlds,")).toBeNull();
 });
 
-it("zooms into an ayah from the long press bar, then into a word", async () => {
+it("zooms into an ayah on long press, then into a word", async () => {
   await render(<SurahReader />);
   await fireEvent(screen.getByLabelText("Ayah 2"), "longPress");
-  await fireEvent.press(screen.getByLabelText("Zoom in"));
   await act(async () => {});
   expect(screen.getByText("Transliteration")).toBeTruthy();
   expect(screen.getByText("Praise belongs to God, Lord of the Worlds,")).toBeTruthy();

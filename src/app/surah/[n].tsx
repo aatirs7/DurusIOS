@@ -320,10 +320,13 @@ export default function SurahReader() {
     return (
       <Pressable
         onPress={() => cycle(ayah)}
-        onLongPress={() => setSelected(isSel ? null : ayah)}
+        onLongPress={() => {
+          setSelected(null);
+          setZoom(ayah);
+        }}
         delayLongPress={320}
         accessibilityLabel={`Ayah ${ayah}`}
-        accessibilityHint="Tap to show the translation, then the transliteration. Long press for actions."
+        accessibilityHint="Tap to show the translation, then the transliteration. Long press to zoom in, with its actions."
         style={[s.ayah, (highlight === ayah || isSel) && { backgroundColor: selColor }]}
       >
         {qa && (view === "wordTranslation" || view === "wordTransliteration") ? (
@@ -505,18 +508,6 @@ export default function SurahReader() {
               style={[s.tool, selB && { backgroundColor: theme.colors.lapis }]}
             >
               <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={selB ? theme.colors.paper : theme.colors.lapis} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Zoom in"
-              onPress={() => {
-                const a = selected;
-                setSelected(null);
-                setZoom(a);
-              }}
-              style={s.tool}
-            >
-              <Icon d="M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13zM15.5 15.5L20 20M10.5 8v5M8 10.5h5" color={theme.colors.lapis} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
