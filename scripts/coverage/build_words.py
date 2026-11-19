@@ -15,8 +15,11 @@ What is taken from each, and why that keeps the licences apart:
   - Every Arabic string and every English gloss in the output is copied
     VERBATIM from the Quran Foundation word-by-word data (text_uthmani and the
     word translation), recorded with source "qf-wbw" and the word it came from.
-    Nothing is written by hand or by a model. Hand notes are empty placeholders
-    with verified false.
+    No meaning is written by hand or by a model. Hand notes are empty
+    placeholders with verified false.
+  - Written here, as structure rather than content: the stage titles (the
+    spec's), the skill names (neutral, such as "Prefix wa-"), the stage word
+    lists and the interference groups. All are for owner review.
 
 The corpus and the QF data are joined by word position within each ayah. An
 ayah whose word counts disagree is left out of form and gloss selection (it
@@ -93,41 +96,45 @@ GROUPS = {
 
 # How each parsing skill is shown: the Arabic letters (not a gloss) and a
 # grammatical name (a category, not a translation).
-SKILL_FACE = {
-    "al-": ("ٱل", "Prefix al-, the definite article"),
-    "wa-": ("وَ", "Prefix wa-"),
-    "fa-": ("فَ", "Prefix fa-"),
-    "bi-": ("بِ", "Prefix bi-"),
-    "li-": ("لِ", "Prefix li-"),
-    "ka-": ("كَ", "Prefix ka-"),
-    "sa-": ("سَ", "Prefix sa-, future"),
-    "la- (emphasis)": ("لَ", "Prefix la- of emphasis"),
-    "a- (question)": ("أَ", "Prefix a-, question"),
-    "ya (calling)": ("يَا", "Particle ya, calling"),
-    "ha (attention)": ("هَا", "Prefix ha-, attention (as in hadha)"),
-    "ta (oath)": ("تَ", "Prefix ta-, oath"),
-    "-li- in dhalika": ("لِ", "The -li- in dhalika"),
-    "suffix -kum on that/those": ("ـكُم", "The -ka or -kum on dhalika and ula'ika"),
-    "-nna (emphasis)": ("ـنَّ", "Suffix -nna of emphasis"),
-    "-mma in Allahumma": ("ـمَّ", "The -mma in Allahumma"),
-    "suf P": ("", "Other attached particle"),
+# How each parsing skill is named on screen: a neutral name only. Nothing
+# here says what a skill means (that would be a hand-written note, which must
+# be verified first), and no Arabic is typed by hand: the skill is shown
+# through its verbatim Quran Foundation examples.
+SKILL_NAME = {
+    "al-": "Prefix al-",
+    "wa-": "Prefix wa-",
+    "fa-": "Prefix fa-",
+    "bi-": "Prefix bi-",
+    "li-": "Prefix li-",
+    "ka-": "Prefix ka-",
+    "sa-": "Prefix sa-",
+    "la- (emphasis)": "Prefix la-",
+    "a- (question)": "Prefix a-",
+    "ya (calling)": "Particle ya",
+    "ha (attention)": "Prefix ha-",
+    "ta (oath)": "Prefix ta-",
+    "-li- in dhalika": "The -li- in dhalika",
+    "suffix -kum on that/those": "The -ka or -kum on dhalika",
+    "-nna (emphasis)": "Suffix -nna",
+    "-mma in Allahumma": "The -mma in Allahumma",
+    "suf P": "Other attached particle",
 }
 PERSON_NAME = {"1": "1st person", "2": "2nd person", "3": "3rd person"}
 GENDER_NAME = {"M": "masculine", "F": "feminine"}
 NUMBER_NAME = {"S": "singular", "D": "dual", "P": "plural"}
 
 
-def skill_face(name):
-    if name in SKILL_FACE:
-        return SKILL_FACE[name]
+def skill_name(name):
+    if name in SKILL_NAME:
+        return SKILL_NAME[name]
     if name.startswith("suffix "):
         code = name[7:]
         parts = [PERSON_NAME.get(code[0], code[0])]
         if len(code) == 3:
             parts.append(GENDER_NAME[code[1]])
         parts.append(NUMBER_NAME[code[-1]])
-        return ("", "Attached pronoun, " + ", ".join(parts))
-    return ("", name)
+        return "Attached pronoun, " + " ".join(parts)
+    return name
 
 
 def load_qf(cache):
@@ -171,6 +178,10 @@ def main():
     # (shadda before or after a vowel is the same lemma).
     canon = {unicodedata.normalize("NFC", l): l for l in freq}
     fix = lambda l: canon.get(unicodedata.normalize("NFC", l), l)
+    global ALLAH
+    ALLAH = fix(ALLAH)
+    if ALLAH not in freq:
+        raise SystemExit("the lemma Allah was not found")
     for i, st in enumerate(STAGES):
         STAGES[i] = (st[0], st[1], [fix(l) for l in st[2]], st[3], st[4])
     for g in GROUPS:
@@ -312,6 +323,7 @@ def main():
         faces_in_stage = set()
         for l in sl:
             idx = pos_of_lemma[l]
+            rank = order.index(l) + 1
             form_count = collections.Counter()
             # candidate faces ranked by (number of clitics + extra stems, -count)
             cand = collections.defaultdict(list)
@@ -361,16 +373,19 @@ def main():
                 audio = src_w["a"]
                 break
             if face is None:
-                print("no face for lemma at path position", idx + 1)
-                continue
+                raise SystemExit(f"no face for the lemma at path position {idx + 1}")
             faces_in_stage.add(face)
             anchor_key = min((k for k, _ in occ[l]), key=anchor_rank)
             pos = pos_of[l].most_common(1)[0][0]
             lemma_out.append({
-                "id": idx + 1,
-                "cardId": CARD_ID_BASE + idx + 1,
+                # id is the lemma's frequency rank, stable when stages are
+                # re-cut; pos is its place on the path, which may change.
+                "id": rank,
+                "pos": idx + 1,
+                "cardId": CARD_ID_BASE + rank,
                 "stage": stage_index,
                 "freq": freq[l],
+                "ayahs": len(set(k[:2] for k, _ in occ[l])),
                 "kind": "content" if pos in qac.CONTENT else "function",
                 "face": face,
                 "forms": forms,
@@ -402,12 +417,11 @@ def main():
                     continue
                 seen.add(w["u"])
                 examples.append({"arabic": w["u"], "gloss": w["g"], "source": "qf-wbw", "ref": "%d:%d:%d" % key})
-            ar, label = skill_face(name)
+            label = skill_name(name)
             skill_out.append({
                 "id": skill_ids[name],
                 "key": name,
                 "stage": stage_index,
-                "arabic": ar,
                 "label": label,
                 "words": all_skills[name],
                 "examples": examples,
@@ -439,7 +453,7 @@ def main():
         "version": 1,
         "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "attribution": "Quran data provided by Quran Foundation",
-        "method": "Lemma, frequency and clitic facts computed offline; every Arabic form and English gloss is verbatim Quran Foundation word-by-word (source qf-wbw). Notes are empty until written and verified.",
+        "method": "Lemma, frequency and clitic facts computed offline; every lemma form, gloss and skill example is verbatim Quran Foundation word-by-word (source qf-wbw). Stage titles and skill names are structural labels. Notes are empty until written and verified.",
         "totals": {"words": n, "ayahs": len(per_ayah), "followableShare": FOLLOWABLE},
         "audioBase": "https://audio.qurancdn.com/",
         "stages": stages_out,

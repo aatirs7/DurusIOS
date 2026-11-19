@@ -52,6 +52,7 @@ export function submitGrade(
   const row = db
     .select({
       lessonNumber: lessons.number,
+      deck: lessons.deck,
       ease: cardStates.ease,
       intervalDays: cardStates.intervalDays,
       repetitions: cardStates.repetitions,
@@ -157,8 +158,18 @@ export function submitGrade(
       Production is created lazily, only once recognition for this card reaches
       repetitions >= 2. Otherwise production drills swamp the first week of
       every new lesson.
+
+      Not for the Quranic Words track: its goal is reception and it never draws
+      production (spec 7.2), so a production row there would sit due for ever,
+      unserved. Only this lazily created row is skipped; reviews and the fold
+      are untouched.
     */
-    if (!skipSchedule && payload.direction === "recognition" && next.repetitions >= 2) {
+    if (
+      !skipSchedule &&
+      payload.direction === "recognition" &&
+      next.repetitions >= 2 &&
+      row.deck !== "words"
+    ) {
       tx.insert(cardStates)
         .values({
           profileId,

@@ -21,7 +21,7 @@ API = "https://api.quran.com/api/v4/verses/by_chapter/{s}?words=true&word_fields
 def get(url):
     for attempt in range(5):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "durus-content-build"})
+            req = urllib.request.Request(url, headers={"User-Agent": "content-build"})
             with urllib.request.urlopen(req, timeout=30) as r:
                 return json.load(r)
         except Exception:

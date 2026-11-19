@@ -20,10 +20,10 @@
      What ships today: for each prefix length k of the path (the first k lemma
      cards, with each stage's skills taught at the stage's start), how many
      words of the Quran are known and how many ayahs are followable, computed
-     offline by scripts/coverage/build_words.py. On the device the learner's
-     position is the LONGEST prefix of the path that is fully known, so the
-     figure shown is exact when the learner has gone in path order and a lower
-     bound otherwise. It is never an overestimate.
+     offline by scripts/coverage/build_words.py. On the device the figure is
+     read off that curve at the learner's known positions, less the most any
+     gap could cost (knownAlongPath), so it is exact when the learner has gone
+     in path order and a lower bound otherwise. It is never an overestimate.
 */
 
 import { gradeFor } from "./modes";
@@ -80,6 +80,36 @@ export function pathPrefix(pathCardIds: readonly number[], knownCardIds: Readonl
   let k = 0;
   while (k < pathCardIds.length && knownCardIds.has(pathCardIds[k])) k += 1;
   return k;
+}
+
+/*
+  A lower bound that survives gaps.
+
+  The bare prefix would drop the meter to zero the moment the first word of
+  the path lapses. Instead, for every known position K, take the curve at K
+  and subtract, for each word before K that is not known, the most it could
+  cost: weights[i], the number of Quran words (or ayahs) containing that
+  lemma. That is still never an overestimate, because a missing lemma can
+  only take away the words that contain it. The best K wins, and the bare
+  prefix is the floor.
+*/
+export function knownAlongPath(
+  curve: readonly number[],
+  pathCardIds: readonly number[],
+  knownCardIds: ReadonlySet<number>,
+  weights: readonly number[],
+): number {
+  let best = atPrefix(curve, pathPrefix(pathCardIds, knownCardIds));
+  let missing = 0;
+  for (let i = 0; i < pathCardIds.length; i += 1) {
+    if (!knownCardIds.has(pathCardIds[i])) {
+      missing += weights[i] ?? 0;
+      continue;
+    }
+    const value = atPrefix(curve, i + 1) - missing;
+    if (value > best) best = value;
+  }
+  return best;
 }
 
 /* curve[k] is the count at prefix k. Clamped, so a stale curve cannot throw. */

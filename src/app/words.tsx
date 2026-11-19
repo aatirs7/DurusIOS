@@ -265,11 +265,6 @@ function Intro({ stage }: { stage: WordsStage }) {
           </Text>
           {skills.map((k) => (
             <View key={k.id} style={s.skill}>
-              {k.arabic ? (
-                <Arabic variant="title" style={s.face}>
-                  {k.arabic}
-                </Arabic>
-              ) : null}
               <Text style={s.center}>{k.label}</Text>
               {k.examples.map((e) => (
                 <View key={e.ref} style={s.example}>

@@ -143,10 +143,40 @@ describe("a words session", () => {
     expect(p.prefix).toBe(1);
     expect(p.percent).toBe(Math.floor((100 * WORDS.path.coverage[1]) / WORDS.totals.words));
 
-    /* A later word known out of order does not move the lower bound. */
+    /* A later word known out of order does not move the prefix. */
     answer(PATH_CARD_IDS[5], now);
     answer(PATH_CARD_IDS[5], new Date(now.getTime() + 86_400_000));
     expect(wordsProgress(db, profileId, now).prefix).toBe(1);
+  });
+
+  it("does not drop to nothing when an early word lapses", () => {
+    const { db, profileId } = populated();
+    seedWords(db);
+    const day = (n: number) => new Date(now.getTime() + n * 86_400_000);
+    for (const id of PATH_CARD_IDS.slice(0, 6)) {
+      for (const n of [0, 1]) {
+        submitGrade(db, profileId, "device-a", { cardId: id, direction: "recognition", grade: "good", msToAnswer: 3000 }, { now: day(n), random: rng });
+      }
+    }
+    const before = wordsProgress(db, profileId, day(2)).percent;
+    expect(before).toBeGreaterThan(0);
+
+    /* The second word of the path lapses. */
+    submitGrade(db, profileId, "device-a", { cardId: PATH_CARD_IDS[1], direction: "recognition", grade: "again", msToAnswer: 3000 }, { now: day(2), random: rng });
+    const after = wordsProgress(db, profileId, day(2));
+    expect(after.prefix).toBe(1);
+    expect(after.percent).toBeGreaterThan(Math.floor((100 * WORDS.path.coverage[1]) / WORDS.totals.words));
+    expect(after.percent).toBeLessThanOrEqual(before);
+  });
+
+  it("never creates a production row for a words card", () => {
+    const { db, profileId } = populated();
+    seedWords(db);
+    for (const n of [0, 1, 2]) {
+      submitGrade(db, profileId, "device-a", { cardId: PATH_CARD_IDS[0], direction: "recognition", grade: "good", msToAnswer: 3000 }, { now: new Date(now.getTime() + n * 86_400_000), random: rng });
+    }
+    const rows = db.select().from(cardStates).where(eq(cardStates.cardId, PATH_CARD_IDS[0])).all();
+    expect(rows.map((r) => r.direction)).toEqual(["recognition"]);
   });
 });
 

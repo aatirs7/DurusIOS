@@ -9,13 +9,15 @@ import raw from "../../assets/content/quranic-words.json";
   get it wiped on the next content build.
 
   Ids are fixed and are the contract with the server-to-be: lessons 1000 + stage
-  (lessons.number 200 + stage), cards 100000 + position on the path. When the
-  web repo seeds the track into Neon it must insert these exact ids.
+  (lessons.number 200 + stage), cards 100000 + the lemma's frequency rank, so
+  re-cutting the stages moves a card between lessons without renumbering it.
+  When the web repo seeds the track into Neon it must insert these exact ids.
 
   WHAT MAY BE SHOWN
 
-  Every Arabic form and every gloss here is verbatim Quran Foundation
-  word-by-word (source "qf-wbw"), shown with the attribution line. Notes are
+  Every lemma form, gloss and skill example here is verbatim Quran Foundation
+  word-by-word (source "qf-wbw"), shown with the attribution line. Stage
+  titles and skill names are structural labels. Notes are
   empty placeholders with verified false; a note is shown only once it has
   text AND verified true, which today is never. canShowGloss and canShowNote
   are the one place that rule lives.
@@ -25,10 +27,15 @@ export type Gloss = { text: string; source: string; ref: string; verified: boole
 export type Note = { text: string | null; verified: boolean };
 
 export type WordsLemma = {
+  /* The lemma's frequency rank: stable when stages are re-cut. */
   id: number;
+  /* Place on the path, 1-based. This, not the id, orders new words. */
+  pos: number;
   cardId: number;
   stage: number;
+  /* Quran words containing it, and ayahs containing it. */
   freq: number;
+  ayahs: number;
   kind: "content" | "function";
   face: string;
   forms: string[];
@@ -43,7 +50,8 @@ export type WordsSkill = {
   id: number;
   key: string;
   stage: number;
-  arabic: string;
+  /* A neutral name ("Prefix wa-"). What a skill means is a note, and notes
+     show only once verified. */
   label: string;
   words: number;
   examples: { arabic: string; gloss: string; source: string; ref: string }[];
@@ -82,8 +90,14 @@ export const WORDS = raw as unknown as WordsContent;
 
 export const WORDS_ATTRIBUTION = WORDS.attribution;
 
+const BY_POS = [...WORDS.lemmas].sort((a, b) => a.pos - b.pos);
+
 /* Lemma cards in path order: index k is the k+1th card of the path. */
-export const PATH_CARD_IDS: readonly number[] = [...WORDS.lemmas].sort((a, b) => a.id - b.id).map((l) => l.cardId);
+export const PATH_CARD_IDS: readonly number[] = BY_POS.map((l) => l.cardId);
+
+/* What a gap at each path position could cost, for knownAlongPath. */
+export const PATH_WORD_WEIGHTS: readonly number[] = BY_POS.map((l) => l.freq);
+export const PATH_AYAH_WEIGHTS: readonly number[] = BY_POS.map((l) => l.ayahs);
 
 const byCard = new Map(WORDS.lemmas.map((l) => [l.cardId, l]));
 export function lemmaForCard(cardId: number): WordsLemma | undefined {

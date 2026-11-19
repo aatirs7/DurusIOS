@@ -18,9 +18,11 @@ export type SeedWordsResult = { ran: boolean; lessons: number; cards: number };
   bump and a words content bump never gate each other.
 
   Synchronous, one transaction, inside the boot gate. Idempotent: the meta
-  guard skips it once applied, lessons upsert on id, cards upsert on id and
-  only ever refresh their English (the verbatim gloss), never their Arabic or
-  lesson, so a re-seed can never collide with uniqueIndex(lessonId, arabic).
+  guard skips it once applied, lessons upsert on id, and cards upsert on id
+  (the lemma's frequency rank), so re-cutting the stages moves a card to its
+  new lesson and keeps its history. A content update that swaps two faces
+  within one stage could trip uniqueIndex(lessonId, arabic); the boot gate
+  catches that and the track stays on its previous content.
 
   Creates no card_states: a card with no state is new, so words arrive through
   the picker, not all at once.
@@ -79,7 +81,14 @@ export function seedWords(db: Db): SeedWordsResult {
     for (let i = 0; i < rows.length; i += CHUNK) {
       tx.insert(cards)
         .values(rows.slice(i, i + CHUNK))
-        .onConflictDoUpdate({ target: cards.id, set: { english: sql`excluded.english` } })
+        .onConflictDoUpdate({
+          target: cards.id,
+          set: {
+            lessonId: sql`excluded.lesson_id`,
+            arabic: sql`excluded.arabic`,
+            english: sql`excluded.english`,
+          },
+        })
         .run();
     }
 

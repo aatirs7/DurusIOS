@@ -37,6 +37,8 @@ describe("the Quranic Words content", () => {
       expect(s.number).toBe(200 + s.stage);
     }
     const faces = new Set<string>();
+    const positions = WORDS.lemmas.map((l) => l.pos).sort((a, b) => a - b);
+    expect(positions).toEqual(WORDS.lemmas.map((_, i) => i + 1));
     for (const l of WORDS.lemmas) {
       expect(l.cardId).toBe(100000 + l.id);
       const key = `${l.stage}|${l.face}`;

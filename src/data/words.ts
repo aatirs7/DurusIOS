@@ -1,8 +1,8 @@
 import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
 
 import {
-  atPrefix,
   floorPercent,
+  knownAlongPath,
   pathPrefix,
   pickMeaningDistractors,
   pickNewCards,
@@ -13,7 +13,9 @@ import {
 import type { Db } from "./client";
 import { cardStates, cardSuspensions, cards, lessons, reviews } from "./schema";
 import {
+  PATH_AYAH_WEIGHTS,
   PATH_CARD_IDS,
+  PATH_WORD_WEIGHTS,
   WORDS,
   lemmaForCard,
   stageFor,
@@ -30,8 +32,7 @@ import {
   the coverage curves) comes from the bundled content, keyed by card id.
 
   Recognition only. The track's goal is reception (spec 7.2), so it never
-  draws production; submitGrade may still create a production state at two
-  repetitions, as it does for every card, and it is simply never read here.
+  draws production, and submitGrade does not create production rows for it.
 */
 
 /* What "known" means for coverage: two correct recognitions, the same bar the
@@ -115,8 +116,8 @@ export function wordsProgress(db: Db, profileId: number, now = new Date()): Word
 
   return {
     prefix,
-    percent: floorPercent(atPrefix(WORDS.path.coverage, prefix), WORDS.totals.words),
-    followable: atPrefix(WORDS.path.followable, prefix),
+    percent: floorPercent(knownAlongPath(WORDS.path.coverage, PATH_CARD_IDS, known, PATH_WORD_WEIGHTS), WORDS.totals.words),
+    followable: knownAlongPath(WORDS.path.followable, PATH_CARD_IDS, known, PATH_AYAH_WEIGHTS),
     stages,
     due,
     ready: (seeded?.n ?? 0) > 0,
@@ -237,9 +238,10 @@ export function buildWordsSession(
       ),
     )
     .where(and(wordsDeck(), isNull(cardStates.cardId), notSuspended(profileId)))
-    .orderBy(asc(cards.id))
     .all()
-    .filter((r) => lemmaForCard(r.cardId)?.gloss);
+    .filter((r) => lemmaForCard(r.cardId)?.gloss)
+    /* Path order, which is the content's pos, not the card id. */
+    .sort((a, b) => lemmaForCard(a.cardId)!.pos - lemmaForCard(b.cardId)!.pos);
 
   /* Only the first stage that still has words to teach. */
   const firstStage = fresh.length ? lemmaForCard(fresh[0].cardId)!.stage : null;

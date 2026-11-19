@@ -5,6 +5,7 @@ import {
   followableAyahs,
   gradeWordChoice,
   isTokenKnown,
+  knownAlongPath,
   pathPrefix,
   pickMeaningDistractors,
   pickNewCards,
@@ -67,6 +68,19 @@ describe("coverage along the path", () => {
     expect(pathPrefix([101, 102, 103], new Set([101, 103]))).toBe(1);
     expect(pathPrefix([101, 102, 103], new Set([101, 102, 103]))).toBe(3);
     expect(pathPrefix([101, 102, 103], new Set())).toBe(0);
+  });
+
+  it("does not collapse when an early word lapses", () => {
+    /* Curve for path [1,2,3,4]: each word adds 10 known words. */
+    const curve = [0, 10, 20, 30, 40];
+    const path = [1, 2, 3, 4];
+    const weights = [6, 6, 6, 6];
+    /* All known: the full curve. */
+    expect(knownAlongPath(curve, path, new Set([1, 2, 3, 4]), weights)).toBe(40);
+    /* The first lapses: 40 less at most the 6 words containing it. */
+    expect(knownAlongPath(curve, path, new Set([2, 3, 4]), weights)).toBe(34);
+    /* Never below the bare prefix. */
+    expect(knownAlongPath(curve, path, new Set([1, 4]), [50, 50, 50, 50])).toBe(10);
   });
 
   it("reads a curve, clamped at both ends", () => {
