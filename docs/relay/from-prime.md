@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- OTA d8496240: the Search home says "Assalamu alaikum" instead of a time-of-day greeting. Updates apply 2.5 s after launch and on return to the app, which restores the hook (it was not the crash cause). About shows the running update ID ("built in" when no update has loaded).
 - Search placeholder (OTA c1b4654a): 59 example searches instead of 13, shuffled on each launch. Every one is tested to find results locally.
 - **Search home, fuller (OTA 2cece299).**
   - Top row: a greeting ("Good evening"), today's Hijri date, and the theme toggle. The toggle had been sitting inside the status bar, out of reach.
