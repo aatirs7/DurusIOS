@@ -1,7 +1,18 @@
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
-import Animated, { Easing, ZoomIn, useReducedMotion } from "react-native-reanimated";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import Animated, {
+  Easing,
+  ZoomIn,
+  useReducedMotion,
+} from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
@@ -46,7 +57,10 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   No streaks and no praise: the screen reports what was done and stops there.
 */
 
-const ADHKAR_TIME: Record<string, "morning" | "evening"> = { morningAdhkar: "morning", eveningAdhkar: "evening" };
+const ADHKAR_TIME: Record<string, "morning" | "evening"> = {
+  morningAdhkar: "morning",
+  eveningAdhkar: "evening",
+};
 const SHORT: Record<string, string> = {
   fajr: "Within its time",
   quran: "Your daily portion",
@@ -65,48 +79,176 @@ const SHORT: Record<string, string> = {
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
-  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space(1) },
-  dateRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space(1) },
-  arrow: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  hero: { flexDirection: "row", alignItems: "center", gap: space(2.5), paddingVertical: space(2) },
-  ringCenter: { position: "absolute", alignItems: "center", justifyContent: "center" },
+  top: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: space(1),
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: space(1),
+  },
+  arrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space(2.5),
+    paddingVertical: space(2),
+  },
+  ringCenter: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   week: { flexDirection: "row", gap: 6, paddingTop: space(1) },
   dot: { width: 22, alignItems: "center", gap: 3 },
   dotFill: { width: 14, height: 14, borderRadius: 7 },
   /* The tiles sit centred in the space between the header and the pills. */
-  grid: { flexGrow: 1, justifyContent: "center", gap: space(1.25), paddingBottom: space(1.25) },
-  row: { flex: 1, flexDirection: "row", gap: space(1.25), minHeight: 104, maxHeight: 160 },
-  tile: { flex: 1, borderRadius: 24, padding: space(1.75), justifyContent: "space-between", overflow: "hidden" },
-  tileTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  mark: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: t.colors.inkFaint, alignItems: "center", justifyContent: "center" },
-  markOn: { borderColor: t.colors.verdigris, backgroundColor: t.colors.verdigris },
-  chip: { flexDirection: "row", alignItems: "center", gap: 2, borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingVertical: 3, paddingHorizontal: space(1) },
-  bar: { alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
-  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(16) },
-  pill: { flex: 1, minHeight: 46, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  grid: {
+    flexGrow: 1,
+    justifyContent: "center",
+    gap: space(1.25),
+    paddingBottom: space(1.25),
+  },
+  row: {
+    flex: 1,
+    flexDirection: "row",
+    gap: space(1.25),
+    minHeight: 104,
+    maxHeight: 160,
+  },
+  tile: {
+    flex: 1,
+    borderRadius: 24,
+    padding: space(1.75),
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  tileTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  mark: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: t.colors.inkFaint,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markOn: {
+    borderColor: t.colors.verdigris,
+    backgroundColor: t.colors.verdigris,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderRadius: RADIUS.pill,
+    backgroundColor: t.colors.lapisWash,
+    paddingVertical: 3,
+    paddingHorizontal: space(1),
+  },
+  bar: {
+    alignSelf: "stretch",
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: t.colors.surfaceSunk,
+    overflow: "hidden",
+    marginTop: space(0.75),
+  },
+  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5) },
+  pill: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
   focusWrap: { flex: 1, justifyContent: "center", paddingHorizontal: MARGIN },
-  focusCard: { alignItems: "center", gap: space(1.25), borderRadius: 28, padding: space(3), backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.rule },
-  sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(3) },
-  sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: space(2) },
-  chooseRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: space(1.25), gap: space(2), borderBottomWidth: 1, borderBottomColor: t.colors.rule },
-  monthGrid: { flexDirection: "row", flexWrap: "wrap", width: 7 * 40, alignSelf: "center" },
+  focusCard: {
+    alignItems: "center",
+    gap: space(1.25),
+    borderRadius: 32,
+    padding: space(3),
+    overflow: "hidden",
+  },
+  focusClose: {
+    alignSelf: "center",
+    marginTop: space(2),
+    borderRadius: RADIUS.pill,
+    paddingVertical: space(1.25),
+    paddingHorizontal: space(4),
+    overflow: "hidden",
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: t.colors.paper,
+    paddingHorizontal: MARGIN,
+    paddingTop: space(3),
+  },
+  sheetHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: space(2),
+  },
+  chooseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: space(1.25),
+    gap: space(2),
+    borderBottomWidth: 1,
+    borderBottomColor: t.colors.rule,
+  },
+  monthGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: 7 * 40,
+    alignSelf: "center",
+  },
   stepper: { flexDirection: "row", alignItems: "center", gap: space(2) },
-  step: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  step: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
 }));
 
 /* A small line drawing for each practice, shown above its title. */
 const ICON: Record<string, string> = {
   fajr: "M3 18h18M7 18a5 5 0 0110 0M12 7v3M5.6 11.6l1.8 1.4M18.4 11.6l-1.8 1.4",
-  morningAdhkar: "M12 8a4 4 0 100 8 4 4 0 000-8zM12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4",
+  morningAdhkar:
+    "M12 8a4 4 0 100 8 4 4 0 000-8zM12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4",
   eveningAdhkar: "M20 13.4A8.2 8.2 0 1110.6 4a6.6 6.6 0 009.4 9.4z",
-  quran: "M3.5 5.5c3-1 6-1 8.5 1v13c-2.5-2-5.5-2-8.5-1zM20.5 5.5c-3-1-6-1-8.5 1v13c2.5-2 5.5-2 8.5-1z",
+  quran:
+    "M3.5 5.5c3-1 6-1 8.5 1v13c-2.5-2-5.5-2-8.5-1zM20.5 5.5c-3-1-6-1-8.5 1v13c2.5-2 5.5-2 8.5-1z",
   duha: "M12 9a3 3 0 100 6 3 3 0 000-6zM12 3v2.5M4.2 7.5l2 1.2M19.8 7.5l-2 1.2M3 19h18",
   rawatib: "M6 4h12v16H6zM9 8h6M9 12h6M9 16h3",
   witr: "M17 14.4A7 7 0 118.6 5a5.6 5.6 0 008.4 9.4zM18.5 3.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z",
   istighfar: "M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z",
   salawat: "M12 20s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.5-7 10-7 10z",
-  sadaqah: "M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-2-3-5-3-5-1s3 1 5 1zM12 7c2-3 5-3 5-1s-3 1-5 1z",
-  family: "M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM2.5 20a5.5 5.5 0 0111 0M10.5 20a5.5 5.5 0 0111 0",
+  sadaqah:
+    "M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-2-3-5-3-5-1s3 1 5 1zM12 7c2-3 5-3 5-1s-3 1-5 1z",
+  family:
+    "M8 11a3 3 0 100-6 3 3 0 000 6zM16 11a3 3 0 100-6 3 3 0 000 6zM2.5 20a5.5 5.5 0 0111 0M10.5 20a5.5 5.5 0 0111 0",
   kahf: "M2.5 20L9 8l4 6 2.5-3.5L21.5 20zM10 20a3 3 0 016 0",
   fastMonThu: "M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2",
   whiteDays: "M12 4a8 8 0 100 16 8 8 0 000-16z",
@@ -117,7 +259,14 @@ function PracticeIcon({ id, color }: { id: string; color: string }) {
   if (!d) return null;
   return (
     <Svg width={28} height={28} viewBox="0 0 24 24">
-      <Path d={d} stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path
+        d={d}
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </Svg>
   );
 }
@@ -126,20 +275,29 @@ function PracticeIcon({ id, color }: { id: string; color: string }) {
 function whenOf(p: Practice): string {
   const sc = p.schedule as { kind: string; days?: number[] };
   if (sc.kind === "weekdays") {
-    const names = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+    const names = [
+      "Sundays",
+      "Mondays",
+      "Tuesdays",
+      "Wednesdays",
+      "Thursdays",
+      "Fridays",
+      "Saturdays",
+    ];
     const d = (sc.days ?? []).map((n) => names[n]);
-    return d.length > 1 ? `${d.slice(0, -1).join(", ")} and ${d[d.length - 1]}` : d[0] ?? "Some days";
+    return d.length > 1
+      ? `${d.slice(0, -1).join(", ")} and ${d[d.length - 1]}`
+      : (d[0] ?? "Some days");
   }
-  if (sc.kind === "hijriDays") return `The ${SHORT[p.id] ?? "set days"} of each Hijri month`;
+  if (sc.kind === "hijriDays")
+    return `The ${SHORT[p.id] ?? "set days"} of each Hijri month`;
   return "Every day";
 }
 
-function howOf(p: Practice): string {
-  if (p.id === "morningAdhkar" || p.id === "eveningAdhkar") return "Tap the tile for the guided walkthrough. Finishing it ticks the day; you can also tick the circle yourself.";
-  if (p.id === "quran") return "Ayahs you stay on in the reader count toward your daily goal, which you set in Choose practices. Reaching it ticks the day.";
-  if (p.input === "count") return p.max ? `Tap the tile once for each, up to ${p.max}. Any count marks the day.` : "Tap the tile once for each. Any count marks the day.";
-  return "Tap the tile or its circle when done. Tap again to undo.";
-}
+
+/* The pills' bottom edge sits this far above the screen's bottom, clear of
+   the floating tab bar with a little air. */
+const TAB_CLEAR = 104;
 
 function localDate(day: string): Date {
   const { y, m, d } = parseDay(day);
@@ -150,15 +308,37 @@ function Tick({ size = 13 }: { size?: number }) {
   const theme = useTheme();
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M5 12.5l4.5 4.5L19 7.5" stroke={theme.colors.paper} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path
+        d="M5 12.5l4.5 4.5L19 7.5"
+        stroke={theme.colors.paper}
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </Svg>
   );
 }
 
-function Chevron({ left, color, size = 18 }: { left?: boolean; color: string; size?: number }) {
+function Chevron({
+  left,
+  color,
+  size = 18,
+}: {
+  left?: boolean;
+  color: string;
+  size?: number;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d={left ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path
+        d={left ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}
+        stroke={color}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </Svg>
   );
 }
@@ -166,10 +346,25 @@ function Chevron({ left, color, size = 18 }: { left?: boolean; color: string; si
 /* A stable fallback: a fresh {} inside a selector re-renders forever. */
 const NO_LOG: Record<string, number[]> = {};
 
-function Sheet({ visible, onClose, title, children }: { visible: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+function Sheet({
+  visible,
+  onClose,
+  title,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
   const s = useStyles();
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <View style={s.sheet}>
         <View style={s.sheetHead}>
           <Text variant="pageTitle">{title}</Text>
@@ -216,6 +411,8 @@ export default function Barakah() {
      taller than the screen, which pushed the bottom pills under the tab bar. */
   const { height: winH } = useWindowDimensions();
   const tabTop = useTabTop();
+  const pillsRef = useRef<View>(null);
+  const [lift, setLift] = useState(0);
   const isToday = day === today;
 
   const values = useMemo(() => fold(events), [events]);
@@ -227,13 +424,17 @@ export default function Barakah() {
   */
   const readToday = readOn(today);
   useEffect(() => {
-    if (!hydrated || !tracked.includes("quran") || readToday < readingGoal) return;
+    if (!hydrated || !tracked.includes("quran") || readToday < readingGoal)
+      return;
     if (events.some((e) => e.day === today && e.practiceId === "quran")) return;
     log(today, "quran", 1);
   }, [hydrated, tracked, readToday, readingGoal, events, today, log]);
 
   const due = useMemo(
-    () => tracked.map((id) => PRACTICE_BY_ID.get(id)).filter((p): p is Practice => !!p && appliesOn(p, day)),
+    () =>
+      tracked
+        .map((id) => PRACTICE_BY_ID.get(id))
+        .filter((p): p is Practice => !!p && appliesOn(p, day)),
     [tracked, day],
   );
 
@@ -241,7 +442,10 @@ export default function Barakah() {
   const fills = due.map((p) => fill(p, valueOn(values, day, p.id)));
   const percent = consistency(values, tracked, today, since ?? today);
   const month = useMemo(() => monthDays(day), [day]);
-  const last7 = useMemo(() => Array.from({ length: 7 }, (_, k) => addDays(today, k - 6)), [today]);
+  const last7 = useMemo(
+    () => Array.from({ length: 7 }, (_, k) => addDays(today, k - 6)),
+    [today],
+  );
 
   if (!hydrated) return null;
 
@@ -260,18 +464,32 @@ export default function Barakah() {
     if (time) {
       const n = adhkarFor(time).length;
       const r = run?.key === `${today}:${time}` ? run : null;
-      line = done ? `${n} adhkar, done` : r && r.i > 0 ? `Resume, ${Math.min(r.i + 1, n)} of ${n}` : `${n} adhkar, guided`;
+      line = done
+        ? `${n} adhkar, done`
+        : r && r.i > 0
+          ? `Resume, ${Math.min(r.i + 1, n)} of ${n}`
+          : `${n} adhkar, guided`;
       onPress = () => router.push(`/adhkar/${time}`);
       label = `${p.title}, open the guide`;
     } else if (p.id === "quran") {
       const read = readOn(day);
       line = `${read} of ${readingGoal} ayahs`;
       progress = Math.min(1, read / Math.max(1, readingGoal));
-      onPress = () => router.push(lastRead ? `/surah/${lastRead.surah}?ayah=${lastRead.ayah}` : "/surah/1");
+      onPress = () =>
+        router.push(
+          lastRead
+            ? `/surah/${lastRead.surah}?ayah=${lastRead.ayah}`
+            : "/surah/1",
+        );
       label = `${p.title}, open the reader`;
     } else if (p.input === "count") {
-      line = p.max ? `${value} of ${p.max}` : value > 0 ? `${value} today` : SHORT[p.id] ?? "Tap to count";
-      onPress = () => log(day, p.id, p.max ? Math.min(p.max, value + 1) : value + 1);
+      line = p.max
+        ? `${value} of ${p.max}`
+        : value > 0
+          ? `${value} today`
+          : (SHORT[p.id] ?? "Tap to count");
+      onPress = () =>
+        log(day, p.id, p.max ? Math.min(p.max, value + 1) : value + 1);
       label = `${p.title}, add one`;
     }
     const opens = !!time || p.id === "quran";
@@ -293,7 +511,11 @@ export default function Barakah() {
               accessibilityRole="checkbox"
               accessibilityState={{ checked: done }}
               accessibilityLabel={`${p.title} done`}
-              onPress={p.input === "count" ? () => log(day, p.id, done ? 0 : 1) : toggle}
+              onPress={
+                p.input === "count"
+                  ? () => log(day, p.id, done ? 0 : 1)
+                  : toggle
+              }
               hitSlop={12}
               style={[s.mark, done && s.markOn]}
             >
@@ -314,17 +536,37 @@ export default function Barakah() {
           </View>
           <View style={{ alignItems: "center", gap: 2 }}>
             <View style={{ paddingBottom: space(0.5) }}>
-              <PracticeIcon id={p.id} color={done ? theme.colors.verdigris : theme.colors.lapis} />
+              <PracticeIcon
+                id={p.id}
+                color={done ? theme.colors.verdigris : theme.colors.lapis}
+              />
             </View>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} color={done ? "verdigris" : "ink"} style={{ textAlign: "center" }}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+              color={done ? "verdigris" : "ink"}
+              style={{ textAlign: "center" }}
+            >
               {p.title}
             </Text>
-            <Text variant="label" color="inkSoft" numberOfLines={1} style={{ textAlign: "center" }}>
+            <Text
+              variant="label"
+              color="inkSoft"
+              numberOfLines={1}
+              style={{ textAlign: "center" }}
+            >
               {line}
             </Text>
             {progress !== null ? (
               <View style={s.bar}>
-                <View style={{ width: `${progress * 100}%`, height: "100%", backgroundColor: theme.colors.verdigris }} />
+                <View
+                  style={{
+                    width: `${progress * 100}%`,
+                    height: "100%",
+                    backgroundColor: theme.colors.verdigris,
+                  }}
+                />
               </View>
             ) : null}
           </View>
@@ -345,7 +587,11 @@ export default function Barakah() {
         <TopBar title="Barakah" subtitle="Small daily practices" />
 
         <View style={s.dateRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Previous day" onPress={() => setDay(addDays(day, -1))}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Previous day"
+            onPress={() => setDay(addDays(day, -1))}
+          >
             <Glass interactive style={s.arrow}>
               <Chevron left color={theme.colors.inkSoft} />
             </Glass>
@@ -360,7 +606,13 @@ export default function Barakah() {
               </Text>
             ) : null}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Next day" disabled={isToday} onPress={() => setDay(addDays(day, 1))} style={{ opacity: isToday ? 0.3 : 1 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Next day"
+            disabled={isToday}
+            onPress={() => setDay(addDays(day, 1))}
+            style={{ opacity: isToday ? 0.3 : 1 }}
+          >
             <Glass interactive style={s.arrow}>
               <Chevron color={theme.colors.inkSoft} />
             </Glass>
@@ -369,15 +621,35 @@ export default function Barakah() {
 
         {/* A roomy header while there are few practices; it gives the space
             back as more are chosen, so the tiles never need to scroll. */}
-        <View style={[s.hero, { paddingVertical: roomy ? space(4) : space(2) }]}>
+        <View
+          style={[s.hero, { paddingVertical: roomy ? space(4) : space(2) }]}
+        >
           <View style={{ alignItems: "center", justifyContent: "center" }}>
-            <BarakahRing fills={fills} size={ringSize} stroke={roomy ? 12 : 10} />
+            <BarakahRing
+              fills={fills}
+              size={ringSize}
+              stroke={roomy ? 12 : 10}
+            />
             <View style={s.ringCenter}>
-              <Text variant="numeral" style={{ fontSize: roomy ? 40 : 30, lineHeight: roomy ? 44 : 34 }}>{`${summary.done}`}</Text>
-              <Text variant="label" color="inkSoft">{`of ${summary.applicable}`}</Text>
+              <Text
+                variant="numeral"
+                style={{
+                  fontSize: roomy ? 40 : 30,
+                  lineHeight: roomy ? 44 : 34,
+                }}
+              >{`${summary.done}`}</Text>
+              <Text
+                variant="label"
+                color="inkSoft"
+              >{`of ${summary.applicable}`}</Text>
             </View>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open the month" onPress={() => setSheet("month")} style={{ flex: 1, gap: 2 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open the month"
+            onPress={() => setSheet("month")}
+            style={{ flex: 1, gap: 2 }}
+          >
             <Text style={roomy ? { fontSize: 20, lineHeight: 26 } : undefined}>
               {summary.applicable === 0
                 ? "Nothing tracked this day"
@@ -386,22 +658,38 @@ export default function Barakah() {
                   : `${summary.done} of ${summary.applicable} done ${isToday ? "today" : "that day"}`}
             </Text>
             <Text variant="label" color="inkSoft">
-              {percent === null ? "Consistency starts counting today" : `${percent}% consistent over 30 days`}
+              {percent === null
+                ? "Consistency starts counting today"
+                : `${percent}% consistent over 30 days`}
             </Text>
             <View style={s.week}>
               {last7.map((d) => {
                 const sum = summarise(values, tracked, d);
-                const ratio = sum.applicable === 0 ? 0 : sum.done / sum.applicable;
+                const ratio =
+                  sum.applicable === 0 ? 0 : sum.done / sum.applicable;
                 return (
                   <View key={d} style={s.dot}>
                     <View
                       style={[
                         s.dotFill,
-                        { backgroundColor: ratio > 0 ? theme.colors.verdigris : theme.colors.surfaceSunk, opacity: ratio > 0 ? 0.35 + 0.65 * ratio : 1 },
-                        d === day && { borderWidth: 1.5, borderColor: theme.colors.lapis },
+                        {
+                          backgroundColor:
+                            ratio > 0
+                              ? theme.colors.verdigris
+                              : theme.colors.surfaceSunk,
+                          opacity: ratio > 0 ? 0.35 + 0.65 * ratio : 1,
+                        },
+                        d === day && {
+                          borderWidth: 1.5,
+                          borderColor: theme.colors.lapis,
+                        },
                       ]}
                     />
-                    <Text variant="label" color={d === today ? "ink" : "inkFaint"} style={{ fontSize: 10, lineHeight: 12 }}>
+                    <Text
+                      variant="label"
+                      color={d === today ? "ink" : "inkFaint"}
+                      style={{ fontSize: 10, lineHeight: 12 }}
+                    >
                       {"SMTWTFS"[new Date(`${d}T12:00:00Z`).getUTCDay()]}
                     </Text>
                   </View>
@@ -420,7 +708,10 @@ export default function Barakah() {
           bounces={rows.length > 3}
         >
           {due.length === 0 ? (
-            <Text color="inkSoft" style={{ textAlign: "center", paddingTop: space(4) }}>
+            <Text
+              color="inkSoft"
+              style={{ textAlign: "center", paddingTop: space(4) }}
+            >
               Nothing tracked for this day. Choose practices below.
             </Text>
           ) : (
@@ -433,13 +724,33 @@ export default function Barakah() {
           )}
         </ScrollView>
 
-        <View style={s.pills}>
-          <Pressable accessibilityRole="button" onPress={() => setSheet("month")} style={{ flex: 1 }}>
+        <View
+          ref={pillsRef}
+          style={[s.pills, { marginBottom: lift }]}
+          onLayout={() =>
+            /* Where the pills really are on screen: if the tab bar would
+               cover them, lift them by exactly the overlap. Measured, because
+               the tab's own view does not end at the screen's edge. */
+            pillsRef.current?.measureInWindow((_x, y, _w, h) => {
+              const over = y + h - (winH - TAB_CLEAR);
+              if (Math.abs(over) > 1) setLift((l) => Math.max(0, l + over));
+            })
+          }
+        >
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setSheet("month")}
+            style={{ flex: 1 }}
+          >
             <Glass interactive style={s.pill}>
               <Text variant="label">This month</Text>
             </Glass>
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => setSheet("edit")} style={{ flex: 1 }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setSheet("edit")}
+            style={{ flex: 1 }}
+          >
             <Glass interactive style={s.pill}>
               <Text variant="label">Choose practices</Text>
             </Glass>
@@ -451,42 +762,96 @@ export default function Barakah() {
           screen, the page blurred behind it (a full-screen glass layer).
           Tap anywhere to put it back. Only the card's scale animates, never
           the glass's opacity, so the glass always draws. */}
-      <Modal visible={info !== null} transparent animationType="none" onRequestClose={() => setInfo(null)}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setInfo(null)} style={StyleSheet.absoluteFill}>
+      <Modal
+        visible={info !== null}
+        transparent
+        animationType="none"
+        onRequestClose={() => setInfo(null)}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => setInfo(null)}
+          style={StyleSheet.absoluteFill}
+        >
           <Glass style={StyleSheet.absoluteFill} />
         </Pressable>
         {info ? (
           <View pointerEvents="box-none" style={s.focusWrap}>
-            <Animated.View entering={still ? undefined : ZoomIn.duration(240).easing(Easing.out(Easing.cubic))} style={s.focusCard}>
-              <PracticeIcon id={info.id} color={theme.colors.lapis} />
-              <Text variant="pageTitle" style={{ textAlign: "center" }}>
-                {info.title}
-              </Text>
-              <Text color="inkSoft" style={{ textAlign: "center" }}>
-                {info.line}
-              </Text>
-              {BENEFITS[info.id] ? (
-                <View style={{ alignItems: "center", gap: space(0.75), paddingTop: space(1) }}>
-                  <Text variant="eyebrow" color="inkSoft">
-                    Why
-                  </Text>
-                  <Text style={{ textAlign: "center", fontSize: 18, lineHeight: 27 }}>{BENEFITS[info.id].why}</Text>
-                  <Text variant="label" color="lapis" style={{ textAlign: "center" }}>
-                    {BENEFITS[info.id].source}
-                  </Text>
-                </View>
-              ) : null}
-              <Text variant="label" color="inkFaint" style={{ textAlign: "center", paddingTop: space(1) }}>
-                {whenOf(info)}
-              </Text>
+            <Animated.View
+              entering={
+                still
+                  ? undefined
+                  : ZoomIn.duration(240).easing(Easing.out(Easing.cubic))
+              }
+            >
+              <Glass interactive style={s.focusCard}>
+                <PracticeIcon id={info.id} color={theme.colors.lapis} />
+                <Text variant="pageTitle" style={{ textAlign: "center" }}>
+                  {info.title}
+                </Text>
+                <Text color="inkSoft" style={{ textAlign: "center" }}>
+                  {info.line}
+                </Text>
+                {BENEFITS[info.id] ? (
+                  <View
+                    style={{
+                      alignItems: "center",
+                      gap: space(0.75),
+                      paddingTop: space(1),
+                    }}
+                  >
+                    <Text variant="eyebrow" color="inkSoft">
+                      Why
+                    </Text>
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        fontSize: 18,
+                        lineHeight: 27,
+                      }}
+                    >
+                      {BENEFITS[info.id].why}
+                    </Text>
+                    <Text
+                      variant="label"
+                      color="lapis"
+                      style={{ textAlign: "center" }}
+                    >
+                      {BENEFITS[info.id].source}
+                    </Text>
+                  </View>
+                ) : null}
+                <Text
+                  variant="label"
+                  color="inkFaint"
+                  style={{ textAlign: "center", paddingTop: space(1) }}
+                >
+                  {whenOf(info)}
+                </Text>
+              </Glass>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setInfo(null)}
+              >
+                <Glass interactive style={s.focusClose}>
+                  <Text>Done</Text>
+                </Glass>
+              </Pressable>
             </Animated.View>
           </View>
         ) : null}
       </Modal>
 
-      <Sheet visible={sheet === "month"} onClose={() => setSheet(null)} title="This month">
+      <Sheet
+        visible={sheet === "month"}
+        onClose={() => setSheet(null)}
+        title="This month"
+      >
         <Text color="inkSoft" style={{ paddingBottom: space(2) }}>
-          {percent === null ? "Consistency starts counting today." : `${percent}% of your practices done over the last 30 days. Tap a day to see it.`}
+          {percent === null
+            ? "Consistency starts counting today."
+            : `${percent}% of your practices done over the last 30 days. Tap a day to see it.`}
         </Text>
         <View style={s.monthGrid}>
           {Array.from({ length: month.firstWeekday }, (_, k) => (
@@ -507,16 +872,33 @@ export default function Barakah() {
                   setSheet(null);
                 }}
               >
-                <DayCell ratio={ratio} label={String(parseDay(d).d)} selected={d === day} future={future} />
+                <DayCell
+                  ratio={ratio}
+                  label={String(parseDay(d).d)}
+                  selected={d === day}
+                  future={future}
+                />
               </Pressable>
             );
           })}
         </View>
       </Sheet>
 
-      <Sheet visible={sheet === "edit"} onClose={() => setSheet(null)} title="Choose practices">
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space(6) }}>
-          <View style={[s.chooseRow, { borderBottomWidth: 0, paddingBottom: space(2) }]}>
+      <Sheet
+        visible={sheet === "edit"}
+        onClose={() => setSheet(null)}
+        title="Choose practices"
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: space(6) }}
+        >
+          <View
+            style={[
+              s.chooseRow,
+              { borderBottomWidth: 0, paddingBottom: space(2) },
+            ]}
+          >
             <View style={{ flex: 1, gap: 2 }}>
               <Text>Daily Quran goal</Text>
               <Text variant="label" color="inkFaint">
@@ -524,15 +906,31 @@ export default function Barakah() {
               </Text>
             </View>
             <View style={s.stepper}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Smaller goal" onPress={() => setReadingGoal(readingGoal - 5)}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Smaller goal"
+                onPress={() => setReadingGoal(readingGoal - 5)}
+              >
                 <Glass interactive style={s.step}>
                   <Text>−</Text>
                 </Glass>
               </Pressable>
-              <Text variant="numeral" style={{ fontSize: 20, lineHeight: 24, minWidth: 32, textAlign: "center" }}>
+              <Text
+                variant="numeral"
+                style={{
+                  fontSize: 20,
+                  lineHeight: 24,
+                  minWidth: 32,
+                  textAlign: "center",
+                }}
+              >
                 {String(readingGoal)}
               </Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="Larger goal" onPress={() => setReadingGoal(readingGoal + 5)}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Larger goal"
+                onPress={() => setReadingGoal(readingGoal + 5)}
+              >
                 <Glass interactive style={s.step}>
                   <Text>+</Text>
                 </Glass>
@@ -548,7 +946,13 @@ export default function Barakah() {
                 accessibilityState={{ checked: on }}
                 accessibilityLabel={p.title}
                 onPress={() =>
-                  setTracked(on ? tracked.filter((id) => id !== p.id) : PRACTICES.filter((q) => q.id === p.id || tracked.includes(q.id)).map((q) => q.id))
+                  setTracked(
+                    on
+                      ? tracked.filter((id) => id !== p.id)
+                      : PRACTICES.filter(
+                          (q) => q.id === p.id || tracked.includes(q.id),
+                        ).map((q) => q.id),
+                  )
                 }
                 style={s.chooseRow}
               >
@@ -558,7 +962,9 @@ export default function Barakah() {
                     {p.line}
                   </Text>
                 </View>
-                <View style={[s.mark, on && s.markOn]}>{on ? <Tick /> : null}</View>
+                <View style={[s.mark, on && s.markOn]}>
+                  {on ? <Tick /> : null}
+                </View>
               </Pressable>
             );
           })}
