@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Background words (OTA b1a40f0b): the stars are removed (the owner wants words only). Each word now drifts 40pt up and down with a slight sideways sway on a 5 to 6.6 s cycle, so the movement is visible.
 - Search home background (OTA 3bf64a02): eight faint Arabic words (رحمة صبر نور توكل سكينة هدى شكر ذكر) and two eight-pointed stars, each drifting slowly, kept off the middle band and hidden while searching. src/components/Glyphs.tsx.
 - The top bar sits 16pt lower on every tab (72pt tall). The breathing light is stronger in light mode (0.62); dark mode is back to 0.34. The owner said it was visible in dark mode and barely visible in light mode, and the previous change had been made the wrong way round.
 - One shared top bar on all five tabs (src/components/TopBar.tsx): 56pt high in the same place, the title and a subtitle centred, and the theme toggle always in the same spot at the right. Progress's Mark sits in the left slot. Read's title no longer scrolls away.
