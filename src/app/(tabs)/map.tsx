@@ -494,11 +494,15 @@ function PickSheet({
   visible,
   onClose,
   onPick,
+  offset,
 }: {
   juz: number | null;
   visible: boolean;
   onClose: () => void;
   onPick: (n: number) => void;
+  /* Where the list was scrolled to, kept by the screen, so coming back from
+     a surah opens the list at the same place. */
+  offset: { current: number };
 }) {
   const s = useStyles();
   const theme = useTheme();
@@ -520,6 +524,11 @@ function PickSheet({
       <FlatList
         data={list}
         keyExtractor={(x) => String(x.n)}
+        contentOffset={{ x: 0, y: offset.current }}
+        onScroll={(e) => {
+          offset.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={64}
         ItemSeparatorComponent={() => <View style={s.rule} />}
         contentContainerStyle={{ paddingBottom: space(6) }}
         renderItem={({ item }) => {
@@ -624,7 +633,22 @@ export default function ProgressTab() {
     setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
 
   /* Picking a surah closes the list first, then opens its sheet once the list is gone. */
+  /* Picking from the list opens the surah; closing the surah brings the list
+     back, scrolled where it was, so marking several in a row stays easy. */
+  const listOffset = useRef(0);
+  const fromList = useRef(false);
+  const openPick = (juz: number | null) => {
+    if (juz !== pick.juz) listOffset.current = 0;
+    setPick({ open: true, juz });
+  };
+  const closeSurah = () => {
+    setSheet(null);
+    if (!fromList.current) return;
+    fromList.current = false;
+    setTimeout(() => setPick((x) => ({ ...x, open: true })), 450);
+  };
   const choose = (n: number) => {
+    fromList.current = true;
     pending.current = n;
     setPick((x) => ({ ...x, open: false }));
     setTimeout(() => {
@@ -662,7 +686,7 @@ export default function ProgressTab() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Mark a surah"
-            onPress={() => setPick({ open: true, juz: null })}
+            onPress={() => openPick(null)}
           >
             <Glass interactive primary style={s.markBtn}>
               <Text variant="label" color="paper">
@@ -731,7 +755,7 @@ export default function ProgressTab() {
               </Text>
               {p.ayahsMemorized === 0 ? (
                 <View style={{ alignSelf: "stretch" }}>
-                  <GlassButton label="Mark what you know" primary onPress={() => setPick({ open: true, juz: null })} />
+                  <GlassButton label="Mark what you know" primary onPress={() => openPick(null)} />
                 </View>
               ) : null}
             </View>
@@ -802,7 +826,7 @@ export default function ProgressTab() {
                     key={i}
                     accessibilityRole="button"
                     accessibilityLabel={`Juz ${i + 1}, ${Math.round(p.juz[i].memorized * 100)} percent memorized`}
-                    onPress={() => setPick({ open: true, juz: i + 1 })}
+                    onPress={() => openPick(i + 1)}
                     style={[s.juzCell, { width: cellW, height: cellH }]}
                   >
                     <View
@@ -1008,8 +1032,9 @@ export default function ProgressTab() {
         visible={pick.open}
         onClose={() => setPick((x) => ({ ...x, open: false }))}
         onPick={choose}
+        offset={listOffset}
       />
-      <SurahSheet surah={sheet} onClose={() => setSheet(null)} />
+      <SurahSheet surah={sheet} onClose={closeSurah} />
     </TabSafe>
   );
 }
