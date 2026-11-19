@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- OTA b192508f: the idle search group (mark, question, bar) is measured and centred between the greeting and the tab bar, which fixes the owner's "does not feel centred". The breathing wash in dark mode is about twice as strong.
 - **Search home, per the owner (OTA b46d76d4).**
   - "Assalamu alaikum" and the Hijri date are centred at the top, with the toggle at the top right.
   - The bar is centred again.
