@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Adhkar walkthrough, cleaner**, per the owner ("too condensed"): one dhikr per screen with no page scroll. A glass switch picks one part at a time (Arabic, Say it, Meaning, Origin), centred above the counter; the counter row now sits below the content instead of floating over it. Only a very long passage scrolls inside its own space.
 - **Learn opens on an overview**, per the owner: a ring (share of words known), "Learn the words of the Quran" with a three-sentence explanation, Begin (or Continue) and Arabic Course buttons, Stats and Settings pills. Begin shows the coverage meter, Start and the stage path (now glass rows); Arabic Course shows the course screen as before. A glass Back pill in the top bar returns to the overview.
 - Search, per the owner after trying both: typing folds the mark and question and the bar glides to the top again (results were cut off when it stayed centred). A tap alone still keeps it centred.
 - **Owner round, 19 Nov evening.**
