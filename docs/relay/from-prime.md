@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah long press now leads with "Why": one paraphrased line per practice with its source (Sahih Muslim, al-Bukhari, Abu Dawud, Tirmidhi, Quran 33:41-42), in src/barakah/benefits.ts, at the owner's request. Needs owner or teacher review like the other religious copy. Pills raised further above the tab bar.
 - Barakah: the page body is held to the window height (the tab view measured taller than the screen, so extra bottom padding never lifted the pills clear of the tab bar). Long press on a tile opens a sheet: its icon, its line, when it is due and how the app counts it (facts from the practice settings only, no new religious text).
 - Barakah: each tile has a small line icon above its title (sunrise, sun, moon, book and so on; verdigris when done), and the tile area no longer scrolls or bounces unless more than three rows of practices are chosen.
 - Quranic Words: a session with nothing due no longer dead-ends. It offers "Learn 5 more words" (past the day's five) and "Practise words you have met" (12 met words, not graded into the schedule, so practising early never pushes reviews out). Stage rows on the path are centred.
@@ -41,6 +42,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
     - Also fixed: the Lessons list showed Numbers stages; the Jest node project named a missing preset.
 
 ## Blocked on the owner (Quranic Words)
+
+- Review src/barakah/benefits.ts (14 short "why" lines with references) with a teacher if possible.
 
 - QUL downloads need a signed-in account: the owner downloads Word lemma (resource 75) and Word stem (77) as sqlite into DurusIOS/data-in/. That unlocks the per-word table: Read underline, per-ayah known count, Map toggle, learn-from-a-surah and exact coverage.
 

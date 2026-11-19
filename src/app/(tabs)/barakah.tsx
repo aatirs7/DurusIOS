@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, View, useWindowDimensions } from "react-n
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
+import { BENEFITS } from "@/barakah/benefits";
 import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
@@ -80,7 +81,7 @@ const useStyles = makeStyles((t) => ({
   markOn: { borderColor: t.colors.verdigris, backgroundColor: t.colors.verdigris },
   chip: { flexDirection: "row", alignItems: "center", gap: 2, borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingVertical: 3, paddingHorizontal: space(1) },
   bar: { alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
-  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(12) },
+  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(16) },
   pill: { flex: 1, minHeight: 46, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(3) },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: space(2) },
@@ -446,7 +447,20 @@ export default function Barakah() {
         {info ? (
           <View style={{ alignItems: "center", gap: space(2), paddingTop: space(2) }}>
             <PracticeIcon id={info.id} color={theme.colors.lapis} />
-            <Text style={{ textAlign: "center", fontSize: 18, lineHeight: 27 }}>{info.line}</Text>
+            <Text color="inkSoft" style={{ textAlign: "center" }}>
+              {info.line}
+            </Text>
+            {BENEFITS[info.id] ? (
+              <View style={{ alignItems: "center", gap: space(0.75), paddingVertical: space(1) }}>
+                <Text variant="eyebrow" color="inkSoft">
+                  Why
+                </Text>
+                <Text style={{ textAlign: "center", fontSize: 19, lineHeight: 28 }}>{BENEFITS[info.id].why}</Text>
+                <Text variant="label" color="lapis" style={{ textAlign: "center" }}>
+                  {BENEFITS[info.id].source}
+                </Text>
+              </View>
+            ) : null}
             <View style={{ alignItems: "center", gap: space(0.75) }}>
               <Text variant="eyebrow" color="inkSoft">
                 When
