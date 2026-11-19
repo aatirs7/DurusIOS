@@ -286,19 +286,18 @@ export default function Home() {
   }, []);
   const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
   const activeTop = space(1);
-  /* Tapping the bar does not throw it to the top. With nothing typed the
-     mark, question and bar rise together to sit just under the greeting,
-     clear of the keyboard. Only once there are results to show does the head
-     fold away and the bar take the top, to give them the room. */
+  /* The group stays centred. Tapping the bar keeps it there, lifting only if
+     the keyboard would cover it. Typing folds the mark and question away and
+     the bar rises part of the way, to the upper middle, never to the very
+     top: enough room for results beneath, without leaping. */
   let target = idleTop;
   let fold = 0;
+  const lift = kbH > 0 ? Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD) : idleTop;
   if (typing) {
-    target = activeTop;
+    target = Math.max(activeTop, Math.round((idleTop + HEAD) * 0.5));
     fold = 1;
   } else if (focused) {
-    const lift = kbH > 0 ? Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD) : idleTop;
-    const raised = Math.min(idleTop, space(2));
-    if (lift >= raised) target = raised;
+    if (lift >= activeTop) target = Math.min(idleTop, lift);
     else {
       target = activeTop;
       fold = 1;

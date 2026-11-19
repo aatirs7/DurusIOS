@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Search layout and theme fade, second pass**, per the owner. Search stays centred on tap (lifting only for the keyboard); typing folds the mark and question and the bar rises halfway, not to the very top. The theme fade no longer flashes: the veil gathers in the old background colour, shades to the new one while covering, then falls away (about 1 s, all eased).
 - **Greeting by name, smoother theme, higher search**, per the owner.
   - Onboarding asks "What should we call you?" after the story (Continue or Skip). Search says "Assalamu alaikum, Name". The name can be changed in Settings > Appearance. People already signed in get their account's first name until they set one.
   - The corner theme toggle now fades: a veil in the new background colour rises, the theme switches under it, then it falls away (about 0.65 s). Under Reduce Motion it still switches instantly. src/components/ThemeFade.tsx.
