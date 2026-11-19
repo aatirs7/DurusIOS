@@ -370,7 +370,7 @@ export default function Home() {
             contentContainerStyle={{ paddingBottom: space(12) }}
             ListHeaderComponent={
               <View>
-                {typing && asking && items.length === 0 ? <Seeking /> : null}
+                {typing && asking && items.length === 0 && completions.length === 0 ? <Seeking /> : null}
                 {caption ? (
                   <View style={s.caption} accessible accessibilityLabel={picks && picks.results.length > 0 ? `Suggested by AI. ${caption}` : caption}>
                     {picks && picks.results.length > 0 ? <Sparkle color={theme.colors.lapis} /> : null}
