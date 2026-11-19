@@ -13,6 +13,11 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Search home, per the owner (OTA b46d76d4).**
+  - "Assalamu alaikum" and the Hijri date are centred at the top, with the toggle at the top right.
+  - The bar is centred again.
+  - The ayah-for-today card is removed; the owner did not like it.
+  - The breathing light is now clearly visible: stronger washes, a wider swell, and a 5 to 8 second rhythm.
 - OTA d8496240: the Search home says "Assalamu alaikum" instead of a time-of-day greeting. Updates apply 2.5 s after launch and on return to the app, which restores the hook (it was not the crash cause). About shows the running update ID ("built in" when no update has loaded).
 - Search placeholder (OTA c1b4654a): 59 example searches instead of 13, shuffled on each launch. Every one is tested to find results locally.
 - **Search home, fuller (OTA 2cece299).**
