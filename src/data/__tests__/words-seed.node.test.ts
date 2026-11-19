@@ -14,6 +14,7 @@ import { seedContent } from "../seed";
 import { seedWords } from "../seedWords";
 import { buildWordsSession, NEW_PER_DAY, wordsProgress } from "../words";
 import { PATH_CARD_IDS, WORDS, lemmaForCard } from "../wordsContent";
+import { coverageFor, surahCards } from "../wordsMap";
 
 /*
   The populated-database rehearsal for the Quranic Words seed.
@@ -128,7 +129,7 @@ describe("a words session", () => {
     expect(second.intros).toHaveLength(0);
   });
 
-  it("counts coverage only along a known prefix of the path", () => {
+  it("counts coverage exactly, word by word, in or out of path order", () => {
     const { db, profileId } = populated();
     seedWords(db);
     expect(wordsProgress(db, profileId, now).percent).toBe(0);
@@ -136,20 +137,25 @@ describe("a words session", () => {
     const answer = (cardId: number, at: Date) =>
       submitGrade(db, profileId, "device-a", { cardId, direction: "recognition", grade: "good", msToAnswer: 3000 }, { now: at, random: rng });
 
-    /* The first path word, known (two correct recognitions). */
+    /* The first path word, known (two correct recognitions); meeting it
+       started Al-Fatiha, whose intro teaches that stage's skills. */
     answer(PATH_CARD_IDS[0], now);
     answer(PATH_CARD_IDS[0], new Date(now.getTime() + 86_400_000));
     const p = wordsProgress(db, profileId, now);
-    expect(p.prefix).toBe(1);
-    expect(p.percent).toBe(Math.floor((100 * WORDS.path.coverage[1]) / WORDS.totals.words));
+    const exact = coverageFor([PATH_CARD_IDS[0]], WORDS.stages[0].skills)!;
+    expect(p.coverage?.known).toBe(exact.known);
+    expect(p.percent).toBe(Math.floor((100 * exact.known) / exact.total));
+    expect(p.percent).toBeGreaterThan(0);
 
-    /* A later word known out of order does not move the prefix. */
+    /* A later word known out of order counts too. */
     answer(PATH_CARD_IDS[5], now);
     answer(PATH_CARD_IDS[5], new Date(now.getTime() + 86_400_000));
-    expect(wordsProgress(db, profileId, now).prefix).toBe(1);
+    const q = wordsProgress(db, profileId, now);
+    expect(q.prefix).toBe(1);
+    expect(q.coverage!.known).toBeGreaterThan(exact.known);
   });
 
-  it("does not drop to nothing when an early word lapses", () => {
+  it("drops only the words of a lapsed card", () => {
     const { db, profileId } = populated();
     seedWords(db);
     const day = (n: number) => new Date(now.getTime() + n * 86_400_000);
@@ -158,15 +164,31 @@ describe("a words session", () => {
         submitGrade(db, profileId, "device-a", { cardId: id, direction: "recognition", grade: "good", msToAnswer: 3000 }, { now: day(n), random: rng });
       }
     }
-    const before = wordsProgress(db, profileId, day(2)).percent;
+    const before = wordsProgress(db, profileId, day(2)).coverage!.known;
     expect(before).toBeGreaterThan(0);
 
     /* The second word of the path lapses. */
     submitGrade(db, profileId, "device-a", { cardId: PATH_CARD_IDS[1], direction: "recognition", grade: "again", msToAnswer: 3000 }, { now: day(2), random: rng });
-    const after = wordsProgress(db, profileId, day(2));
-    expect(after.prefix).toBe(1);
-    expect(after.percent).toBeGreaterThan(Math.floor((100 * WORDS.path.coverage[1]) / WORDS.totals.words));
-    expect(after.percent).toBeLessThanOrEqual(before);
+    const after = wordsProgress(db, profileId, day(2)).coverage!.known;
+    const without = coverageFor([0, 2, 3, 4, 5].map((i) => PATH_CARD_IDS[i]), WORDS.stages[0].skills)!.known;
+    expect(after).toBe(without);
+    expect(after).toBeLessThan(before);
+  });
+
+  it("teaches from a surah: no reviews, only that surah's new words, most frequent first", () => {
+    const { db, profileId } = populated();
+    seedWords(db);
+    /* Al-Ikhlas (112): its words of the track, none met yet. */
+    const session = buildWordsSession(db, profileId, { now, random: () => 0.3, surah: 112 });
+    const inSurah = new Set(surahCards(112));
+    expect(session.reviews).toBe(0);
+    expect(session.newCards.length).toBeGreaterThan(0);
+    expect(session.newCards.length).toBeLessThanOrEqual(NEW_PER_DAY);
+    for (const l of session.newCards) expect(inSurah.has(l.cardId)).toBe(true);
+    const freqs = session.newCards.map((l) => l.freq);
+    expect([...freqs].sort((x, y) => y - x)).toEqual(freqs);
+    /* Each stage it reaches into is introduced, so its skills are taught. */
+    expect(new Set(session.intros.map((st) => st.stage))).toEqual(new Set(session.newCards.map((l) => l.stage)));
   });
 
   it("never creates a production row for a words card", () => {

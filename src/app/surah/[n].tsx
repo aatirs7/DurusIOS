@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActionSheetIOS, FlatList, Pressable, Share, View, type ViewToken } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -9,6 +9,7 @@ import { Glass } from "@/components/Glass";
 import { FootnoteCard, TranslationLine, TransliterationLine, WordGrid } from "@/components/QuranLayers";
 import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
 import { Text } from "@/components/Text";
+import { WORDS_MAP_ATTRIBUTION, wordsMap } from "@/data/wordsMap";
 import { translationName, type QfChapter } from "@/quran/qf";
 import { loadChapter, prefetchChapters, quranApiConfigured } from "@/quran/remote";
 import { foldStatus } from "@/quran/status";
@@ -17,6 +18,8 @@ import { surahForDisplay } from "@/quran/text";
 import { localToday } from "@/state/barakah";
 import { usePrefs } from "@/state/prefs";
 import { useQuranStatus } from "@/state/quranStatus";
+import { useWordsCoverage } from "@/state/wordsKnown";
+import { withAlpha } from "@/theme/tokens";
 import { FONTS } from "@/theme/typography";
 import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
@@ -40,7 +43,15 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
   reading view. The controls float on glass over the page and never hold the
   text itself. Statuses live in the device event log (src/state/quranStatus).
   Everything here is on the phone, so it works offline.
+
+  Once the learner has started Quranic Words, each ayah says how many of its
+  words they know, and the known words carry a faint teal underline (the
+  ayah by ayah layout with the plain Arabic only; the flowing page and the
+  word grid stay as they are). Worked out once per surah and knowledge
+  change, never per render of an ayah.
 */
+
+type AyahWords = { known: number; total: number; tokens: { text: string; known: boolean }[] | null };
 
 const toArabicDigits = (n: number) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
 
@@ -110,6 +121,26 @@ export default function SurahReader() {
   const meta = SURAHS[n - 1];
 
   const { basmala, ayahs } = useMemo(() => surahForDisplay(n), [n]);
+  const coverage = useWordsCoverage();
+  const ayahWords = useMemo<(AyahWords | null)[] | null>(() => {
+    const p = coverage ? wordsMap() : null;
+    if (!coverage || !p) return null;
+    return ayahs.map((text, i) => {
+      const g = meta.start + i;
+      const a = p.ayahStart[g];
+      const total = p.ayahStart[g + 1] - a;
+      /* Only where the table's words are the reader's words, one to one. */
+      if (!p.aligned[g]) return null;
+      const parts = text.split(" ");
+      if (parts.length !== total) return null;
+      const known = coverage.ayahKnown[g];
+      return {
+        known,
+        total,
+        tokens: known > 0 ? parts.map((t, j) => ({ text: t, known: coverage.words[a + j] === 1 })) : null,
+      };
+    });
+  }, [coverage, ayahs, meta.start]);
   const events = useQuranStatus((st) => st.events);
   const setAyah = useQuranStatus((st) => st.setAyah);
   const setSurah = useQuranStatus((st) => st.setSurah);
@@ -258,6 +289,13 @@ export default function SurahReader() {
   const top = insets.top + space(1);
   const juz = juzOf(meta.start + visibleAyah - 1);
   const selColor = colors.dark ? colors.rule : theme.colors.lapisWash;
+  const knownLine = useMemo(
+    () => ({
+      textDecorationLine: "underline" as const,
+      textDecorationColor: withAlpha(theme.colors.verdigris, 0.45),
+    }),
+    [theme.colors.verdigris],
+  );
   const markColor = (g: number) =>
     !look.marks ? colors.soft : maps.understood[g] ? theme.colors.verdigris : maps.memorized[g] ? theme.colors.saffron : colors.soft;
 
@@ -298,7 +336,7 @@ export default function SurahReader() {
   const footer = (
     <View style={s.foot}>
       <Text variant="label" style={{ textAlign: "center", color: colors.soft }}>
-        Arabic text from Tanzil. Translation and transliteration from Quran.com, provided by Quran Foundation.
+        {`Arabic text from Tanzil. Translation and transliteration from Quran.com, provided by Quran Foundation.${ayahWords ? ` ${WORDS_MAP_ATTRIBUTION}.` : ""}`}
       </Text>
       {n < 114 ? (
         <Pressable accessibilityRole="button" onPress={() => router.replace(`/surah/${n + 1}`)} style={[s.next, { borderColor: colors.rule }]}>
@@ -317,6 +355,7 @@ export default function SurahReader() {
     const qa = wantsLayers && qf ? qf.ayahs[index] : undefined;
     const layer = qf ? qf.ayahs[index] : undefined;
     const shown = reveal[ayah] ?? 0;
+    const aw = ayahWords?.[index] ?? null;
     return (
       <Pressable
         onPress={() => cycle(ayah)}
@@ -330,7 +369,20 @@ export default function SurahReader() {
           <WordGrid ayah={qa} under={view === "wordTranslation" ? "meaning" : "translit"} colors={colors} quran={quran} />
         ) : (
           <Text selectable={false} style={quran}>
-            {ayahs[index]}
+            {aw?.tokens
+              ? aw.tokens.map((t, j) => (
+                  <Fragment key={j}>
+                    {j > 0 ? " " : null}
+                    {t.known ? (
+                      <Text selectable={false} style={knownLine}>
+                        {t.text}
+                      </Text>
+                    ) : (
+                      t.text
+                    )}
+                  </Fragment>
+                ))
+              : ayahs[index]}
           </Text>
         )}
         {qa && view === "translation" ? <TranslationLine ayah={qa} colors={colors} onFootnote={setFootnote} /> : null}
@@ -345,7 +397,7 @@ export default function SurahReader() {
           )
         ) : null}
         {shown >= 2 && view !== "transliteration" && layer ? <TransliterationLine ayah={layer} colors={colors} /> : null}
-        {look.numbers || m || u || bookmarks.includes(g) ? (
+        {look.numbers || m || u || aw || bookmarks.includes(g) ? (
           <View style={s.meta}>
             <View style={s.chips}>
               {m ? (
@@ -365,6 +417,11 @@ export default function SurahReader() {
                 </View>
               ) : null}
               {bookmarks.includes(g) ? <Icon d="M6.5 3.5h11v17l-5.5-4-5.5 4z" color={theme.colors.lapis} size={14} /> : null}
+              {aw ? (
+                <Text variant="label" color="inkFaint">
+                  {`You know ${aw.known} of ${aw.total} ${aw.total === 1 ? "word" : "words"}`}
+                </Text>
+              ) : null}
             </View>
             {look.numbers ? (
               <View style={s.marker}>
@@ -437,7 +494,7 @@ export default function SurahReader() {
         initialNumToRender={Math.max(12, (targetAyah ? rowOf(targetAyah) : 0) + 4)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top + TOP_BAR + space(1), paddingHorizontal: MARGIN, paddingBottom: insets.bottom + space(14) }}
-        extraData={[selected, highlight, maps, type, bookmarks, colors, qf, view]}
+        extraData={[selected, highlight, maps, type, bookmarks, colors, qf, view, ayahWords]}
         renderItem={({ item }) => (Array.isArray(item) ? renderFlow(item) : renderAyah(item))}
       />
 

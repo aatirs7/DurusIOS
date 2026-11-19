@@ -72,6 +72,14 @@ describe("Learn", () => {
     expect(screen.getByText("Al-Fatiha")).toBeTruthy();
     await fireEvent.press(screen.getByLabelText("How this is counted"));
     expect(screen.getByText(/A word counts once/)).toBeTruthy();
+    expect(screen.getByText(/Quranic Universal Library/)).toBeTruthy();
+
+    /* Learn from a surah: the list, then a surah's words, most frequent first. */
+    await fireEvent.press(screen.getByLabelText("Learn from a surah"));
+    await fireEvent.press(screen.getByLabelText(/^Al-Faatiha, \d+ words to learn$/));
+    expect(screen.getByText(/words to learn, the most frequent first/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Learn \d new words?$/)).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText("All surahs"));
 
     await fireEvent.press(screen.getByLabelText("Back to Learn"));
     await fireEvent.press(screen.getByLabelText("Arabic Course"));

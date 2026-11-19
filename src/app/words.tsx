@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
@@ -10,7 +10,7 @@ import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
 import { db } from "@/data/client";
 import { submitGrade } from "@/data/review";
-import { NEW_PER_DAY, buildWordsSession, type WordQuestion } from "@/data/words";
+import { NEW_PER_DAY, buildWordsSession, refreshWordsKnown, type WordQuestion } from "@/data/words";
 import {
   WORDS_ATTRIBUTION,
   canShowGloss,
@@ -90,13 +90,25 @@ export default function WordsSession() {
   const boot = useRef(bootOnce()).current;
 
   /* Built once on mount, so answering does not reshuffle the session. */
-  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const { mode, surah: surahParam } = useLocalSearchParams<{ mode?: string; surah?: string }>();
+  /* "Learn from a surah": new words from that surah only. */
+  const surah = surahParam && SURAHS[Number(surahParam) - 1] ? Number(surahParam) : null;
   const session = useMemo(
     () =>
       profileId === null
         ? null
-        : buildWordsSession(db, profileId, mode === "more" ? { extraNew: NEW_PER_DAY } : mode === "practice" ? { practice: true } : {}),
-    [profileId, mode],
+        : buildWordsSession(
+            db,
+            profileId,
+            surah !== null
+              ? { surah }
+              : mode === "more"
+                ? { extraNew: NEW_PER_DAY }
+                : mode === "practice"
+                  ? { practice: true }
+                  : {},
+          ),
+    [profileId, mode, surah],
   );
 
 
@@ -110,6 +122,13 @@ export default function WordsSession() {
       : [],
   );
   const [index, setIndex] = useState(0);
+  /* On the way out, hand what is now known to Read and the Map. */
+  useEffect(
+    () => () => {
+      if (profileId !== null) refreshWordsKnown(db, profileId);
+    },
+    [profileId],
+  );
   const [revealed, setRevealed] = useState(false);
   const [chosen, setChosen] = useState<number | null>(null);
   const shownAt = useRef(0);
@@ -151,7 +170,15 @@ export default function WordsSession() {
           </Text>
         </View>
         <View style={s.foot}>
-          <GlassButton primary label={`Learn ${NEW_PER_DAY} more words`} onPress={() => router.replace("/words?mode=more")} />
+          {surah !== null ? (
+            <GlassButton
+              primary
+              label={`Learn more from ${SURAHS[surah - 1].en}`}
+              onPress={() => router.replace(`/words?surah=${surah}`)}
+            />
+          ) : (
+            <GlassButton primary label={`Learn ${NEW_PER_DAY} more words`} onPress={() => router.replace("/words?mode=more")} />
+          )}
           {canPractice ? <GlassButton label="Practise words you have met" onPress={() => router.replace("/words?mode=practice")} /> : null}
           <Pressable accessibilityRole="button" onPress={finish} style={{ alignSelf: "center", paddingVertical: space(1) }}>
             <Text color="lapis">Back to Learn</Text>

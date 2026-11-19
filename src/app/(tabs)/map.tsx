@@ -24,6 +24,7 @@ import { quranText } from "@/quran/text";
 import { localToday } from "@/state/barakah";
 import { usePrefs } from "@/state/prefs";
 import { useQuranStatus } from "@/state/quranStatus";
+import { useWordsCoverage } from "@/state/wordsKnown";
 import { FONTS } from "@/theme/typography";
 import { MARGIN, RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
@@ -624,6 +625,11 @@ export default function ProgressTab() {
   const weekTotal = week.reduce((n, d) => n + d.count, 0);
   const maxDay = Math.max(1, ...week.map((d) => d.count));
   const recent = useMemo(() => recentMarks(events, 4), [events]);
+  /* Wall: "Words I know" lights the ayahs where 9 in 10 words are known
+     (Quranic Words), instead of memorized and understood. */
+  const wordsCov = useWordsCoverage();
+  const [wordsOn, setWordsOn] = useState(false);
+  const lightWords = wordsOn && wordsCov !== null;
 
   const go = (i: number) => {
     setPage(i);
@@ -762,11 +768,33 @@ export default function ProgressTab() {
 
             {/* Wall */}
             <View style={[s.page, { width: area.w, height: h }]}>
-              <Text style={s.headline}>{p.ayahsMemorized === 0 ? "Every ayah of the Quran" : headline}</Text>
-              <Text variant="label" color="inkSoft" style={s.caption}>
-                Each square is one ayah, all 6,236 in order: Al-Fatiha at the
-                top, An-Nas at the bottom. Numbers on the left are juz.
+              <Text style={s.headline}>
+                {lightWords
+                  ? `${fmt(wordsCov.followableCount)} ayahs you can mostly follow`
+                  : p.ayahsMemorized === 0
+                    ? "Every ayah of the Quran"
+                    : headline}
               </Text>
+              <Text variant="label" color="inkSoft" style={s.caption}>
+                {lightWords
+                  ? "Lit where you know at least 9 in 10 of an ayah's words. Al-Fatiha at the top, An-Nas at the bottom."
+                  : "Each square is one ayah, all 6,236 in order: Al-Fatiha at the top, An-Nas at the bottom. Numbers on the left are juz."}
+              </Text>
+              {wordsCov !== null ? (
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Words I know"
+                  accessibilityState={{ checked: wordsOn }}
+                  onPress={() => setWordsOn((on) => !on)}
+                  style={{ alignSelf: "center", marginBottom: space(1) }}
+                >
+                  <Glass interactive primary={wordsOn} style={[s.markBtn, { height: 32 }]}>
+                    <Text variant="label" color={wordsOn ? "paper" : "ink"}>
+                      Words I know
+                    </Text>
+                  </Glass>
+                </Pressable>
+              ) : null}
               <View
                 style={{
                   alignItems: "center",
@@ -777,23 +805,32 @@ export default function ProgressTab() {
                 <AyahField
                   labels
                   width={inner}
-                  height={h - 150}
-                  memorized={(i) => maps.memorized[i] === 1}
-                  understood={(i) => maps.understood[i] === 1}
+                  height={h - 150 - (wordsCov !== null ? 40 : 0)}
+                  memorized={lightWords ? () => false : (i) => maps.memorized[i] === 1}
+                  understood={lightWords ? (i) => wordsCov.followable[i] === 1 : (i) => maps.understood[i] === 1}
                 />
               </View>
               <View style={s.legend}>
-                {[
-                  {
-                    color: theme.colors.saffron,
-                    label: `Memorized ${fmt(p.ayahsMemorized)}`,
-                  },
-                  {
-                    color: theme.colors.verdigris,
-                    label: `Understood ${fmt(p.ayahsUnderstood)}`,
-                  },
-                  { color: theme.colors.rule, label: "Not yet" },
-                ].map((l) => (
+                {(lightWords
+                  ? [
+                      {
+                        color: theme.colors.verdigris,
+                        label: `Mostly followable ${fmt(wordsCov.followableCount)}`,
+                      },
+                      { color: theme.colors.rule, label: "Not yet" },
+                    ]
+                  : [
+                      {
+                        color: theme.colors.saffron,
+                        label: `Memorized ${fmt(p.ayahsMemorized)}`,
+                      },
+                      {
+                        color: theme.colors.verdigris,
+                        label: `Understood ${fmt(p.ayahsUnderstood)}`,
+                      },
+                      { color: theme.colors.rule, label: "Not yet" },
+                    ]
+                ).map((l) => (
                   <View
                     key={l.label}
                     style={{
