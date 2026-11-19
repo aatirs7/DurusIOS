@@ -81,8 +81,10 @@ async function main() {
   const sql = neon(databaseUrl());
 
   const lessons = (await sql.query(
+    /* The Quranic Words track ships in its own bundled file and seeds itself
+       (src/data/seedWords.ts); Neon holds a copy only so reviews can sync. */
     `select id, number, title_ar, title_en, grammar_note, deck
-       from lessons order by number`,
+       from lessons where deck <> 'words' order by number`,
   )) as LessonRow[];
 
   /*
@@ -92,8 +94,9 @@ async function main() {
     edit that re-sorts this is a real behaviour change.
   */
   const cards = (await sql.query(
-    `select id, lesson_id, type, arabic, english, transliteration, gender, plural, note
-       from cards order by id`,
+    `select c.id, c.lesson_id, c.type, c.arabic, c.english, c.transliteration, c.gender, c.plural, c.note
+       from cards c join lessons l on l.id = c.lesson_id
+       where l.deck <> 'words' order by c.id`,
   )) as CardRow[];
 
   const known = new Set(lessons.map((l) => l.id));
