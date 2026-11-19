@@ -1,6 +1,6 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-18, late night
+Updated: 2026-11-19
 
 ## Now
 
@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Search tap no longer jumps to the top**, per the owner. With nothing typed, tapping the bar keeps it, the mark and the question in place, lifting only as far as the keyboard needs. The bar glides up and the head folds only once you type and results need room.
 - **Liquid Glass on Read and Learn**, at the owner's request, so they match Search.
   - Read: every surah and juz row is a glass card over the breathing light, as are the continue card, the bookmark chips and the Surah/Juz switch.
   - Learn: Start review is a primary glass button and Study Lesson a glass button. The four drills are a two-by-two grid of glass tiles, and Stats and Settings are glass pills.

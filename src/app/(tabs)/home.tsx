@@ -249,15 +249,11 @@ export default function Home() {
 
   /*
     Idle, the bar rests in the middle of the screen under the mark and the
-    question. Tap it and it glides to the top, the head folding away, and
-    results gather beneath. A glide rather than a jump, and the bar itself is
+    question. Start typing and it glides to the top, the head folding away,
+    and results gather beneath. A glide rather than a jump, and the bar itself is
     only ever moved, never faded, so its glass always draws.
   */
   const active = focused || typing;
-  const p = useSharedValue(0);
-  useEffect(() => {
-    p.value = withTiming(active ? 1 : 0, { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) });
-  }, [active, still, p]);
   /* Idle, the mark, question and bar sit truly centred in the space between
      the greeting and the tab bar, measured rather than guessed. */
   /* Start from the window size so the first frame is already centred; the
@@ -265,21 +261,54 @@ export default function Home() {
   const win = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [bodyH, setBodyH] = useState(win.height - insets.top);
+  const [kbH, setKbH] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardWillShow", (e) => setKbH(e.endCoordinates.height));
+    const hide = Keyboard.addListener("keyboardWillHide", () => setKbH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   const idleTop = Math.max(space(2), Math.round((bodyH - TOP_ROW - TAB_ROOM - HEAD - BAR_H) / 2));
-  /* Plain numbers only inside a worklet: calling an ordinary function such as
-     space() there runs on the UI thread and crashes a release build. */
   const activeTop = space(1);
-  const spacer = useAnimatedStyle(() => ({ height: idleTop * (1 - p.value) + activeTop * p.value }));
+  /* Tapping the bar no longer throws it to the top. With nothing typed it
+     stays where it is, lifting only as far as the keyboard needs, the mark
+     and question still above it. Only once there are results to show does it
+     glide up and the head fold away to give them the room. */
+  let target = idleTop;
+  let fold = 0;
+  if (typing) {
+    target = activeTop;
+    fold = 1;
+  } else if (focused && kbH > 0) {
+    const lift = Math.round(bodyH - kbH - space(3) - BAR_H - TOP_ROW - HEAD);
+    if (lift >= activeTop) target = Math.min(idleTop, lift);
+    else {
+      target = activeTop;
+      fold = 1;
+    }
+  }
+  const top = useSharedValue(idleTop);
+  const p = useSharedValue(0);
+  useEffect(() => {
+    const cfg = { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) };
+    top.value = withTiming(target, cfg);
+    p.value = withTiming(fold, cfg);
+  }, [target, fold, still, top, p]);
+  /* Shared values only inside a worklet: calling an ordinary function such
+     as space() there runs on the UI thread and crashes a release build. */
+  const spacer = useAnimatedStyle(() => ({ height: top.value }));
   const head = useAnimatedStyle(() => ({ height: HEAD * (1 - p.value), opacity: 1 - p.value }));
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
       <Breath />
-      {active ? null : <Glyphs />}
+      {typing ? null : <Glyphs />}
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
         <TopBar title="Assalamu alaikum" subtitle={hijri} />
         <Animated.View style={spacer} />
-        <Animated.View style={[s.head, head]} pointerEvents={active ? "none" : "auto"}>
+        <Animated.View style={[s.head, head]} pointerEvents={typing ? "none" : "auto"}>
           <Arabic variant="title" color="lapis">
             دُرُوس
           </Arabic>
