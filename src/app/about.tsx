@@ -60,6 +60,19 @@ const CREDIT = {
   publisher: "Islamic University of Madinah",
 };
 
+
+/* Which over-the-air update is running, for checking a phone is current. */
+function updateLabel(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const U: typeof import("expo-updates") = require("expo-updates");
+    if (U.isEmbeddedLaunch || !U.updateId) return "built in";
+    const at = U.createdAt ? ` ${U.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC` : "";
+    return `${U.updateId.slice(0, 8)}${at}`;
+  } catch {
+    return "unknown";
+  }
+}
 export default function About() {
   const s = useStyles();
   const router = useRouter();
@@ -167,6 +180,7 @@ export default function About() {
             Version
           </Text>
           <Text style={s.mono}>{`${version} (${build})`}</Text>
+          <Text style={s.mono}>{`Update ${updateLabel()}`}</Text>
           {FONTS_ARE_PLACEHOLDERS ? (
             <Text variant="label" color="clay">
               Test build: the typefaces are placeholders, so the Arabic is not

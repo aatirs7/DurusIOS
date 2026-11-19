@@ -30,6 +30,7 @@ import { syncReminders } from "@/data/reminders";
 import { useSession } from "@/state/session";
 import { useThemeChoice } from "@/state/theme";
 import { tokenCache } from "@/lib/tokenCache";
+import { useLiveUpdates } from "@/lib/updates";
 import { space } from "@/theme/layout";
 import { THEMES } from "@/theme/tokens";
 import { useTheme } from "@/theme/useTheme";
@@ -72,6 +73,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
 }
 
 export default function RootLayout() {
+  useLiveUpdates();
   const theme = useTheme();
   const choice = useThemeChoice((s) => s.choice);
   const migration = useDurusMigrations();
