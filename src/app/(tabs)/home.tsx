@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
+import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
@@ -9,7 +9,7 @@ import { Arabic } from "@/components/Arabic";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { Typewriter } from "@/components/Typewriter";
 import { complete } from "@/quran/phrases";
 import { askKey, askQuran, loadVerseTranslations, type AskAnswer } from "@/quran/remote";
@@ -48,7 +48,7 @@ const HEAD = 118;
 const PER_REF = 3;
 /* Heights used to centre the idle search: the greeting row, the bar, and the
    room the floating tab bar takes at the bottom. */
-const TOP_ROW = 56;
+const TOP_ROW = TOP_BAR_HEIGHT;
 const BAR_H = 54;
 const TAB_ROOM = 88;
 
@@ -60,8 +60,6 @@ type Item = ({ kind: "ayah"; index: number } | { kind: "surah"; n: number }) & {
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
   body: { flex: 1, paddingHorizontal: MARGIN },
-  topRow: { alignItems: "center", justifyContent: "center", paddingTop: space(1), height: 56 },
-  toggle: { position: "absolute", right: 0, top: space(1.25) },
   pill: { flexDirection: "row", alignItems: "center", gap: space(1), alignSelf: "center", borderRadius: RADIUS.pill, paddingVertical: space(1.125), paddingHorizontal: space(2), overflow: "hidden" },
   head: { alignItems: "center", justifyContent: "flex-end", gap: space(0.75), paddingBottom: space(2.5), overflow: "hidden" },
   title: { fontSize: 24, lineHeight: 30, textAlign: "center" },
@@ -106,7 +104,6 @@ export default function Home() {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
-  const { height } = useWindowDimensions();
   const rememberSearch = usePrefs((st) => st.rememberSearch);
   const translationId = usePrefs((st) => st.translationId) ?? 20;
   const [query, setQuery] = useState("");
@@ -274,19 +271,7 @@ export default function Home() {
     <SafeAreaView style={s.safe} edges={["top"]}>
       <Breath />
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
-        <View style={s.topRow}>
-          <View style={{ alignItems: "center", gap: 1 }}>
-            <Text>Assalamu alaikum</Text>
-            {hijri ? (
-              <Text variant="label" color="inkSoft">
-                {hijri}
-              </Text>
-            ) : null}
-          </View>
-          <View style={s.toggle}>
-            <ThemeToggle />
-          </View>
-        </View>
+        <TopBar title="Assalamu alaikum" subtitle={hijri} />
         <Animated.View style={spacer} />
         <Animated.View style={[s.head, head]} pointerEvents={active ? "none" : "auto"}>
           <Arabic variant="title" color="lapis">

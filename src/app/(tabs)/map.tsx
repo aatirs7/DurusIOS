@@ -15,7 +15,7 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { AyahField } from "@/components/AyahField";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { TopBar } from "@/components/TopBar";
 import { rangePath } from "@/onboarding/field";
 import { ago, progress, readingWeek, recentMarks } from "@/quran/progress";
 import { countRange, foldStatus } from "@/quran/status";
@@ -650,12 +650,11 @@ export default function ProgressTab() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
-      <View style={s.top}>
-        <Text variant="pageTitle">Progress</Text>
-        <View
-          style={{ flexDirection: "row", alignItems: "center", gap: space(1) }}
-        >
-          <ThemeToggle />
+      <TopBar
+        inset
+        title="Progress"
+        subtitle="What you have memorized"
+        left={
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Mark a surah"
@@ -667,8 +666,8 @@ export default function ProgressTab() {
               </Text>
             </Glass>
           </Pressable>
-        </View>
-      </View>
+        }
+      />
 
       <Glass style={s.seg}>
         {PAGES.map((label, i) => (

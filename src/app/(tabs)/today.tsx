@@ -7,7 +7,7 @@ import { Arabic } from "@/components/Arabic";
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { TopBar } from "@/components/TopBar";
 import { db } from "@/data/client";
 import { countDue, countNewAvailable } from "@/data/queue";
 import { lessons } from "@/data/schema";
@@ -116,16 +116,9 @@ export default function Today() {
 
   return (
     <Screen>
-      <View style={s.toggle}>
-        <ThemeToggle />
-      </View>
+      <TopBar title="Learn" subtitle={dateLine(now, config.timezone)} />
 
       <View style={s.top}>
-        <View style={s.dateRow}>
-          <Text variant="eyebrow" color="inkSoft">
-            {dateLine(now, config.timezone)}
-          </Text>
-        </View>
 
         {/* The English sits under the Arabic, the way the lessons list sets it,
             and never in the same text node, or bidi reorders the two. */}

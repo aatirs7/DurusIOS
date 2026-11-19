@@ -9,7 +9,7 @@ import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { TopBar } from "@/components/TopBar";
 import {
   PRACTICES,
   PRACTICE_BY_ID,
@@ -269,10 +269,7 @@ export default function Barakah() {
     <SafeAreaView style={s.safe} edges={["top"]}>
       <Breath />
       <View style={s.body}>
-        <View style={s.top}>
-          <Text variant="pageTitle">Barakah</Text>
-          <ThemeToggle />
-        </View>
+        <TopBar title="Barakah" subtitle="Small daily practices" />
 
         <View style={s.dateRow}>
           <Pressable accessibilityRole="button" accessibilityLabel="Previous day" onPress={() => setDay(addDays(day, -1))}>
