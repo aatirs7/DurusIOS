@@ -16,12 +16,12 @@ import { makeStyles } from "@/theme/useTheme";
   `inset` adds the page margin for screens whose body has none.
 */
 
-export const TOP_BAR_HEIGHT = 56;
+export const TOP_BAR_HEIGHT = 72;
 
 const SLOT = 88;
 
 const useStyles = makeStyles(() => ({
-  bar: { height: TOP_BAR_HEIGHT, flexDirection: "row", alignItems: "center", paddingTop: space(0.5) },
+  bar: { height: TOP_BAR_HEIGHT, flexDirection: "row", alignItems: "center", paddingTop: space(2.5) },
   slot: { width: SLOT, flexDirection: "row", alignItems: "center" },
   middle: { flex: 1, alignItems: "center", justifyContent: "center", gap: 1 },
   title: { fontFamily: FONTS.uiMedium, fontSize: 17, lineHeight: 22, textAlign: "center" },
