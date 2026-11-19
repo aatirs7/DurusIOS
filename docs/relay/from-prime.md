@@ -4,13 +4,14 @@ Updated: 2026-11-18, late
 
 ## Now
 
-Latest OTA: ce7af734. Rollback: republish 49bf76f4. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
+Latest OTA: 5c337f90. Rollback: republish ce7af734. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
 Owner decisions in the terminal, 2026-11-16: use the Tanzil text for the Read tab and the Map until Quran Foundation is connected (this widens issue #3's onboarding-only approval); build the Map now; search is deterministic, with no AI; the app opens to a centred search bar.
 Issue #2 stays open until someone records the onboarding on a phone.
 
 ## Shipped
 
+- Search home, per the owner (OTA 5c337f90): centred and clean with no suggestions, no "continue" and no chips. Example searches type themselves into the bar in grey and erase ("Surah about the battle of Badr", "Surah for hopelessness", "32nd surah"...), each one tested to return results. Behind it a slow breathing light (lapis, saffron, teal washes swelling about every eight seconds; still under Reduce Motion). Tapping the bar glides it to the top instead of jumping. Search now reads ordinals ("32nd surah", "the 18th surah") and no longer treats a real word as a typo of another ("hopeless" was matching "homeless"). Badr topic added (Al-Anfal and 3:123); the owner asked not to wait on approval for new topics, so new ones ship live.
 - Search rebuilt as one clean list (OTA ce7af734), after the owner said it had drifted from what they wanted. Type anything and the results are ayahs and surahs only: each ayah shows the Arabic, its English (Saheeh International by default, fetched from durus.space once and then kept on the phone) and its reference. A feeling or topic expands into the ayahs it points to, so "i feel sad" shows ayahs, not a topic box. One quiet caption line replaces the reply bubble, topic cards and headings. New server route on durus.space: GET /api/v1/quran/verses?keys=13:28,94:5&translation=20.
 - Light and dark toggle on every tab (Search, Read, Progress, Barakah), not just Learn. The long-press zoom centres its transliteration and translation.
 - Owner feedback from phone screenshots (OTA 49bf76f4): search looked heavy, and Progress was unreadable. Search: the title is smaller and set lower in a fixed spot, For you is two quiet lines, and six light chips replace the bordered cards; it still does not move while typing. Progress: every view opens with a plain sentence ("12 surahs memorized, 2% of the Quran"), the wall has a caption explaining that each square is an ayah from Al-Fatiha down to An-Nas, juz numbers run down its left side, a legend gives the counts, and juz boxes show their percentage.
@@ -53,6 +54,8 @@ Issue #2 stays open until someone records the onboarding on a phone.
 - **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
 
 ## Questions
+
+- Free smarter search: the owner's Quran Foundation console lists a "Search" permission as available. Requesting it (Permissions, Production, tick Search, submit) would let Durus send open-ended queries to Quran Foundation's own index, free, as a fallback when the built-in matcher finds nothing. Gemini's free embedding tier is the backup option. No paid API needed.
 
 - Approve the 89 new search topics in docs/review/topics.md. Each one points readers to specific ayahs, so it needs a look before it goes live. Reply "approve all", or name the ones to change.
 - Onboarding's last story page is still titled "Ask" and shows a feelings query, which the real search answers with "being reviewed" until the topics are approved. Retitle it "Search" and show a surah search instead?
