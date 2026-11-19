@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 
 import MapTab from "@/app/(tabs)/map";
 import SurahReader from "@/app/surah/[n]";
 import { WORDS } from "@/data/wordsContent";
 import { useWordsKnown } from "@/state/wordsKnown";
+import { FONTS } from "@/theme/typography";
 
 /*
   Quranic Words in Read and on the Map: quiet until the learner has started
@@ -52,6 +54,14 @@ describe("Read", () => {
     await render(<SurahReader />);
     expect(screen.getAllByText(/^You know \d+ of \d+ words$/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Quranic Universal Library \(Tarteel\)/)).toBeTruthy();
+    /* Known words keep the Quran face, size and tone; only the underline is added. */
+    const known = screen.getAllByTestId("known-word");
+    expect(known.length).toBeGreaterThan(0);
+    const flat = StyleSheet.flatten(known[0].props.style);
+    expect(flat.fontFamily).toBeTruthy();
+    expect(flat.fontFamily).not.toBe(FONTS.uiRegular);
+    expect(flat.fontSize).toBeGreaterThan(20);
+    expect(flat.textDecorationLine).toBe("underline");
     /* The tap cycle still answers on the ayah. */
     expect(screen.getByLabelText("Ayah 1")).toBeTruthy();
   });

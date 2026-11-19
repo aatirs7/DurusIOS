@@ -74,7 +74,7 @@ const useStyles = makeStyles((t) => ({
     gap: space(1),
   },
   meta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  chips: { flexDirection: "row", gap: space(0.75) },
+  chips: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", flexShrink: 1, gap: space(0.75) },
   chip: { flexDirection: "row", alignItems: "center", gap: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   marker: {
@@ -336,7 +336,7 @@ export default function SurahReader() {
   const footer = (
     <View style={s.foot}>
       <Text variant="label" style={{ textAlign: "center", color: colors.soft }}>
-        {`Arabic text from Tanzil. Translation and transliteration from Quran.com, provided by Quran Foundation.${ayahWords ? ` ${WORDS_MAP_ATTRIBUTION}.` : ""}`}
+        {`Arabic text from Tanzil. Translation and transliteration from Quran.com, provided by Quran Foundation.${ayahWords && !flow ? ` ${WORDS_MAP_ATTRIBUTION}.` : ""}`}
       </Text>
       {n < 114 ? (
         <Pressable accessibilityRole="button" onPress={() => router.replace(`/surah/${n + 1}`)} style={[s.next, { borderColor: colors.rule }]}>
@@ -374,7 +374,7 @@ export default function SurahReader() {
                   <Fragment key={j}>
                     {j > 0 ? " " : null}
                     {t.known ? (
-                      <Text selectable={false} style={knownLine}>
+                      <Text selectable={false} testID="known-word" style={[quran, knownLine]}>
                         {t.text}
                       </Text>
                     ) : (
