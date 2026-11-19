@@ -1,8 +1,10 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-18, late
+Updated: 2026-11-18, night
 
 ## Now
+
+NEXT (resume here): AI search ("Ask"). Owner wants to type anything and get surah and ayah suggestions from a free AI, with no Anthropic cost. Plan agreed in chat: Groq free tier first, Gemini Flash free tier as fallback, called from durus.space. Add a route GET /api/v1/quran/ask?q= (write it in DurusIOS server/ first, then copy into the Durus web repo's lib/quran). It returns strict JSON {line, results:[{ref, reason}]}. Every ref is checked against the Tanzil metadata and invalid ones are dropped; the AI never writes Quran text. Answers are cached per normalized query. Keys go in Vercel as GROQ_API_KEY and GEMINI_API_KEY (Prime has the Vercel CLI logged in and linked in ../durus-web). In the app, Search shows its local results instantly, then the AI picks above them after a short debounce, rendered with the local Arabic and the cached English. Waiting on: the owner to paste a Groq key (console.groq.com/keys) and, optionally, a Gemini key (aistudio.google.com/apikey). Nothing has been started yet; the working tree is clean.
 
 Latest OTA: 5c337f90. Rollback: republish ce7af734. Rollback: republish 687f9df4 (before the Quran Foundation layers) or 733433db (before the reader rework).
 Quran Foundation works end to end on prelive through a server handler that is written and tested but not deployed. Two owner decisions unlock translation, word by word and transliteration in the app (see Blocked).
