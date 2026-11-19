@@ -50,8 +50,9 @@ export function Breath() {
   const theme = useTheme();
   const { width, height } = useWindowDimensions();
   const big = Math.round(Math.max(width, height) * 0.9);
-  /* Dark paper swallows a faint wash, so night gets a stronger one. */
-  const peak = theme.dark ? 0.62 : 0.3;
+  /* Light paper washes a soft tint out, so day gets the stronger one; night
+     was already easy to see at 0.34. */
+  const peak = theme.dark ? 0.34 : 0.62;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Wash id="breathLapis" color={theme.colors.lapis} size={big} top={-big * 0.38} left={-big * 0.25} period={5200} delay={0} peak={peak} />
