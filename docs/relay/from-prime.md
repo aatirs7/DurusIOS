@@ -13,6 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Breathing light: the yellow (saffron) wash is replaced with a soft blue-grey (inkSoft), per the owner.
 - Progress Mark: closing a surah picked from the list brings the list back at the same scroll position, so several surahs can be marked in a row (owner request).
 - **Tab first-open shift, second fix.** Each native tab has its own safe-area measurement, which reads the top inset as zero for a moment the first time a tab opens and then corrects, so the page jumped. The five tabs now use the window's top inset from launch, a fixed number in this portrait-only app (src/components/TabSafe.tsx; Screen takes a `tab` prop). Sheets and pushed screens are unchanged.
 - Licensing gate: the email to developers@quran.com is SENT (19 Nov, from the owner's elysiumcyber.com Gmail). It asks about clipping word audio from recitation segments, caching audio and text on the device, and bundling about 560 word-by-word glosses verbatim with attribution. Waiting on their reply. QUL licence issue: NOT posted, by the owner's decision (19 Nov): use QUL data with credit. QUL's FAQ says its data may be used commercially; the morphology resource pages say "We don't have copyright information for this resource".

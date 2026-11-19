@@ -7,7 +7,7 @@ import { useTheme } from "@/theme/useTheme";
 
 /*
   A slow breathing light behind the search page: soft washes, lapis above,
-  saffron below and teal at the side, swelling and settling every five to
+  a soft blue-grey below (no yellow, per the owner) and teal at the side, swelling and settling every five to
   eight seconds, out of step with each other, clearly visible but calm. Calm, never busy. It sits behind everything and
   never wraps glass, so its fading is safe. Under Reduce Motion it holds still.
 */
@@ -56,7 +56,7 @@ export function Breath() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Wash id="breathLapis" color={theme.colors.lapis} size={big} top={-big * 0.38} left={-big * 0.25} period={5200} delay={0} peak={peak} />
-      <Wash id="breathSaffron" color={theme.colors.saffron} size={big * 0.85} top={height - big * 0.62} left={width - big * 0.6} period={6400} delay={1400} peak={peak * 0.8} />
+      <Wash id="breathMist" color={theme.colors.inkSoft} size={big * 0.85} top={height - big * 0.62} left={width - big * 0.6} period={6400} delay={1400} peak={peak * 0.8} />
       <Wash id="breathTeal" color={theme.colors.verdigris} size={big * 0.55} top={height * 0.38} left={-big * 0.3} period={7800} delay={2800} peak={peak * 0.6} />
     </View>
   );
