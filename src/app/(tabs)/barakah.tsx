@@ -80,7 +80,7 @@ const useStyles = makeStyles((t) => ({
   markOn: { borderColor: t.colors.verdigris, backgroundColor: t.colors.verdigris },
   chip: { flexDirection: "row", alignItems: "center", gap: 2, borderRadius: RADIUS.pill, backgroundColor: t.colors.lapisWash, paddingVertical: 3, paddingHorizontal: space(1) },
   bar: { alignSelf: "stretch", height: 4, borderRadius: 2, backgroundColor: t.colors.surfaceSunk, overflow: "hidden", marginTop: space(0.75) },
-  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(14) },
+  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5), paddingBottom: space(16) },
   pill: { flex: 1, minHeight: 46, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   sheet: { flex: 1, backgroundColor: t.colors.paper, paddingHorizontal: MARGIN, paddingTop: space(3) },
   sheetHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: space(2) },
