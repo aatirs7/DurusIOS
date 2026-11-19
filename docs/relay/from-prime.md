@@ -13,6 +13,12 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Per-word Quranic Words, from QUL** (merged from a worktree; QUL credited where word data shows).
+  - assets/content/quranic-words-map.json (233 KB): per word, its track card and clitic skills, built by scripts/coverage/build_words_map.py from the QUL lemma and stem files (data-in/, git-ignored) with the corpus used offline only to map QUL lemmas to the app's cards. Clitics from surface minus QUL stem: 98.9% agree with the corpus (98.0% of words with a clitic).
+  - Exact coverage replaces the lower-bound curve: the meter, followable ayahs and memorized-surah share.
+  - Read: known words get a faint verdigris underline and each ayah shows "You know N of M words" (ayah layout; not in flow, the word grid or 37:130).
+  - Progress Wall: a "Words I know" glass toggle lights ayahs with at least 9 in 10 words known.
+  - Learn from a surah: on the Quranic Words page, pick a surah and learn its unknown words, most frequent first.
 - Barakah long-press backdrop: a faint lapis tint in light mode (owner).
 - Barakah: the pills now measure their real position on screen (measureInWindow) and lift by exactly the overlap with the tab bar; padding alone never moved them because the tab view does not end at the screen edge. The long-press card is Liquid Glass with a glass Done pill.
 - Reader: long press zooms into the ayah again (its sheet has memorized, understood and bookmark); the extra Zoom button that pushed the ayah bar off the screen is gone. Barakah long press shows the practice as a centred card over a blurred page.
@@ -48,7 +54,6 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 - Review src/barakah/benefits.ts (14 short "why" lines with references) with a teacher if possible.
 
-- QUL downloads need a signed-in account: the owner downloads Word lemma (resource 75) and Word stem (77) as sqlite into DurusIOS/data-in/. That unlocks the per-word table: Read underline, per-ayah known count, Map toggle, learn-from-a-surah and exact coverage.
 
 - Native build: add expo-audio, which unlocks drill 1 (listen, choose the meaning); src/lib/wordAudio.ts has the switch.
 - Send the developers@quran.com draft (now also covers bundling the glosses) and approve posting the QUL licence issue.

@@ -7,23 +7,19 @@
 
   TWO WAYS TO COUNT COVERAGE
 
-  1. Exact, per word (isTokenKnown, coverageOf, followableAyahs). A word of the
-     Quran counts as known when it has a stem lemma, every stem lemma in it is
-     known, and every clitic on it (wa-, bi-, al-, attached pronouns and so on)
-     has been taught as a parsing skill. This needs a per-word table (word to
-     lemma ids and skill ids). The only morphology we can read today is the
-     Quranic Arabic Corpus, which is GPL with a no-modification clause, so such
-     a table is NOT shipped. These functions are what the app will run once a
-     shippable table exists (QUL, once its licence is confirmed).
+  1. Exact, per word (isTokenKnown, coverageOf, followableAyahs, and their
+     packed forms decodeWordsMap and knownWordFlags). A word of the Quran
+     counts as known when it has a stem lemma, every stem lemma in it is known,
+     and every clitic on it (wa-, bi-, al-, attached pronouns and so on) has
+     been taught as a parsing skill. The per-word table this needs ships as
+     assets/content/quranic-words-map.json, built offline from the Quranic
+     Universal Library's lemma and stem data (scripts/coverage/
+     build_words_map.py). This is what the app counts with.
 
-  2. Precomputed along the path (pathPrefix, coverageAtPrefix and friends).
-     What ships today: for each prefix length k of the path (the first k lemma
-     cards, with each stage's skills taught at the stage's start), how many
-     words of the Quran are known and how many ayahs are followable, computed
-     offline by scripts/coverage/build_words.py. On the device the figure is
-     read off that curve at the learner's known positions, less the most any
-     gap could cost (knownAlongPath), so it is exact when the learner has gone
-     in path order and a lower bound otherwise. It is never an overestimate.
+  2. Precomputed along the path (pathPrefix, knownAlongPath and friends). For
+     each prefix length k of the path, how many words are known, computed
+     offline. Exact in path order and a lower bound otherwise. Kept as the
+     fallback for a build whose word table does not match its cards.
 */
 
 import { gradeFor } from "./modes";
@@ -68,6 +64,142 @@ export function followableAyahs(
     if (known >= Math.ceil(share * ayah.length - 1e-9)) n += 1;
   }
   return n;
+}
+
+/* ------------------------------------------------- the packed word table */
+
+/*
+  The word table, decoded once into flat arrays: for word i (Quran order),
+  first[i] is the index of its card among the track's cards or -1, second[i]
+  the index of a second card for a fused word (-1 none, -2 a lemma outside
+  the track, so the word is never known), and skills[i] a bitmask with bit
+  (id - 1) set for each parsing skill id. ayahStart[g] is the first word of
+  global ayah g; ayahStart[ayahs] is the word count.
+
+  Encoding (see build_words_map.py): per ayah, each word is two base-36
+  characters for 1 + its card index (00 = none), then optionally "+" and two
+  more for a second card (00 = outside the track), then one character per
+  skill from skillChars.
+*/
+export type PackedWords = {
+  first: Int16Array;
+  second: Int16Array;
+  skills: Int32Array;
+  ayahStart: Int32Array;
+  aligned: Uint8Array;
+};
+
+const B36 = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+export function decodeWordsMap(map: {
+  skillChars: string;
+  ayahs: readonly string[];
+  unaligned?: readonly number[];
+}): PackedWords {
+  /* Character code lookups: a base-36 digit (or -1), a skill bit (or 0). */
+  const digit = new Int8Array(128).fill(-1);
+  for (let i = 0; i < B36.length; i += 1) digit[B36.charCodeAt(i)] = i;
+  const skillBit = new Int32Array(128);
+  for (let i = 0; i < map.skillChars.length; i += 1) skillBit[map.skillChars.charCodeAt(i)] = 1 << i;
+  const PLUS = 43;
+  const d = (a: string, j: number) => {
+    const v = digit[a.charCodeAt(j)];
+    if (v === undefined || v < 0) throw new Error(`bad word table character at ${j}`);
+    return v;
+  };
+  /* Every word has exactly two base-36 characters, a second card two more. */
+  let count = 0;
+  let seconds = 0;
+  for (const a of map.ayahs)
+    for (let j = 0; j < a.length; j += 1) {
+      const c = a.charCodeAt(j);
+      if (c < 128 && digit[c] >= 0) count += 1;
+      else if (c === PLUS) seconds += 1;
+    }
+  const total = (count - 2 * seconds) / 2;
+  const first = new Int16Array(total);
+  const second = new Int16Array(total).fill(-1);
+  const skills = new Int32Array(total);
+  const ayahStart = new Int32Array(map.ayahs.length + 1);
+  let w = 0;
+  for (let g = 0; g < map.ayahs.length; g += 1) {
+    const a = map.ayahs[g];
+    ayahStart[g] = w;
+    let j = 0;
+    while (j < a.length) {
+      first[w] = d(a, j) * 36 + d(a, j + 1) - 1;
+      j += 2;
+      if (a.charCodeAt(j) === PLUS) {
+        const v = d(a, j + 1) * 36 + d(a, j + 2) - 1;
+        second[w] = v < 0 ? -2 : v;
+        j += 3;
+      }
+      let mask = 0;
+      while (j < a.length) {
+        const c = a.charCodeAt(j);
+        const bit = c < 128 ? skillBit[c] : 0;
+        if (bit === 0) break;
+        mask |= bit;
+        j += 1;
+      }
+      skills[w] = mask;
+      w += 1;
+    }
+  }
+  ayahStart[map.ayahs.length] = w;
+  const aligned = new Uint8Array(map.ayahs.length).fill(1);
+  for (const g of map.unaligned ?? []) if (g >= 0 && g < aligned.length) aligned[g] = 0;
+  return { first, second, skills, ayahStart, aligned };
+}
+
+/* The bitmask for a set of skill ids (1-based). */
+export function skillMask(ids: Iterable<number>): number {
+  let m = 0;
+  for (const id of ids) if (id >= 1 && id <= 31) m |= 1 << (id - 1);
+  return m;
+}
+
+/*
+  isTokenKnown over the packed table: knownCards[c] is 1 when the card at
+  index c is known; taught is a skillMask. One flag per word.
+*/
+export function knownWordFlags(p: PackedWords, knownCards: Uint8Array, taught: number): Uint8Array {
+  const out = new Uint8Array(p.first.length);
+  for (let i = 0; i < out.length; i += 1) {
+    const f = p.first[i];
+    if (f < 0 || knownCards[f] !== 1) continue;
+    const s = p.second[i];
+    if (s === -2 || (s >= 0 && knownCards[s] !== 1)) continue;
+    if ((p.skills[i] & ~taught) !== 0) continue;
+    out[i] = 1;
+  }
+  return out;
+}
+
+/* Known words per ayah, and the ayahs at least `share` known. */
+export function ayahCoverage(
+  p: PackedWords,
+  flags: Uint8Array,
+  share = FOLLOWABLE_SHARE,
+): { known: Uint16Array; followable: Uint8Array; followableCount: number; knownTotal: number } {
+  const n = p.ayahStart.length - 1;
+  const known = new Uint16Array(n);
+  const followable = new Uint8Array(n);
+  let followableCount = 0;
+  let knownTotal = 0;
+  for (let g = 0; g < n; g += 1) {
+    const a = p.ayahStart[g];
+    const b = p.ayahStart[g + 1];
+    let k = 0;
+    for (let i = a; i < b; i += 1) k += flags[i];
+    known[g] = k;
+    knownTotal += k;
+    if (b > a && k >= Math.ceil(share * (b - a) - 1e-9)) {
+      followable[g] = 1;
+      followableCount += 1;
+    }
+  }
+  return { known, followable, followableCount, knownTotal };
 }
 
 /* ------------------------------------------------------ along the path */

@@ -90,3 +90,13 @@ export const READER_TONES: Readonly<Record<Exclude<ReaderTone, "app">, ToneColor
   sepia: { page: "#f2e8d5", ink: "#4a3520", soft: "#7a6248", rule: "#dccdb2", accent: "#2a4a8b", dark: false },
   night: { page: "#0f1218", ink: "#d9d4c7", soft: "#8f97a6", rule: "#262c38", accent: "#7fa0dc", dark: true },
 };
+
+/*
+  A palette colour at reduced strength, for marks that should read as a faint
+  tint of a token (the known-word underline in Read). Takes a token's hex, so
+  no new colour enters the app.
+*/
+export function withAlpha(hex: Hex, alpha: number): string {
+  const n = parseInt(hex.slice(1, 7), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}

@@ -33,6 +33,7 @@ import { bootOnce } from "@/data/boot";
 import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
 import { syncReminders } from "@/data/reminders";
+import { refreshWordsKnown } from "@/data/words";
 import { useSession } from "@/state/session";
 import { useThemeChoice } from "@/state/theme";
 import { tokenCache } from "@/lib/tokenCache";
@@ -177,6 +178,12 @@ export default function RootLayout() {
     if (!boot?.ok) return;
     const profileId = boot.profileId;
     void syncReminders(db, profileId);
+    /* What Read underlines and the Map lights, from the first screen on. */
+    try {
+      refreshWordsKnown(db, profileId);
+    } catch {
+      /* Read and the Map simply stay plain; Learn refreshes it on focus. */
+    }
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") void syncReminders(db, profileId);
     });

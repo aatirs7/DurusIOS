@@ -1,14 +1,18 @@
 import {
   atPrefix,
+  ayahCoverage,
   coverageOf,
+  decodeWordsMap,
   floorPercent,
   followableAyahs,
   gradeWordChoice,
   isTokenKnown,
   knownAlongPath,
+  knownWordFlags,
   pathPrefix,
   pickMeaningDistractors,
   pickNewCards,
+  skillMask,
   surahKnownAt,
   surahsCoverage,
   type MeaningOption,
@@ -182,5 +186,57 @@ describe("grading", () => {
 
   it("is never again when right", () => {
     expect(gradeWordChoice(true, 4000)).not.toBe("again");
+  });
+});
+
+describe("the packed word table", () => {
+  const B36 = "0123456789abcdefghijklmnopqrstuvwxyz";
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!$*@^";
+  const card = (i: number) => B36[Math.floor((i + 1) / 36)] + B36[(i + 1) % 36];
+  /* One word as build_words_map.py writes it: card index (or -1), a second
+     card (index, -2 outside the track, or none), skill ids. */
+  const enc = (first: number, skills: number[] = [], second?: number) =>
+    (first < 0 ? "00" : card(first)) +
+    (second === undefined ? "" : "+" + (second < 0 ? "00" : card(second))) +
+    skills.map((id) => CHARS[id - 1]).join("");
+
+  it("decodes words, second cards and skills, ayah by ayah", () => {
+    const p = decodeWordsMap({
+      skillChars: CHARS,
+      ayahs: [enc(0, [1, 4]) + enc(-1) + enc(40, [31]), enc(2, [], 3) + enc(5, [2], -2)],
+      unaligned: [1],
+    });
+    expect(Array.from(p.first)).toEqual([0, -1, 40, 2, 5]);
+    expect(Array.from(p.second)).toEqual([-1, -1, -1, 3, -2]);
+    expect(Array.from(p.skills)).toEqual([skillMask([1, 4]), 0, skillMask([31]), 0, skillMask([2])]);
+    expect(Array.from(p.ayahStart)).toEqual([0, 3, 5]);
+    expect(Array.from(p.aligned)).toEqual([1, 0]);
+  });
+
+  it("agrees with the known-word rule on every word", () => {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pick = (n: number) => Math.floor(rnd() * n);
+    const words: { first: number; second?: number; skills: number[] }[] = [];
+    for (let i = 0; i < 400; i += 1) {
+      const first = rnd() < 0.15 ? -1 : pick(20);
+      const second = rnd() < 0.1 ? (rnd() < 0.3 ? -2 : pick(20)) : undefined;
+      const skills = [...new Set(Array.from({ length: pick(3) }, () => 1 + pick(31)))];
+      words.push({ first, second, skills });
+    }
+    const ayahs = [0, 1, 2, 3].map((a) => words.slice(a * 100, a * 100 + 100).map((w) => enc(w.first, w.skills, w.second)).join(""));
+    const p = decodeWordsMap({ skillChars: CHARS, ayahs });
+    for (let trial = 0; trial < 20; trial += 1) {
+      const knownCards = new Set(Array.from({ length: 12 }, () => pick(20)));
+      const taught = new Set(Array.from({ length: 20 }, () => 1 + pick(31)));
+      const flags = knownWordFlags(p, Uint8Array.from({ length: 20 }, (_, i) => (knownCards.has(i) ? 1 : 0)), skillMask(taught));
+      /* The same words as tokens: a lemma outside the track is one no one knows. */
+      const tokens = words.map((w) => t(w.first < 0 ? [] : [w.first, ...(w.second === undefined ? [] : [w.second === -2 ? 999 : w.second])], w.skills));
+      tokens.forEach((tok, i) => expect(flags[i]).toBe(isTokenKnown(tok, knownCards, taught) ? 1 : 0));
+      const ayahTokens = [0, 1, 2, 3].map((a) => tokens.slice(a * 100, a * 100 + 100));
+      const cov = ayahCoverage(p, flags);
+      expect(cov.followableCount).toBe(followableAyahs(ayahTokens, knownCards, taught));
+      expect(cov.knownTotal).toBe(coverageOf(tokens, knownCards, taught).known);
+    }
   });
 });

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { Arabic } from "@/components/Arabic";
@@ -8,6 +8,7 @@ import { BarakahRing } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass, GlassButton } from "@/components/Glass";
 import { Screen } from "@/components/Screen";
+import { SurahWordsSheet } from "@/components/SurahWordsSheet";
 import { Text } from "@/components/Text";
 import { TopBar } from "@/components/TopBar";
 import { db } from "@/data/client";
@@ -15,11 +16,13 @@ import { countDue, countNewAvailable } from "@/data/queue";
 import { lessons } from "@/data/schema";
 import { getSettingsFor } from "@/data/settings";
 import {
+  NEW_PER_DAY,
   memorizedCoverage,
+  refreshWordsKnown,
   wordsProgress,
   type WordsStageView,
 } from "@/data/words";
-import { WORDS } from "@/data/wordsContent";
+import { WORDS_MAP_ATTRIBUTION, wordsMapTotal } from "@/data/wordsMap";
 import { TOTAL_LESSONS } from "@/engine/constants";
 import { dateLine } from "@/lib/time";
 import { countRange, foldStatus } from "@/quran/status";
@@ -148,8 +151,21 @@ export default function Today() {
   const [mode, setMode] = useState<"home" | "words" | "course">("home");
 
   const [tick, setTick] = useState(0);
-  const bump = useCallback(() => setTick((n) => n + 1), []);
+  const bump = useCallback(() => {
+    setTick((n) => n + 1);
+    /* Read and the Map underline and light what is known: keep them current. */
+    if (profileId !== null) refreshWordsKnown(db, profileId);
+  }, [profileId]);
   useFocusEffect(bump);
+
+  /* Learn from a surah: the sheet, and the surah to open once it has gone. */
+  const [surahOpen, setSurahOpen] = useState(false);
+  const pendingSurah = useRef<number | null>(null);
+  const afterSurahSheet = () => {
+    const n = pendingSurah.current;
+    pendingSurah.current = null;
+    if (n !== null) router.push(`/words?surah=${n}`);
+  };
 
   const view = useMemo(() => {
     if (profileId === null) return null;
@@ -184,7 +200,7 @@ export default function Today() {
 
   const memorizedShare =
     words.ready && memorized.length > 0
-      ? memorizedCoverage(words.prefix, memorized)
+      ? memorizedCoverage(words, memorized)
       : null;
   const currentStage = words.stages.findIndex((st) => st.learned < st.items);
 
@@ -315,7 +331,7 @@ export default function Today() {
                 </View>
                 {howOpen ? (
                   <Text variant="bodySoft" color="inkSoft" style={s.center}>
-                    {`A word counts once you have chosen its meaning correctly twice, and only when every part joined to it, such as wa-, bi- or al-, has been taught too. The figure is the share of the Quran's ${WORDS.totals.words.toLocaleString("en-US")} words that are known along the path in order, so it can lag behind but never runs ahead. The mark is at 80%. Knowing most of the words is a step toward following an ayah, not the same as understanding it.`}
+                    {`A word counts once you have chosen its meaning correctly twice, and only when every part joined to it, such as wa-, bi- or al-, has been taught too. Every one of the Quran's ${wordsMapTotal().toLocaleString("en-US")} words is checked this way, and the figure is the share you know. The mark is at 80%. Knowing most of the words is a step toward following an ayah, not the same as understanding it. ${WORDS_MAP_ATTRIBUTION}.`}
                   </Text>
                 ) : (
                   <Text variant="label" color="inkFaint">
@@ -340,6 +356,10 @@ export default function Today() {
                 primary
                 label="Start"
                 onPress={() => router.push("/words")}
+              />
+              <GlassButton
+                label="Learn from a surah"
+                onPress={() => setSurahOpen(true)}
               />
 
               <View style={s.path}>
@@ -501,6 +521,21 @@ export default function Today() {
           </View>
         </ScrollView>
       ) : null}
+
+      <SurahWordsSheet
+        visible={surahOpen}
+        onClose={() => setSurahOpen(false)}
+        onDismiss={afterSurahSheet}
+        knownIds={words.known}
+        introducedIds={words.introduced}
+        perSession={NEW_PER_DAY}
+        onStart={(n) => {
+          pendingSurah.current = n;
+          setSurahOpen(false);
+          /* onDismiss is the right moment; this covers it never firing. */
+          setTimeout(afterSurahSheet, 650);
+        }}
+      />
     </Screen>
   );
 }

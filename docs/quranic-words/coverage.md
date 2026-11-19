@@ -59,3 +59,14 @@ Notes:
 - Al-Fatiha alone is 10%, not 25 to 30%. Its 23 lemmas include rare ones (maghdub, dallin, sirat, mustaqim), and the most frequent glue (min, ma, la, fi, inna, qala, kana) is not in it.
 - The salah surahs bring 51 lemmas, many rare (ghasiq, waqab, naffathat, kawthar). That costs about 3 points by stage 12: the path reaches 78.4% at 500 lemmas against 81.6% in pure frequency order. Reaching 80% on the path takes about 540 lemmas.
 - Skill placement is my assumption: the spec puts wa-, bi- and li- in stage 3, but Al-Fatiha needs them (bismi, lillahi, wa iyyaka), so they are counted in stage 0. Hadha needs ha- (attention) and dhalika needs -li- and -ka; these are in stage 1 with the demonstratives.
+
+## Exact coverage on the device (per-word table)
+
+Built 2026-11-19 by scripts/coverage/build_words_map.py into assets/content/quranic-words-map.json (233 KB, about 108 KB gzipped). Morphology data from the Quranic Universal Library (Tarteel): the "Word lemma" and "Word stem" sqlite files, owner's licence decision. The corpus is used offline only, to match QUL ids to our cards and to check the result; nothing from it ships.
+
+- Words: 77,432, following Tanzil and QUL word division (ba'da ma is two words in 2:181, 8:6 and 13:37, where the corpus fuses it). Every ayah but 37:130 lines up word for word with the reader's text.
+- Cards: each word's QUL lemma and stem id are matched to our cards by majority vote over word locations, keyed on (lemma id, stem id, whether the stem is a bare pronoun after li- or bi-), then the lemma id, then the stem id; fused words (mimma, yawma'idhin) keep both lemmas. QUL gives min and man one lemma; the stem id (which keeps the vowels) tells them apart. Agreement with the corpus on which track cards a word holds: 99.96%, measured on the same words the vote was taken over, so it is in-sample.
+- Clitics: the Tanzil surface form minus the QUL stem, read by hand-written rules (prefixes wa-, fa-, bi-, li-, la-, ka-, sa-, a-, al-, ya, ha, ta; pronoun and verb person suffixes). Exact agreement with the corpus's clitic set: 98.9% of all compared words (76,520 of 77,386), and 98.0% of the words that carry a clitic (41,565 of 42,423). The main residue is 2nd versus 3rd person plural on verbs (-u, -una), which the letters alone cannot tell, and the dropped "my" in rabbi. Both persons are taught in stages 0 and 1, so it barely moves the figures.
+- Without the stem file, the fallback (surface compared with the lemma) scored 84.4% of all words and 74.5% of words with a clitic (31,616 of 42,423).
+- The word at which each word becomes known along the path agrees with the corpus for 99.84% of words; coverage per stage matches the content curve to 0.1 point, and the whole path reaches 80.01%.
+- QUL data issues found: the lemma table has three rows past the end of their ayah (13:5:26, 2:275:46, 4:176:51); they are ignored.
