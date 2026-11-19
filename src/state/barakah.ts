@@ -34,7 +34,12 @@ type BarakahState = Hydratable & {
   log: (day: string, practiceId: string, value: number) => void;
   setTracked: (ids: string[]) => void;
   ensureSince: () => void;
+  /* Where an adhkar walkthrough was left: "YYYY-MM-DD:morning", the page, and taps per dhikr. */
+  adhkarRun: AdhkarRun | null;
+  setAdhkarRun: (run: AdhkarRun | null) => void;
 };
+
+export type AdhkarRun = { key: string; i: number; counts: Record<string, number> };
 
 /* A generous cap. Roughly three years of a dozen practices with a few edits a
    day; the oldest go first, and the fold only ever reads the latest per day. */
@@ -53,6 +58,8 @@ export const useBarakah = create<BarakahState>()(
         set({ events: next.length > MAX_EVENTS ? next.slice(next.length - MAX_EVENTS) : next });
       },
       setTracked: (tracked) => set({ tracked }),
+      adhkarRun: null,
+      setAdhkarRun: (adhkarRun) => set({ adhkarRun }),
       ensureSince: () => {
         if (get().since === null) set({ since: localToday() });
       },

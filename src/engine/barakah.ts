@@ -10,8 +10,10 @@
     standing rule is no streaks at all, and the app wins.
   - A missed day is simply a day with less done. Nothing here computes a
     "miss" as its own thing.
-  - Descriptions are one plain line. No hadith text, no virtue claims. A Quran
-    reference appears only where the practice is itself a surah.
+  - Descriptions are one plain line. A Quran reference appears only where the
+    practice is itself a surah. The fuller words, meanings and narrations of
+    the morning and evening adhkar live in their guided walkthrough
+    (src/barakah/adhkar.ts), which the owner asked for, each with its source.
   - Sadaqah is yes or no. No amounts, ever.
 */
 

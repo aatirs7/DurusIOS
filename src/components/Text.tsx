@@ -22,7 +22,10 @@ export type TextProps = RNTextProps & {
 export function Text({ variant = "body", color = "ink", style, ...rest }: TextProps) {
   const theme = useTheme();
   return (
+    /* Larger Text sizes are honoured up to 1.3x, so the one-screen layouts
+       (Progress, Barakah) still fit on a small iPhone with large text. */
     <RNText
+      maxFontSizeMultiplier={1.3}
       {...rest}
       style={[textStyles[variant], { color: theme.colors[color] }, style]}
     />
