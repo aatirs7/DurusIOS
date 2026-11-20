@@ -33,6 +33,8 @@ import {
 } from "@/data/wordsContent";
 import { transliterateQuranWord } from "@/engine/quranTranslit";
 import { canPlayWordAudio, playWordAudio } from "@/lib/wordAudio";
+import { playWordFromDownload } from "@/quran/offlineAudio";
+import { usePrefs } from "@/state/prefs";
 import { gradeWordChoice } from "@/engine/words";
 import { haptics } from "@/lib/haptics";
 import { SURAHS } from "@/quran/tanzil";
@@ -440,12 +442,18 @@ function Listen({ path }: { path: string | null }) {
   const theme = useTheme();
   const url = wordAudioUrl(path);
   const can = !!url && canPlayWordAudio();
+  /* From a downloaded verse when there is one (offline), else streamed. */
+  const hear = () => {
+    const { reciterId, translationId } = usePrefs.getState();
+    void playWordFromDownload(path, reciterId ?? 7, translationId).then((ok) => ok || playWordAudio(url));
+  };
   useEffect(() => {
-    if (can) playWordAudio(url);
+    if (can) hear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [can, url]);
   if (!can) return null;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel="Listen" onPress={() => playWordAudio(url)} hitSlop={8}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Listen" onPress={hear} hitSlop={8}>
       <Glass interactive style={s.listen}>
         <Svg width={20} height={20} viewBox="0 0 24 24">
           <Path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="none" stroke={theme.colors.lapis} strokeWidth={1.7} strokeLinejoin="round" />

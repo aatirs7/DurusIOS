@@ -71,6 +71,7 @@ function fetchAndStore(key: string, f: File, surah: number, translationId: numbe
     .then((fresh) => {
       f.write(JSON.stringify(fresh));
       memory.set(key, fresh);
+      onFresh?.(fresh);
       return fresh;
     })
     .finally(() => inflight.delete(key));
@@ -133,6 +134,7 @@ export async function syncAllChapters(translationId: number | null, reciterId: n
         f.write(JSON.stringify(fresh));
         /* A surah the reader already holds gets the fresh copy too. */
         if (memory.has(key)) memory.set(key, fresh);
+        onFresh?.(fresh);
       } catch {
         return;
       }
@@ -140,6 +142,28 @@ export async function syncAllChapters(translationId: number | null, reciterId: n
   } finally {
     syncing = false;
   }
+}
+
+/* A surah from the phone, or downloaded and stored, without holding it in
+   memory: for recitation downloads, which walk many surahs. */
+export async function chapterFromDisk(surah: number, translationId: number | null, reciterId: number | null): Promise<QfChapter> {
+  const key = `${surah}-${translationId ?? 0}-${reciterId ?? 0}`;
+  const hot = memory.get(key);
+  if (hot) return hot;
+  const f = fileFor(surah, translationId, reciterId);
+  const stored = await readStored(f);
+  if (stored) return stored;
+  if (!quranApiConfigured()) throw new Error("Quran Foundation content is not connected yet");
+  const fresh = await download(surah, translationId, reciterId);
+  f.write(JSON.stringify(fresh));
+  return fresh;
+}
+
+/* Told when a surah's records are re-synced, so downloaded recitation files
+   whose URL changed or was removed can be replaced or deleted. */
+let onFresh: ((c: QfChapter) => void) | null = null;
+export function onChapterRefreshed(f: (c: QfChapter) => void) {
+  onFresh = f;
 }
 
 /* Every stored surah, for a later "download all for offline" control and for clearing. */

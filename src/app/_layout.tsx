@@ -34,6 +34,9 @@ import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
 import { syncReminders } from "@/data/reminders";
 import { syncWordGlosses } from "@/data/wordGlosses";
+/* Registers the check that keeps downloaded recitation files matching the
+   weekly re-synced records (replaced or deleted when their URL changes). */
+import "@/quran/offlineAudio";
 import { syncAllChapters } from "@/quran/remote";
 import { usePrefs } from "@/state/prefs";
 import { refreshWordsKnown } from "@/data/words";

@@ -31,6 +31,10 @@ const mockChapter: QfChapter = {
 jest.mock("@/quran/remote", () => ({
   quranApiConfigured: () => true,
   loadChapter: jest.fn(async () => mockChapter),
+  loadVerseTranslations: jest.fn(async () => ({})),
+  prefetchChapters: jest.fn(async () => undefined),
+  chapterFromDisk: jest.fn(async () => mockChapter),
+  onChapterRefreshed: jest.fn(),
 }));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), canGoBack: () => true }),

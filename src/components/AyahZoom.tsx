@@ -6,7 +6,9 @@ import Svg, { Path } from "react-native-svg";
 
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
-import { canPlayWordAudio, playAudio, stopAudio } from "@/lib/wordAudio";
+import { canPlayWordAudio, playAudio, playClip, stopAudio } from "@/lib/wordAudio";
+import { localAudio } from "@/quran/offlineAudio";
+import { usePrefs } from "@/state/prefs";
 import type { QfAyah, QfWord } from "@/quran/qf";
 import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
@@ -78,6 +80,19 @@ export function AyahZoom(p: Props) {
   const [focus, setFocus] = useState<QfWord | null>(null);
   /* Sound needs the build with the audio module; older builds stay silent. */
   const canHear = canPlayWordAudio();
+  const reciterId = usePrefs((st) => st.reciterId) ?? 7;
+  /* Downloaded for offline listening: the verse file on the phone. */
+  const local = p.layer ? localAudio(reciterId, p.layer.key, p.layer.audio?.url) : null;
+  const hearAyah = () => {
+    if (p.layer?.audio) playAudio(local ?? p.layer.audio.url);
+  };
+  /* A word: cut from the downloaded verse file when there is one (works
+     offline), else Quran Foundation's word recording, streamed. */
+  const hearWord = (w: QfWord) => {
+    const seg = p.layer?.audio?.segments.find((x) => x[1] === w.position);
+    if (local && seg) playClip(local, seg[2], seg[3]);
+    else playAudio(w.audio);
+  };
 
   /* Scale only: a zoom, never a fade, so the glass is always drawn. */
   const scale = useSharedValue(still ? 1 : 0.88);
@@ -111,7 +126,7 @@ export function AyahZoom(p: Props) {
                     <View style={{ flexDirection: "row", alignItems: "center", gap: space(2.5) }}>
                       {/* The whole ayah, recited (Quran Foundation, the chosen reciter). */}
                       {canHear && p.layer?.audio ? (
-                        <Pressable accessibilityRole="button" accessibilityLabel="Play the ayah" onPress={() => playAudio(p.layer!.audio!.url)} hitSlop={10}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Play the ayah" onPress={hearAyah} hitSlop={10}>
                           <Icon d={PLAY} color={theme.colors.lapis} size={18} />
                         </Pressable>
                       ) : null}
@@ -133,8 +148,8 @@ export function AyahZoom(p: Props) {
                           </Text>
                         ) : null}
                         {focus.meaning ? <Text style={{ fontSize: 18, textAlign: "center" }}>{focus.meaning}</Text> : null}
-                        {canHear && focus.audio ? (
-                          <Pressable accessibilityRole="button" accessibilityLabel="Listen" onPress={() => playAudio(focus.audio)} hitSlop={8} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingTop: space(1) }}>
+                        {canHear && (focus.audio || local) ? (
+                          <Pressable accessibilityRole="button" accessibilityLabel="Listen" onPress={() => hearWord(focus)} hitSlop={8} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingTop: space(1) }}>
                             <Icon d={PLAY} color={theme.colors.lapis} size={16} />
                             <Text variant="label" color="lapis">
                               Listen again
@@ -152,7 +167,7 @@ export function AyahZoom(p: Props) {
                           <Pressable key={w.position} accessibilityRole="button" accessibilityLabel={w.meaning ?? `Word ${w.position}`} onPress={() => {
                               setFocus(w);
                               /* Tapping a word says it. */
-                              if (canHear) playAudio(w.audio);
+                              if (canHear) hearWord(w);
                             }} style={s.word}>
                             <Text selectable={false} style={[big, { fontSize: 34, lineHeight: 64 }]}>
                               {w.text}

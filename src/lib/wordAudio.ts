@@ -40,17 +40,19 @@ export function canPlayWordAudio(): boolean {
 }
 
 /*
-  Play a word's Quran Foundation recording. Streamed, never saved to a file,
-  so the one-week limit on stored recordings never applies. One shared
-  player; a new word replaces the last. Loaded lazily so a phone on the older
-  build (no audio module) never touches it.
+  Play a Quran Foundation recording: a word, a whole ayah, or a downloaded
+  verse file. One shared player; a new sound replaces the last. Loaded lazily
+  so a phone on the older build (no audio module) never touches it.
 */
 type Player = { replace(src: string): void; seekTo(s: number): Promise<void>; play(): void; pause(): void };
 let player: Player | null = null;
+let clipTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function playWordAudio(url: string | null): boolean {
-  if (!url || !canPlayWordAudio()) return false;
+function load(url: string): Player | null {
+  if (!canPlayWordAudio()) return null;
   try {
+    if (clipTimer) clearTimeout(clipTimer);
+    clipTimer = null;
     if (!player) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const audio = require("expo-audio") as typeof import("expo-audio");
@@ -59,12 +61,18 @@ export function playWordAudio(url: string | null): boolean {
     } else {
       player.replace(url);
     }
-    void player.seekTo(0).catch(() => undefined);
-    player.play();
-    return true;
+    return player;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function playWordAudio(url: string | null): boolean {
+  const p = url ? load(url) : null;
+  if (!p) return false;
+  void p.seekTo(0).catch(() => undefined);
+  p.play();
+  return true;
 }
 
 /* Any Quran Foundation recording (a word, or a whole ayah from the reader). */
@@ -72,9 +80,34 @@ export const playAudio = playWordAudio;
 
 /* Stop whatever is playing, for example when the reader's zoom closes. */
 export function stopAudio() {
+  if (clipTimer) clearTimeout(clipTimer);
+  clipTimer = null;
   try {
     player?.pause();
   } catch {
     /* Nothing playing. */
   }
+}
+
+/*
+  One word cut from a verse recording (Quran Foundation's timing segments),
+  for verse files downloaded for offline listening: seek to the word, then
+  play, and pause at its end. Allowed by Quran Foundation as a Derived Material.
+*/
+export function playClip(uri: string, fromMs: number, toMs: number): boolean {
+  const p = load(uri);
+  if (!p) return false;
+  p.seekTo(fromMs / 1000)
+    .catch(() => undefined)
+    .then(() => {
+      p.play();
+      clipTimer = setTimeout(() => {
+        try {
+          p.pause();
+        } catch {
+          /* Already stopped. */
+        }
+      }, Math.max(200, toMs - fromMs + 60));
+    });
+  return true;
 }
