@@ -13,6 +13,9 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Word audio (native build).** expo-audio added (no microphone permission, no background audio). The new-word card and the "What does this mean?" drill play Quran Foundation's word recording once as they appear, with a Listen pill to replay. Streamed, never stored, so the one-week limit on stored recordings never applies. Phones on the older build get the same update and simply show no Listen pill.
+- Search: while an AI question is out the list shows only the loader, then the AI's picks with the local results after them. No more local results appearing and then being replaced (owner). Offline, or after 6 s, the local results show alone.
+
 - **Owner round, 20 Nov.**
   - Search: typing no longer snaps the bar up. It glides to the top over about 0.6 s while the results rise and fade in beneath it.
   - Quranic Words new-word card: centred on the screen; the word and each "also heard as" form show a transliteration, from our own Uthmani-aware rules (src/engine/quranTranslit.ts, tested on 30 words), so nothing licensed. Word audio still needs the native build with expo-audio.
@@ -67,7 +70,6 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 - Review src/barakah/benefits.ts (14 short "why" lines with references) with a teacher if possible.
 
 
-- Native build: add expo-audio, which unlocks drill 1 (listen, choose the meaning); src/lib/wordAudio.ts has the switch.
 - Review the stage lists, interference groups and glosses.
 - **Issue #4, Quranic Words, step 1: coverage numbers. STOPPED for owner review.** Full write-up: docs/quranic-words/coverage.md. Computed offline from the Quranic Arabic Corpus (not in the repo, never shipped). A word counts as known only when its lemma and every clitic on it are taught.
   - Lemmas needed: 25% = 9, 50% = 54, 60% = 109, 70% = 220, 80% = 441, 90% = 1,061. The top 500 reach 81.6%, so "500 words, about 80%" holds.

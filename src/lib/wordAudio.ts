@@ -25,7 +25,7 @@ import { requireOptionalNativeModule } from "expo";
   canPlayWordAudio() then turns drill 1 on by itself on phones with the build,
   and older binaries that take the same update stay text first.
 */
-const PLAYER_WIRED = false;
+const PLAYER_WIRED = true;
 
 let cached: boolean | null = null;
 
@@ -37,4 +37,32 @@ export function canPlayWordAudio(): boolean {
     cached = false;
   }
   return cached;
+}
+
+/*
+  Play a word's Quran Foundation recording. Streamed, never saved to a file,
+  so the one-week limit on stored recordings never applies. One shared
+  player; a new word replaces the last. Loaded lazily so a phone on the older
+  build (no audio module) never touches it.
+*/
+type Player = { replace(src: string): void; seekTo(s: number): Promise<void>; play(): void; pause(): void };
+let player: Player | null = null;
+
+export function playWordAudio(url: string | null): boolean {
+  if (!url || !canPlayWordAudio()) return false;
+  try {
+    if (!player) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const audio = require("expo-audio") as typeof import("expo-audio");
+      void audio.setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+      player = audio.createAudioPlayer(url) as unknown as Player;
+    } else {
+      player.replace(url);
+    }
+    void player.seekTo(0).catch(() => undefined);
+    player.play();
+    return true;
+  } catch {
+    return false;
+  }
 }

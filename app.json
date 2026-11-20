@@ -38,7 +38,8 @@
         }
       ],
       "./plugins/withoutPushEntitlement",
-      "expo-web-browser"
+      "expo-web-browser",
+      ["expo-audio", { "microphonePermission": false, "enableBackgroundPlayback": false, "recordAudioAndroid": false }]
     ],
     "experiments": {
       "typedRoutes": true,

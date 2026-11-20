@@ -2,6 +2,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
+import Svg, { Path } from "react-native-svg";
+
 import { Arabic } from "@/components/Arabic";
 import { BackBar } from "@/components/BackBar";
 import { Glass, GlassButton } from "@/components/Glass";
@@ -21,6 +23,7 @@ import {
 import {
   WORDS_ATTRIBUTION,
   canShowGloss,
+  wordAudioUrl,
   canShowNote,
   lemmaForCard,
   skillsForStage,
@@ -29,6 +32,7 @@ import {
   type WordsStage,
 } from "@/data/wordsContent";
 import { transliterateQuranWord } from "@/engine/quranTranslit";
+import { canPlayWordAudio, playWordAudio } from "@/lib/wordAudio";
 import { gradeWordChoice } from "@/engine/words";
 import { haptics } from "@/lib/haptics";
 import { SURAHS } from "@/quran/tanzil";
@@ -100,6 +104,7 @@ const useStyles = makeStyles((t) => ({
   form: { alignItems: "center", gap: space(0.5) },
   word: { alignItems: "center", gap: space(1) },
   middle: { justifyContent: "center" },
+  listen: { flexDirection: "row", alignItems: "center", gap: space(1), paddingHorizontal: space(2), paddingVertical: space(1), borderRadius: RADIUS.pill },
   skill: {
     width: "100%",
     borderTopWidth: 1,
@@ -303,6 +308,7 @@ function WordsSessionBody() {
                 <Arabic variant="card" style={s.face}>
                   {step.q.lemma.face}
                 </Arabic>
+                <Listen key={`${index}`} path={step.q.lemma.audio} />
               </>
             ) : (
               <>
@@ -424,6 +430,33 @@ function Intro({ stage }: { stage: WordsStage }) {
   );
 }
 
+/*
+  The word as Quran Foundation's reciter says it: played once as it appears,
+  and again on a tap. Streamed, not stored. Only on builds with the audio
+  module; older builds show nothing here.
+*/
+function Listen({ path }: { path: string | null }) {
+  const s = useStyles();
+  const theme = useTheme();
+  const url = wordAudioUrl(path);
+  const can = !!url && canPlayWordAudio();
+  useEffect(() => {
+    if (can) playWordAudio(url);
+  }, [can, url]);
+  if (!can) return null;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Listen" onPress={() => playWordAudio(url)} hitSlop={8}>
+      <Glass interactive style={s.listen}>
+        <Svg width={20} height={20} viewBox="0 0 24 24">
+          <Path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="none" stroke={theme.colors.lapis} strokeWidth={1.7} strokeLinejoin="round" />
+          <Path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11" fill="none" stroke={theme.colors.lapis} strokeWidth={1.7} strokeLinecap="round" />
+        </Svg>
+        <Text variant="label">Listen</Text>
+      </Glass>
+    </Pressable>
+  );
+}
+
 function Teach({ lemma }: { lemma: WordsLemma }) {
   const s = useStyles();
   const others = lemma.forms.filter((f) => f !== lemma.face).slice(0, 3);
@@ -439,6 +472,7 @@ function Teach({ lemma }: { lemma: WordsLemma }) {
         <Text variant="label" color="inkSoft">
           {transliterateQuranWord(lemma.face)}
         </Text>
+        <Listen path={lemma.audio} />
       </View>
       {canShowGloss(lemma.gloss) ? (
         <Text variant="pageTitle" style={s.center}>

@@ -111,7 +111,7 @@ describe("a first words session", () => {
       guard += 1;
       if (screen.queryByText("What does this mean?")) await fireEvent.press(screen.getByLabelText("Show the meanings"));
       else arabicRounds += 1;
-      const options = screen.getAllByRole("button").filter((b) => !["Leave this drill", "Choose one", "Go back"].includes(b.props.accessibilityLabel));
+      const options = screen.getAllByRole("button").filter((b) => !["Leave this drill", "Choose one", "Go back", "Listen"].includes(b.props.accessibilityLabel));
       await fireEvent.press(options[0]);
       expect(screen.getByText(/Heard in/)).toBeTruthy();
       await fireEvent.press(screen.getByLabelText("Continue"));

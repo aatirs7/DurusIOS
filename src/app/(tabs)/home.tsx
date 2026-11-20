@@ -14,7 +14,7 @@ import { Text } from "@/components/Text";
 import { TOP_BAR_HEIGHT, TopBar } from "@/components/TopBar";
 import { Typewriter } from "@/components/Typewriter";
 import { complete } from "@/quran/phrases";
-import { askKey, askQuran, loadVerseTranslations, type AskAnswer } from "@/quran/remote";
+import { askKey, askQuran, loadVerseTranslations, quranApiConfigured, type AskAnswer } from "@/quran/remote";
 import { search } from "@/quran/search";
 import { SURAHS } from "@/quran/tanzil";
 import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
@@ -135,9 +135,13 @@ export default function Home() {
     Ask: anything typed in words also goes to the free AI on the Durus server,
     after a pause in typing. Its picks lead the list; the local results follow.
     References, juz and surah names are answered locally and never asked.
+    While a question is out, the list waits with the loader rather than
+    showing the local results and then swapping them for the AI's (owner,
+    20 Nov). Offline, or after six seconds, the local results show alone.
   */
   const [ai, setAi] = useState<{ q: string; a: AskAnswer } | null>(null);
   const [asking, setAsking] = useState(false);
+  const [settled, setSettled] = useState<string | null>(null);
   const askable = typing && !result.label && /[a-z]{3}/i.test(query) && !/^\s*\d/.test(query);
   useEffect(() => {
     if (!askable) {
@@ -146,24 +150,35 @@ export default function Home() {
     }
     const k = askKey(query);
     let alive = true;
+    let done = false;
     setAsking(true);
+    const settle = () => {
+      done = true;
+      setAsking(false);
+      setSettled(k);
+    };
     const id = setTimeout(() => {
       askQuran(k).then((a) => {
-        if (!alive) return;
-        setAsking(false);
+        if (!alive || done) return;
         if (a) setAi({ q: k, a });
+        settle();
       });
     }, 650);
+    const giveUp = setTimeout(() => alive && !done && settle(), 6500);
     return () => {
       alive = false;
       clearTimeout(id);
+      clearTimeout(giveUp);
     };
   }, [query, askable]);
   const picks = askable && ai && ai.q === askKey(query) ? ai.a : null;
+  /* A question is out and its answer is not in yet. */
+  const waiting = askable && quranApiConfigured() && settled !== askKey(query);
 
   /* Results as one list of ayahs and surahs, plus one line saying what they are. */
   const { items, caption } = useMemo(() => {
     const out: Item[] = [];
+    if (waiting) return { items: out, caption: null };
     const seen = new Set<string>();
     const add = (it: Item) => {
       const k = it.kind === "ayah" ? `a${it.index}` : `s${it.n}`;
@@ -187,7 +202,7 @@ export default function Home() {
     else if (typing && out.length === 0 && asking) cap = null;
     else if (typing && out.length === 0) cap = result.pendingTopic ? `"${result.pendingTopic}" is coming soon` : "Nothing found";
     return { items: out, caption: cap };
-  }, [result, query, typing, picks, asking]);
+  }, [result, query, typing, picks, asking, waiting]);
 
   /* English under each ayah: from the phone if fetched before, else the server. */
   const [english, setEnglish] = useState<Record<string, string>>({});
@@ -207,7 +222,7 @@ export default function Home() {
     };
   }, [items, translationId]);
 
-  const completions = useMemo(() => (items.length === 0 ? complete(query, 4) : []), [query, items.length]);
+  const completions = useMemo(() => (items.length === 0 && !waiting ? complete(query, 4) : []), [query, items.length, waiting]);
 
   const openTo = (surah: number, ayah?: number) => {
     Keyboard.dismiss();
@@ -382,7 +397,7 @@ export default function Home() {
             contentContainerStyle={{ paddingBottom: space(12) }}
             ListHeaderComponent={
               <View>
-                {typing && asking && items.length === 0 && completions.length === 0 ? <Seeking /> : null}
+                {waiting ? <Seeking /> : null}
                 {caption ? (
                   <View style={s.caption} accessible accessibilityLabel={picks && picks.results.length > 0 ? `Suggested by AI. ${caption}` : caption}>
                     {picks && picks.results.length > 0 ? <Sparkle color={theme.colors.lapis} /> : null}
