@@ -174,6 +174,25 @@ const useStyles = makeStyles((t) => ({
     overflow: "hidden",
     marginTop: space(0.75),
   },
+  prayers: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderRadius: 24,
+    paddingVertical: space(1.5),
+    paddingHorizontal: space(2),
+    marginBottom: space(1),
+    overflow: "hidden",
+  },
+  prayer: { alignItems: "center", gap: space(0.75), minWidth: 48 },
+  prayerDot: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: t.colors.inkFaint,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5) },
   pill: {
     flex: 1,
@@ -363,6 +382,20 @@ function Chevron({
     </Svg>
   );
 }
+
+/*
+  The five daily prayers, one dot each. Fajr's dot is the Fajr practice
+  itself, so the dot and the "Fajr on time" tile always agree; the other four
+  are logged under their own ids, outside the tracked practices, so they
+  never change the ring or the consistency figure.
+*/
+const PRAYERS: { id: string; name: string }[] = [
+  { id: "fajr", name: "Fajr" },
+  { id: "prayer:dhuhr", name: "Dhuhr" },
+  { id: "prayer:asr", name: "Asr" },
+  { id: "prayer:maghrib", name: "Maghrib" },
+  { id: "prayer:isha", name: "Isha" },
+];
 
 /* A stable fallback: a fresh {} inside a selector re-renders forever. */
 const NO_LOG: Record<string, number[]> = {};
@@ -721,8 +754,8 @@ export default function Barakah() {
           style={{ flex: 1 }}
           contentContainerStyle={s.grid}
           showsVerticalScrollIndicator={false}
-          scrollEnabled={rows.length > 3}
-          bounces={rows.length > 3}
+          scrollEnabled={rows.length > 2}
+          bounces={rows.length > 2}
         >
           {due.length === 0 ? (
             <Text
@@ -740,6 +773,34 @@ export default function Barakah() {
             ))
           )}
         </ScrollView>
+
+        <Glass style={s.prayers}>
+          {PRAYERS.map((pr) => {
+            const done = valueOn(values, day, pr.id) > 0;
+            return (
+              <Pressable
+                key={pr.id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: done }}
+                accessibilityLabel={`${pr.name} prayed`}
+                onPress={() => log(day, pr.id, done ? 0 : 1)}
+                hitSlop={8}
+                style={s.prayer}
+              >
+                <View style={[s.prayerDot, done && s.markOn]}>
+                  {done ? <Tick size={15} /> : null}
+                </View>
+                <Text
+                  variant="label"
+                  color={done ? "verdigris" : "inkSoft"}
+                  style={{ fontSize: 12, lineHeight: 15 }}
+                >
+                  {pr.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </Glass>
 
         <View style={s.pills}>
           <Pressable
