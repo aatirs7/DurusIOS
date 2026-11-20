@@ -6,13 +6,18 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import Animated, {
   Easing,
   ZoomIn,
   useReducedMotion,
 } from "react-native-reanimated";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
@@ -20,7 +25,7 @@ import { BENEFITS } from "@/barakah/benefits";
 import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
-import { TabSafe, useTabTop } from "@/components/TabSafe";
+import { TabSafe } from "@/components/TabSafe";
 import { Text } from "@/components/Text";
 import { TopBar } from "@/components/TopBar";
 import {
@@ -294,9 +299,26 @@ function whenOf(p: Practice): string {
   return "Every day";
 }
 
-/* The pills' bottom edge sits this far above the screen's bottom, clear of
-   the floating tab bar with a little air. */
+/*
+  The page's bottom padding: iOS's own measure of where the tab bar starts.
+  A SafeAreaProvider inside the tab reads this view's safe area, which UIKit
+  extends to cover the floating tab bar, however tall the tab's view is or
+  wherever it sits. The guesses that came before (a fixed reserve, a
+  measured lift) were each thrown off by the tab view being taller than the
+  screen. TAB_CLEAR is only the first frame's value, before iOS reports.
+*/
 const TAB_CLEAR = 104;
+function ClearOfTabBar({
+  style,
+  children,
+}: {
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  const bottom = useSafeAreaInsets().bottom;
+  const pad = bottom > 40 ? bottom + space(1.5) : TAB_CLEAR;
+  return <View style={[style, { paddingBottom: pad }]}>{children}</View>;
+}
 
 function localDate(day: string): Date {
   const { y, m, d } = parseDay(day);
@@ -406,10 +428,6 @@ export default function Barakah() {
   /* Long press on a tile: what the practice is and how the app counts it. */
   const [info, setInfo] = useState<Practice | null>(null);
   const still = useReducedMotion();
-  /* The page is held to the window's height: the tab's own view measured
-     taller than the screen, which pushed the bottom pills under the tab bar. */
-  const { height: winH } = useWindowDimensions();
-  const tabTop = useTabTop();
   const isToday = day === today;
 
   const values = useMemo(() => fold(events), [events]);
@@ -580,10 +598,9 @@ export default function Barakah() {
   return (
     <TabSafe style={s.safe}>
       <Breath />
-      {/* The page ends TAB_CLEAR above the screen's bottom edge, so the pills
-          always sit above the floating tab bar. A fixed reserve, because a
-          measured lift (measureInWindow) never took effect on the device. */}
-      <View style={[s.body, { flex: 0, height: winH - tabTop - TAB_CLEAR }]}>
+      {/* Ends where the tab bar begins, as iOS measures it (ClearOfTabBar). */}
+      <SafeAreaProvider style={{ flex: 1 }}>
+      <ClearOfTabBar style={s.body}>
         <TopBar title="Barakah" subtitle="Small daily practices" />
 
         <View style={s.dateRow}>
@@ -744,7 +761,8 @@ export default function Barakah() {
             </Glass>
           </Pressable>
         </View>
-      </View>
+      </ClearOfTabBar>
+      </SafeAreaProvider>
 
       {/* Long press: the practice comes forward as a card in the middle of the
           screen, the page blurred behind it (a full-screen glass layer).

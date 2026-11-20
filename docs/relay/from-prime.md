@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah: the bottom pills now end where iOS says the tab bar starts (a safe-area reading inside the tab), instead of a fixed guess that the tab view's extra height kept defeating.
+
 - Word audio fix (owner heard "fima" for yawma): Quran Foundation's word audio_url is offset by a word or two in some ayahs (2:113 lists file 028 for word 26; file 028 says word 28). 224 of 560 track words pointed at a neighbouring word. Word recordings are now named from the word's position everywhere: the content file (wordAudioFor, build_words.py) and the reader zoom's word taps. A content test pins it.
 
 - Offline recitation is now ask-once, then automatic (owner wanted no manual downloads; Quran Foundation requires the learner's choice). A one-time glass card 5 s after launch ("Listen offline?", Download / Not now, with the credit). Download, or the Settings switch "Keep the recitation on this phone", downloads every surah in the background after the weekly records sync, on every open until complete, and keeps it current. Turning the switch off deletes the files. Per-surah download buttons removed; a downloaded surah shows the reciter credit under its title.
