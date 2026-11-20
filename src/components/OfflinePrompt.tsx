@@ -4,6 +4,7 @@ import { Modal, View } from "react-native";
 import { Button } from "@/components/Button";
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
+import { claimOverlay, releaseOverlay } from "@/lib/overlay";
 import { canPlayWordAudio } from "@/lib/wordAudio";
 import { recitationCredit, syncOfflineRecitation } from "@/quran/offlineAudio";
 import { quranApiConfigured } from "@/quran/remote";
@@ -34,7 +35,12 @@ export function OfflinePrompt() {
 
   useEffect(() => {
     if (!hydrated || asked !== null || !onboarded || !canPlayWordAudio() || !quranApiConfigured()) return;
-    const id = setTimeout(() => setShow(true), 5000);
+    /* Waits its turn if a first-visit tip is showing. */
+    const tryOpen = () => {
+      if (claimOverlay("offline")) setShow(true);
+      else id = setTimeout(tryOpen, 2000);
+    };
+    let id = setTimeout(tryOpen, 5000);
     return () => clearTimeout(id);
   }, [hydrated, asked, onboarded]);
 
@@ -42,6 +48,7 @@ export function OfflinePrompt() {
     const { setOfflineAudio, translationId, reciterId } = usePrefs.getState();
     setOfflineAudio(on);
     setShow(false);
+    releaseOverlay("offline");
     if (on) syncOfflineRecitation(translationId, reciterId ?? 7);
   };
 

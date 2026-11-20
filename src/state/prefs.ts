@@ -46,6 +46,10 @@ type PrefsState = Hydratable & {
   setReadingGoal: (n: number) => void;
   /* Searches that led somewhere, newest first, at most eight. */
   recentSearches: string[];
+  /* First-visit tips already put away (PageTip). */
+  tipsSeen: string[];
+  markTipSeen: (id: string) => void;
+  resetTips: () => void;
   rememberSearch: (q: string) => void;
   clearSearches: () => void;
   /* Bookmarked ayahs, by global index, newest first. */
@@ -95,6 +99,9 @@ export const usePrefs = create<PrefsState>()(
       readingGoal: 10,
       setReadingGoal: (n) => set({ readingGoal: Math.min(300, Math.max(1, Math.round(n))) }),
       recentSearches: [],
+      tipsSeen: [],
+      markTipSeen: (id) => set((st) => ((st.tipsSeen ?? []).includes(id) ? {} : { tipsSeen: [...(st.tipsSeen ?? []), id] })),
+      resetTips: () => set({ tipsSeen: [] }),
       rememberSearch: (q) =>
         set((st) => {
           const t = q.trim();

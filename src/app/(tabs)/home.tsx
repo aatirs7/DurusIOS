@@ -4,6 +4,7 @@ import { FlatList, Keyboard, Pressable, StyleSheet, TextInput, View, useWindowDi
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
 
+import { PageTip } from "@/components/PageTip";
 import { Arabic } from "@/components/Arabic";
 import { Breath } from "@/components/Breath";
 import { Glyphs } from "@/components/Glyphs";
@@ -346,6 +347,7 @@ export default function Home() {
       <Breath />
       {typing ? null : <Glyphs />}
       <View style={s.body} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
+        <PageTip id="search" />
         <TopBar title={greetName ? `Assalamu alaikum, ${greetName}` : "Assalamu alaikum"} subtitle={hijri} />
         <Animated.View style={spacer} />
         <Animated.View style={[s.head, head]} pointerEvents={fold ? "none" : "auto"}>

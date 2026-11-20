@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 
+import { PageTip } from "@/components/PageTip";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
 import { Screen } from "@/components/Screen";
@@ -216,6 +217,7 @@ export default function Read() {
     return (
       <Screen tab>
         <Breath />
+        <PageTip id="read" />
         <TopBar title="Read" subtitle="The Quran, surah by surah" />
         <FlatList
           data={juzRows}
@@ -259,6 +261,7 @@ export default function Read() {
   return (
     <Screen tab>
       <Breath />
+      <PageTip id="read" />
       <TopBar title="Read" subtitle="The Quran, surah by surah" />
       <FlatList
         data={SURAHS}

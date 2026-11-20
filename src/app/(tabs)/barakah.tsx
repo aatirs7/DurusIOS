@@ -16,6 +16,7 @@ import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
 import { BENEFITS } from "@/barakah/benefits";
+import { PageTip } from "@/components/PageTip";
 import { BarakahRing, DayCell } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
@@ -586,6 +587,7 @@ export default function Barakah() {
   return (
     <TabSafe style={s.safe}>
       <Breath />
+      <PageTip id="barakah" />
       <View style={[s.body, { paddingBottom: TAB_CLEAR }]}>
         <TopBar
           title="Barakah"

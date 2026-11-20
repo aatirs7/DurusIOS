@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { AyahZoom } from "@/components/AyahZoom";
+import { PageTip } from "@/components/PageTip";
 import { Glass } from "@/components/Glass";
 import { FootnoteCard, TranslationLine, TransliterationLine, WordGrid } from "@/components/QuranLayers";
 import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
@@ -629,6 +630,8 @@ export default function SurahReader() {
           <FootnoteCard text={qf.footnotes[footnote]} onClose={() => setFootnote(null)} colors={colors} />
         </View>
       ) : null}
+
+      <PageTip id="reader" />
 
       {zoom !== null ? (
         <AyahZoom

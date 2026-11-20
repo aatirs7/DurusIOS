@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
+import { PageTip } from "@/components/PageTip";
 import { AyahField } from "@/components/AyahField";
 import { Glass, GlassButton } from "@/components/Glass";
 import { TabSafe, useTabTop } from "@/components/TabSafe";
@@ -697,6 +698,7 @@ export default function ProgressTab() {
 
   return (
     <TabSafe style={s.safe}>
+      <PageTip id="progress" />
       <TopBar
         inset
         title="Progress"

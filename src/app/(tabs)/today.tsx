@@ -3,6 +3,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
+import { PageTip } from "@/components/PageTip";
 import { Arabic } from "@/components/Arabic";
 import { BarakahRing } from "@/components/BarakahRing";
 import { Breath } from "@/components/Breath";
@@ -207,6 +208,7 @@ export default function Today() {
   return (
     <Screen tab>
       <Breath />
+      <PageTip id="learn" />
       <TopBar
         title={
           mode === "words"

@@ -66,6 +66,7 @@ export default function SettingsScreen() {
   const profileId = useSession((st) => st.activeProfileId);
   const resetSession = useSession((st) => st.reset);
   const restartOnboarding = useSession((st) => st.restartOnboarding);
+  const resetTips = usePrefs((st) => st.resetTips);
   const themeChoice = useThemeChoice((st) => st.choice);
   const adhkarReminder = usePrefs((st) => st.adhkarReminder);
   const setAdhkarReminder = usePrefs((st) => st.setAdhkarReminder);
@@ -640,6 +641,17 @@ export default function SettingsScreen() {
           style={{ paddingVertical: space(2), alignItems: "center" }}
         >
           <Text color="lapis">Preview onboarding</Text>
+        </Pressable>
+
+        {/* Every first-visit tip again, each on its page's next visit. */}
+        <Pressable
+          onPress={() => {
+            resetTips();
+            Alert.alert("Tips are back", "Each page shows its tip the next time you open it.");
+          }}
+          style={{ paddingVertical: space(2), alignItems: "center" }}
+        >
+          <Text color="lapis">Show tips again</Text>
         </Pressable>
 
         <Pressable
