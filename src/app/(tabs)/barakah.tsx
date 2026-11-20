@@ -322,7 +322,7 @@ function whenOf(p: Practice): string {
   puts the last element (the prayers box) just above the bar in the
   owner's screenshots.
 */
-const TAB_CLEAR = 144;
+const TAB_CLEAR = 116;
 
 function localDate(day: string): Date {
   const { y, m, d } = parseDay(day);

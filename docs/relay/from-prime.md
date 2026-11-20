@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah: prayers box 28 pt lower (bottom reserve 144 to 116) at the owner's request.
+
 - Barakah prayers: one tap marks a prayer late (dot half filled), two taps on time (full with tick), three clears. Late is stored as 0.5 and is not "done", so Fajr late does not tick Fajr on time (its ring segment shows half).
 - Settings > Preview onboarding: the new-learner flow from a signed-in account with nothing saved (no name, hifz, reminders or completion written; sign in shown but skipped; Exit preview top right).
 
