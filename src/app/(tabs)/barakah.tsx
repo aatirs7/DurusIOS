@@ -6,18 +6,12 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  type StyleProp,
-  type ViewStyle,
 } from "react-native";
 import Animated, {
   Easing,
   ZoomIn,
   useReducedMotion,
 } from "react-native-reanimated";
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { adhkarFor } from "@/barakah/adhkar";
@@ -118,7 +112,7 @@ const useStyles = makeStyles((t) => ({
   week: { flexDirection: "row", gap: 6, paddingTop: space(1) },
   dot: { width: 22, alignItems: "center", gap: 3 },
   dotFill: { width: 14, height: 14, borderRadius: 7 },
-  /* The tiles sit centred in the space between the header and the pills. */
+  /* The tiles sit centred in the space between the header and the prayers. */
   grid: {
     flexGrow: 1,
     justifyContent: "center",
@@ -180,7 +174,6 @@ const useStyles = makeStyles((t) => ({
     borderRadius: 24,
     paddingVertical: space(1.5),
     paddingHorizontal: space(2),
-    marginBottom: space(1),
     overflow: "hidden",
   },
   prayer: { alignItems: "center", gap: space(0.75), minWidth: 48 },
@@ -192,15 +185,6 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.inkFaint,
     alignItems: "center",
     justifyContent: "center",
-  },
-  pills: { flexDirection: "row", gap: space(1.25), paddingTop: space(0.5) },
-  pill: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: RADIUS.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
   },
   focusWrap: { flex: 1, justifyContent: "center", paddingHorizontal: MARGIN },
   focusCard: {
@@ -319,25 +303,15 @@ function whenOf(p: Practice): string {
 }
 
 /*
-  The page's bottom padding: iOS's own measure of where the tab bar starts.
-  A SafeAreaProvider inside the tab reads this view's safe area, which UIKit
-  extends to cover the floating tab bar, however tall the tab's view is or
-  wherever it sits. The guesses that came before (a fixed reserve, a
-  measured lift) were each thrown off by the tab view being taller than the
-  screen. TAB_CLEAR is only the first frame's value, before iOS reports.
+  Space kept free at the bottom of the page for the floating tab bar.
+  Calibrated on the device: the tab's view runs past the screen's bottom
+  edge, so a reserve worked out from the screen's height (104, which is the
+  tab bar plus a little air) landed about 40 pt too low every way it was
+  computed: fixed height, measured lift, the safe-area inset. This value
+  puts the last element (the prayers box) just above the bar in the
+  owner's screenshots.
 */
-const TAB_CLEAR = 104;
-function ClearOfTabBar({
-  style,
-  children,
-}: {
-  style?: StyleProp<ViewStyle>;
-  children: React.ReactNode;
-}) {
-  const bottom = useSafeAreaInsets().bottom;
-  const pad = bottom > 40 ? bottom + space(1.5) : TAB_CLEAR;
-  return <View style={[style, { paddingBottom: pad }]}>{children}</View>;
-}
+const TAB_CLEAR = 144;
 
 function localDate(day: string): Date {
   const { y, m, d } = parseDay(day);
@@ -591,8 +565,6 @@ export default function Barakah() {
             </View>
             <Text
               numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
               color={done ? "verdigris" : "ink"}
               style={{ textAlign: "center" }}
             >
@@ -631,10 +603,51 @@ export default function Barakah() {
   return (
     <TabSafe style={s.safe}>
       <Breath />
-      {/* Ends where the tab bar begins, as iOS measures it (ClearOfTabBar). */}
-      <SafeAreaProvider style={{ flex: 1 }}>
-      <ClearOfTabBar style={s.body}>
-        <TopBar title="Barakah" subtitle="Small daily practices" />
+      <View style={[s.body, { paddingBottom: TAB_CLEAR }]}>
+        <TopBar
+          title="Barakah"
+          subtitle="Small daily practices"
+          left={
+            <View style={{ flexDirection: "row", gap: space(1) }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="This month"
+                onPress={() => setSheet("month")}
+                hitSlop={6}
+              >
+                <Glass interactive style={s.arrow}>
+                  <Svg width={18} height={18} viewBox="0 0 24 24">
+                    <Path
+                      d="M4 7.5A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v10a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 17.5zM4 10h16M8.5 3v4M15.5 3v4"
+                      stroke={theme.colors.inkSoft}
+                      strokeWidth={1.7}
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                  </Svg>
+                </Glass>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Choose practices"
+                onPress={() => setSheet("edit")}
+                hitSlop={6}
+              >
+                <Glass interactive style={s.arrow}>
+                  <Svg width={18} height={18} viewBox="0 0 24 24">
+                    <Path
+                      d="M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5"
+                      stroke={theme.colors.inkSoft}
+                      strokeWidth={1.7}
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                  </Svg>
+                </Glass>
+              </Pressable>
+            </View>
+          }
+        />
 
         <View style={s.dateRow}>
           <Pressable
@@ -801,29 +814,7 @@ export default function Barakah() {
             );
           })}
         </Glass>
-
-        <View style={s.pills}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setSheet("month")}
-            style={{ flex: 1 }}
-          >
-            <Glass interactive style={s.pill}>
-              <Text variant="label">This month</Text>
-            </Glass>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setSheet("edit")}
-            style={{ flex: 1 }}
-          >
-            <Glass interactive style={s.pill}>
-              <Text variant="label">Choose practices</Text>
-            </Glass>
-          </Pressable>
-        </View>
-      </ClearOfTabBar>
-      </SafeAreaProvider>
+      </View>
 
       {/* Long press: the practice comes forward as a card in the middle of the
           screen, the page blurred behind it (a full-screen glass layer).
