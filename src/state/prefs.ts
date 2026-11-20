@@ -19,6 +19,10 @@ type PrefsState = Hydratable & {
   /* Where reading stopped, for Resume. */
   lastRead: { surah: number; ayah: number } | null;
   setLastRead: (at: { surah: number; ayah: number }) => void;
+  /* Offline recitation: null until the learner has been asked once; true
+     keeps every surah's recitation on the phone, automatically. */
+  offlineAudio: boolean | null;
+  setOfflineAudio: (on: boolean) => void;
   /* Where each surah was left, so reopening one resumes it. */
   surahPos: Record<number, number>;
   /* The reader's view and Arabic size. */
@@ -77,6 +81,8 @@ export const usePrefs = create<PrefsState>()(
       lastRead: null,
       setLastRead: (lastRead) => set((st) => ({ lastRead, surahPos: { ...st.surahPos, [lastRead.surah]: lastRead.ayah } })),
       surahPos: {},
+      offlineAudio: null,
+      setOfflineAudio: (offlineAudio) => set({ offlineAudio }),
       readerView: "arabic",
       setReaderView: (readerView) => set({ readerView }),
       arabicSize: 28,

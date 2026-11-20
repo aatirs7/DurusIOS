@@ -11,9 +11,8 @@ import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "
 import { Text } from "@/components/Text";
 import { WORDS_MAP_ATTRIBUTION, wordsMap } from "@/data/wordsMap";
 import { translationName, type QfChapter } from "@/quran/qf";
-import { cancelDownloads, downloadSurahs, recitationCredit, removeSurahRecitation, surahDownload, useRecitationDownloads } from "@/quran/offlineAudio";
+import { recitationCredit, surahDownload, useRecitationDownloads } from "@/quran/offlineAudio";
 import { loadChapter, loadVerseTranslations, prefetchChapters, quranApiConfigured } from "@/quran/remote";
-import { canPlayWordAudio } from "@/lib/wordAudio";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { surahForDisplay } from "@/quran/text";
@@ -343,38 +342,11 @@ export default function SurahReader() {
       <Text variant="label" style={{ color: colors.soft }}>
         {`${meta.meaning}. ${meta.place}, ${meta.ayahs} ayahs, Juz ${juzOf(meta.start)}`}
       </Text>
-      <View style={{ flexDirection: "row", gap: space(3), paddingTop: space(1) }}>
-        <Pressable accessibilityRole="button" onPress={surahActions} hitSlop={8}>
-          <Text variant="label" style={{ color: colors.accent }}>
-            Mark this surah
-          </Text>
-        </Pressable>
-        {canPlayWordAudio() && quranApiConfigured() ? (
-          <Pressable
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => {
-              if (dl.state === "none") downloadSurahs([n], translationId, reciterId);
-              else if (dl.state === "done")
-                ActionSheetIOS.showActionSheetWithOptions(
-                  { title: "Downloaded for offline listening", message: recitationCredit(reciterId), options: ["Remove download", "Cancel"], destructiveButtonIndex: 0, cancelButtonIndex: 1 },
-                  (i) => i === 0 && removeSurahRecitation(n, reciterId),
-                );
-              else cancelDownloads();
-            }}
-          >
-            <Text variant="label" style={{ color: colors.accent }}>
-              {dl.state === "done"
-                ? "Downloaded"
-                : dl.state === "downloading"
-                  ? `Downloading ${dl.done} of ${dl.total}`
-                  : dl.state === "queued"
-                    ? "Waiting to download"
-                    : "Download recitation"}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
+      <Pressable accessibilityRole="button" onPress={surahActions} hitSlop={8} style={{ paddingTop: space(1) }}>
+        <Text variant="label" style={{ color: colors.accent }}>
+          Mark this surah
+        </Text>
+      </Pressable>
       {dl.state === "done" ? (
         <Text variant="label" style={{ color: colors.soft, paddingTop: space(0.5) }}>
           {recitationCredit(reciterId)}

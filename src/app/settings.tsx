@@ -33,11 +33,10 @@ import { space } from "@/theme/layout";
 import { useTheme } from "@/theme/useTheme";
 import { canPlayWordAudio } from "@/lib/wordAudio";
 import {
-  cancelDownloads,
   downloadSummary,
-  downloadSurahs,
   recitationCredit,
   removeAllRecitations,
+  syncOfflineRecitation,
   useRecitationDownloads,
 } from "@/quran/offlineAudio";
 import { quranApiConfigured } from "@/quran/remote";
@@ -661,46 +660,46 @@ export default function SettingsScreen() {
 */
 function OfflineRecitation() {
   useRecitationDownloads();
+  const theme = useTheme();
   const reciterId = usePrefs((st) => st.reciterId) ?? 7;
   const translationId = usePrefs((st) => st.translationId);
+  const on = usePrefs((st) => st.offlineAudio) === true;
+  const setOn = usePrefs((st) => st.setOfflineAudio);
   if (!canPlayWordAudio() || !quranApiConfigured()) return null;
   const sum = downloadSummary(reciterId);
   const mb = Math.round(sum.bytes / 1_000_000);
-  const all = Array.from({ length: 114 }, (_, i) => i + 1);
   return (
     <Section title="Offline recitation">
-      <Text color="inkSoft">
-        {sum.active
-          ? `Downloading surah ${sum.active.surah}, ayah ${sum.active.done} of ${sum.active.total}. ${sum.queued} ${sum.queued === 1 ? "surah" : "surahs"} to go.`
-          : sum.surahs > 0
-            ? `${sum.surahs} of 114 surahs downloaded, ${mb} MB.`
-            : "Keep the recitation on this phone to listen without a connection. A surah can also be downloaded from the top of its page."}
-      </Text>
-      {sum.active ? (
-        <Button label="Stop downloading" variant="quiet" onPress={cancelDownloads} />
-      ) : sum.surahs < 114 ? (
-        <Button
-          label={sum.surahs > 0 ? "Download the rest" : "Download all"}
-          variant="quiet"
-          onPress={() =>
-            Alert.alert("Download the whole recitation?", "This is a large download, several hundred MB. Wi-Fi is best.", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Download", onPress: () => downloadSurahs(all, translationId, reciterId) },
-            ])
-          }
+      <Field label="Keep the recitation on this phone" hint="Downloads in the background and stays up to date">
+        <Switch
+          value={on}
+          onValueChange={(next) => {
+            if (next) {
+              setOn(true);
+              syncOfflineRecitation(translationId, reciterId);
+            } else {
+              Alert.alert("Turn off offline recitation?", "The downloaded recitation is removed. Listening will need a connection.", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Turn off",
+                  style: "destructive",
+                  onPress: () => {
+                    setOn(false);
+                    removeAllRecitations();
+                  },
+                },
+              ]);
+            }
+          }}
+          trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
         />
-      ) : null}
-      {sum.surahs > 0 && !sum.active ? (
-        <Button
-          label="Remove downloads"
-          variant="quiet"
-          onPress={() =>
-            Alert.alert("Remove downloaded recitation?", "Listening will need a connection again.", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Remove", style: "destructive", onPress: removeAllRecitations },
-            ])
-          }
-        />
+      </Field>
+      {on ? (
+        <Text variant="label" color="inkSoft">
+          {sum.active
+            ? `Downloading surah ${sum.active.surah}, ayah ${sum.active.done} of ${sum.active.total}. ${sum.surahs} of 114 started, ${mb} MB so far.`
+            : `${sum.surahs} of 114 surahs on this phone, ${mb} MB.`}
+        </Text>
       ) : null}
       <Text variant="label" color="inkFaint">
         {recitationCredit(reciterId)}

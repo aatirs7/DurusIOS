@@ -2,6 +2,7 @@ import { Directory, File, Paths } from "expo-file-system";
 import { useSyncExternalStore } from "react";
 
 import type { QfAyah, QfChapter } from "./qf";
+import { SURAHS } from "./tanzil";
 import { chapterFromDisk, onChapterRefreshed } from "./remote";
 
 /*
@@ -10,8 +11,10 @@ import { chapterFromDisk, onChapterRefreshed } from "./remote";
 
   Quran Foundation's conditions (their email of 2026-11-20, 11:40, and the
   FAQ "Can my app let users download recitations for offline listening"):
-  - Only when the learner chooses it: a surah's Download, or Download all in
-    Settings. Nothing is downloaded on its own.
+  - Only when the learner turns it on: asked once (OfflinePrompt), and the
+    "Offline recitation" switch in Settings. Once on, every surah downloads
+    and stays current automatically (syncOfflineRecitation, each app open).
+    Off, nothing is downloaded, and turning it off deletes the files.
   - Kept in the app's own document folder, which no other app can read, and
     never exported or shared.
   - Quran Foundation and the reciter are credited wherever downloads show.
@@ -281,4 +284,20 @@ export async function playWordFromDownload(wbwPath: string | null, reciterId: nu
   } catch {
     return false;
   }
+}
+
+/*
+  With offline recitation on: queue every surah not fully downloaded. Called
+  on each app open after the records sync, and when the learner turns it on.
+  Already-downloaded files are skipped, so this is cheap once complete.
+*/
+export function syncOfflineRecitation(translationId: number | null, reciterId: number) {
+  const ix = index(reciterId);
+  const have = new Map<number, number>();
+  for (const k of Object.keys(ix.files)) {
+    const n = Number(k.split(":")[0]);
+    have.set(n, (have.get(n) ?? 0) + 1);
+  }
+  const todo = SURAHS.filter((m) => (have.get(m.n) ?? 0) < m.ayahs).map((m) => m.n);
+  if (todo.length > 0) downloadSurahs(todo, translationId, reciterId);
 }

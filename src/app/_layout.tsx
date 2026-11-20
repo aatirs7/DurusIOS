@@ -26,6 +26,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { Button } from "@/components/Button";
 import { ClerkGate } from "@/components/ClerkGate";
+import { OfflinePrompt } from "@/components/OfflinePrompt";
 import { ThemeFade } from "@/components/ThemeFade";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
@@ -36,7 +37,7 @@ import { syncReminders } from "@/data/reminders";
 import { syncWordGlosses } from "@/data/wordGlosses";
 /* Registers the check that keeps downloaded recitation files matching the
    weekly re-synced records (replaced or deleted when their URL changes). */
-import "@/quran/offlineAudio";
+import { syncOfflineRecitation } from "@/quran/offlineAudio";
 import { syncAllChapters } from "@/quran/remote";
 import { usePrefs } from "@/state/prefs";
 import { refreshWordsKnown } from "@/data/words";
@@ -197,7 +198,12 @@ export default function RootLayout() {
        seconds after launch and kept fresh weekly (src/quran/remote.ts). */
     const syncQuran = () => {
       const { translationId, reciterId } = usePrefs.getState();
-      void syncAllChapters(translationId, reciterId);
+      /* Then, if the learner turned on offline recitation, any surah not yet
+         fully on the phone downloads too (src/quran/offlineAudio.ts). */
+      void syncAllChapters(translationId, reciterId).then(() => {
+        const st = usePrefs.getState();
+        if (st.offlineAudio) syncOfflineRecitation(st.translationId, st.reciterId ?? 7);
+      });
     };
     const later = setTimeout(syncQuran, 4000);
     const sub = AppState.addEventListener("change", (state) => {
@@ -331,6 +337,7 @@ export default function RootLayout() {
               underneath and the fade reveals a finished screen rather than an
               empty frame. */}
             <ThemeFade />
+            <OfflinePrompt />
             {introDone ? null : <AnimatedSplash onDone={endIntro} />}
           </NavThemeProvider>
         </SafeAreaProvider>
