@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah: This month and Practices moved out of the top bar into two labelled glass pills centred between the summary and the tiles (the top was cluttered).
+
 - Onboarding story redrawn to match the app, in tab order: Search first; Read shows a press and hold on 1:2 lifting into the zoom (words with reading and meaning, then one word brought forward with Listen again); Progress cycles its real views under its tab strip (Overview ring, Wall, Juz grid, Week); Barakah shows the real starting practices (Fajr on time, Morning and Evening adhkar, Daily Quran portion) and the five prayer dots filling late and on time. Pages can set their own length. PracticeIcon moved to src/components.
 
 - Settings gear in the shared top bar on every tab, beside the theme toggle (Settings was only a footer link at the bottom of Learn; the owner could not find it).

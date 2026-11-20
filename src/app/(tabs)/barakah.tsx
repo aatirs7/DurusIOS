@@ -170,6 +170,16 @@ const useStyles = makeStyles((t) => ({
     overflow: "hidden",
     marginTop: space(0.75),
   },
+  tools: { flexDirection: "row", justifyContent: "center", gap: space(1) },
+  tool: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: RADIUS.pill,
+    paddingVertical: 7,
+    paddingHorizontal: space(1.5),
+    overflow: "hidden",
+  },
   prayers: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -580,46 +590,6 @@ export default function Barakah() {
         <TopBar
           title="Barakah"
           subtitle="Small daily practices"
-          left={
-            <View style={{ flexDirection: "row", gap: space(1) }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="This month"
-                onPress={() => setSheet("month")}
-                hitSlop={6}
-              >
-                <Glass interactive style={s.arrow}>
-                  <Svg width={18} height={18} viewBox="0 0 24 24">
-                    <Path
-                      d="M4 7.5A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v10a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 17.5zM4 10h16M8.5 3v4M15.5 3v4"
-                      stroke={theme.colors.inkSoft}
-                      strokeWidth={1.7}
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  </Svg>
-                </Glass>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Choose practices"
-                onPress={() => setSheet("edit")}
-                hitSlop={6}
-              >
-                <Glass interactive style={s.arrow}>
-                  <Svg width={18} height={18} viewBox="0 0 24 24">
-                    <Path
-                      d="M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5"
-                      stroke={theme.colors.inkSoft}
-                      strokeWidth={1.7}
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  </Svg>
-                </Glass>
-              </Pressable>
-            </View>
-          }
         />
 
         <View style={s.dateRow}>
@@ -658,7 +628,7 @@ export default function Barakah() {
         {/* A roomy header while there are few practices; it gives the space
             back as more are chosen, so the tiles never need to scroll. */}
         <View
-          style={[s.hero, { paddingVertical: roomy ? space(4) : space(2) }]}
+          style={[s.hero, { paddingTop: roomy ? space(4) : space(2), paddingBottom: roomy ? space(2.5) : space(1.5) }]}
         >
           <View style={{ alignItems: "center", justifyContent: "center" }}>
             <BarakahRing
@@ -732,6 +702,42 @@ export default function Barakah() {
                 );
               })}
             </View>
+          </Pressable>
+        </View>
+
+        {/* The month and the practice chooser, between the summary and the tiles. */}
+        <View style={s.tools}>
+          <Pressable accessibilityRole="button" onPress={() => setSheet("month")}>
+            <Glass interactive style={s.tool}>
+                <Svg width={15} height={15} viewBox="0 0 24 24">
+                  <Path
+                    d="M4 7.5A2.5 2.5 0 016.5 5h11A2.5 2.5 0 0120 7.5v10a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 17.5zM4 10h16M8.5 3v4M15.5 3v4"
+                    stroke={theme.colors.lapis}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </Svg>
+              <Text variant="label" color="lapis">
+                This month
+              </Text>
+            </Glass>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => setSheet("edit")}>
+            <Glass interactive style={s.tool}>
+                <Svg width={15} height={15} viewBox="0 0 24 24">
+                  <Path
+                    d="M4 7h10M18 7h2M4 17h4M12 17h8M16 4.5v5M10 14.5v5"
+                    stroke={theme.colors.lapis}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </Svg>
+              <Text variant="label" color="lapis">
+                Practices
+              </Text>
+            </Glass>
           </Pressable>
         </View>
 
