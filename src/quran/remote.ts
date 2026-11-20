@@ -1,6 +1,6 @@
 import { Directory, File, Paths } from "expo-file-system";
 
-import { isStale, type QfChapter } from "./qf";
+import { RESYNC_MS, isStale, type QfChapter } from "./qf";
 
 /*
   Quran Foundation content on the phone: fetched from the Durus server one
@@ -8,8 +8,9 @@ import { isStale, type QfChapter } from "./qf";
 
   Rules (from the owner's handoff, the stricter reading while Quran
   Foundation's own terms page is unavailable):
-  - Nothing of theirs ships inside the app bundle. A surah is downloaded the
-    first time it is opened with a translation or word view.
+  - Nothing of theirs ships inside the app bundle. Every surah is downloaded
+    in the background after install (syncAllChapters, on each app open), and
+    a surah opened before that finishes is fetched first.
   - A stored copy is refreshed once it is older than seven days, whenever the
     phone is online. Offline, the stored copy is used whatever its age.
 
@@ -102,6 +103,42 @@ export async function prefetchChapters(surahs: number[], translationId: number |
     } catch {
       return;
     }
+  }
+}
+
+/*
+  Every surah, kept on the phone: called on each app open. Downloads any surah
+  not stored yet, and re-downloads any stored more than seven days ago (Quran
+  Foundation's sync rule), one at a time, quietly, after the first screen is
+  up. Files only: nothing is held in memory, so the reader's own cache stays
+  small. Text and timings only; recitation audio is streamed, never stored.
+  Stops at the first failure (offline) and picks up on the next open.
+*/
+let syncing = false;
+export async function syncAllChapters(translationId: number | null, reciterId: number | null) {
+  if (!quranApiConfigured() || syncing) return;
+  syncing = true;
+  try {
+    for (let n = 1; n <= 114; n += 1) {
+      const f = fileFor(n, translationId, reciterId);
+      const at = f.exists ? f.modificationTime : null;
+      if (at !== null && at !== undefined && Date.now() - at < RESYNC_MS) continue;
+      const key = `${n}-${translationId ?? 0}-${reciterId ?? 0}`;
+      try {
+        if (inflight.has(key)) {
+          await inflight.get(key);
+          continue;
+        }
+        const fresh = await download(n, translationId, reciterId);
+        f.write(JSON.stringify(fresh));
+        /* A surah the reader already holds gets the fresh copy too. */
+        if (memory.has(key)) memory.set(key, fresh);
+      } catch {
+        return;
+      }
+    }
+  } finally {
+    syncing = false;
   }
 }
 

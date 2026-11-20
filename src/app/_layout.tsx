@@ -34,6 +34,8 @@ import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
 import { syncReminders } from "@/data/reminders";
 import { syncWordGlosses } from "@/data/wordGlosses";
+import { syncAllChapters } from "@/quran/remote";
+import { usePrefs } from "@/state/prefs";
 import { refreshWordsKnown } from "@/data/words";
 import { useSession } from "@/state/session";
 import { useThemeChoice } from "@/state/theme";
@@ -188,12 +190,23 @@ export default function RootLayout() {
     /* Quran Foundation word meanings: fetched after install, refreshed weekly,
        quietly, on every open (src/data/wordGlosses.ts). */
     void syncWordGlosses();
+    /* Every surah's translation, words and timings, downloaded quietly a few
+       seconds after launch and kept fresh weekly (src/quran/remote.ts). */
+    const syncQuran = () => {
+      const { translationId, reciterId } = usePrefs.getState();
+      void syncAllChapters(translationId, reciterId);
+    };
+    const later = setTimeout(syncQuran, 4000);
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
       void syncReminders(db, profileId);
       void syncWordGlosses();
+      syncQuran();
     });
-    return () => sub.remove();
+    return () => {
+      clearTimeout(later);
+      sub.remove();
+    };
   }, [boot]);
 
   const failure =

@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Reader content for every surah now downloads in the background on app open (owner): all 114 surahs' translation, words, transliteration and audio timings, one at a time, starting 4 s after launch, files only. Re-downloaded once older than seven days (Quran Foundation's rule); offline it stops and resumes on the next open. About 2 to 3 MB over the network (Al-Baqarah is 215 KB compressed). Audio is still streamed, never stored.
+
 - Build 12 is in TestFlight (expo-audio); the owner confirmed audio plays.
 - Reader: tapping an ayah before its surah's full layers have downloaded (seconds for a long surah) now fetches that ayah's translation on its own (/quran/verses, kept on the phone) and shows it at once. The "Loading the translation" line is gone.
 
