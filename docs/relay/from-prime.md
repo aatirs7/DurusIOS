@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Settings gear in the shared top bar on every tab, beside the theme toggle (Settings was only a footer link at the bottom of Learn; the owner could not find it).
+
 - Barakah: prayers box 28 pt lower (bottom reserve 144 to 98, measured from the owner's screenshot: about 12 pt above the tab bar) at the owner's request.
 
 - Barakah prayers: one tap marks a prayer late (dot half filled), two taps on time (full with tick), three clears. Late is stored as 0.5 and is not "done", so Fajr late does not tick Fajr on time (its ring segment shows half).
