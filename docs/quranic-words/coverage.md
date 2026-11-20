@@ -76,3 +76,13 @@ Built 2026-11-19 by scripts/coverage/build_words_map.py into assets/content/qura
 - Clipping a word's span from verse recitation with their segments: allowed (a Derived Material, same limits as the recording).
 - Downloaded recordings and clips: on the device for at most one week, no exceptions; re-download or stream after that.
 - Word-by-word meanings: may not be bundled in the app package. Fetched through Content Sync after install and synced at least every seven days when connectivity permits. The content file therefore keeps refs only; src/data/wordGlosses.ts fetches the text.
+
+## Quran Foundation's updated policy (2026-11-20, 11:40)
+
+Durus may keep downloaded verse recitation files, and word clips cut from them, with no one-week limit, when:
+- the user chooses the download or turns on offline downloads;
+- the files stay in the app's private storage (not exported or readable by other apps);
+- the app credits Quran Foundation and the reciter;
+- files are deleted when the user removes them, when Quran Foundation asks, or when access under their terms ends;
+- recitation records are synced at least every 7 days when online, and a file and its clips are deleted or replaced when its recitation is removed or its audio URL changes.
+Reference: api-docs.quran.foundation/docs/tutorials/faq#can-my-app-let-users-download-recitations-for-offline-listening

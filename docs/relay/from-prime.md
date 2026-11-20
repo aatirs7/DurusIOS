@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Quran Foundation updated its policy (20 Nov, 11:40): recitation files and word clips may be kept on the device with no one-week limit when the user opts in to downloads, files stay private, QF and the reciter are credited, files are removed on request or when their URL changes, and records sync weekly. Recorded in docs/quranic-words/coverage.md. Offline recitation downloads not built yet.
+
 - Reader content for every surah now downloads in the background on app open (owner): all 114 surahs' translation, words, transliteration and audio timings, one at a time, starting 4 s after launch, files only. Re-downloaded once older than seven days (Quran Foundation's rule); offline it stops and resumes on the next open. About 2 to 3 MB over the network (Al-Baqarah is 215 KB compressed). Audio is still streamed, never stored.
 
 - Build 12 is in TestFlight (expo-audio); the owner confirmed audio plays.
