@@ -103,3 +103,14 @@ describe("barakah catalogue", () => {
     for (const p of PRACTICES) expect(`${p.title}${p.line}`).not.toMatch(/\u2014/);
   });
 });
+
+describe("prayers marked late", () => {
+  it("is half full and not done, so Fajr late never ticks Fajr on time", () => {
+    const { fill, isDone, LATE, PRACTICE_BY_ID } = jest.requireActual("./barakah") as typeof import("./barakah");
+    const fajr = PRACTICE_BY_ID.get("fajr")!;
+    expect(fill(fajr, LATE)).toBe(0.5);
+    expect(isDone(LATE)).toBe(false);
+    expect(fill(fajr, 1)).toBe(1);
+    expect(isDone(1)).toBe(true);
+  });
+});

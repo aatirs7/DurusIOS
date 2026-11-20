@@ -634,6 +634,14 @@ export default function SettingsScreen() {
           <Text color="lapis">Run setup again</Text>
         </Pressable>
 
+        {/* The new-learner flow, seen from this account, with nothing saved. */}
+        <Pressable
+          onPress={() => router.push("/onboarding?preview=1")}
+          style={{ paddingVertical: space(2), alignItems: "center" }}
+        >
+          <Text color="lapis">Preview onboarding</Text>
+        </Pressable>
+
         <Pressable
           onPress={() => router.push("/about")}
           style={{ paddingVertical: space(2), alignItems: "center" }}

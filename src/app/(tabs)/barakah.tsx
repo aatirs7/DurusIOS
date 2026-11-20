@@ -34,6 +34,7 @@ import {
   parseDay,
   summarise,
   valueOn,
+  LATE,
   type Practice,
 } from "@/engine/barakah";
 import { gregorianDate, hijriDate } from "@/lib/time";
@@ -185,6 +186,16 @@ const useStyles = makeStyles((t) => ({
     borderColor: t.colors.inkFaint,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  /* Late: the lower half filled. */
+  prayerHalf: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "50%",
+    backgroundColor: t.colors.verdigris,
   },
   focusWrap: { flex: 1, justifyContent: "center", paddingHorizontal: MARGIN },
   focusCard: {
@@ -475,7 +486,7 @@ export default function Barakah() {
 
   const tile = (p: Practice) => {
     const value = valueOn(values, day, p.id);
-    const done = value > 0;
+    const done = value >= 1;
     const time = ADHKAR_TIME[p.id];
     const toggle = () => log(day, p.id, done ? 0 : 1);
 
@@ -789,23 +800,34 @@ export default function Barakah() {
 
         <Glass style={s.prayers}>
           {PRAYERS.map((pr) => {
-            const done = valueOn(values, day, pr.id) > 0;
+            /* One tap: prayed late (half). Two: on time (full). Three: clear. */
+            const v = valueOn(values, day, pr.id);
+            const done = v >= 1;
+            const late = v > 0 && !done;
             return (
               <Pressable
                 key={pr.id}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: done }}
-                accessibilityLabel={`${pr.name} prayed`}
-                onPress={() => log(day, pr.id, done ? 0 : 1)}
+                accessibilityState={{ checked: done ? true : late ? "mixed" : false }}
+                accessibilityLabel={`${pr.name}, ${done ? "on time" : late ? "prayed late" : "not marked"}`}
+                accessibilityHint="Tap once for late, twice for on time"
+                onPress={() => log(day, pr.id, done ? 0 : late ? 1 : LATE)}
                 hitSlop={8}
                 style={s.prayer}
               >
-                <View style={[s.prayerDot, done && s.markOn]}>
+                <View
+                  style={[
+                    s.prayerDot,
+                    done && s.markOn,
+                    late && { borderColor: theme.colors.verdigris },
+                  ]}
+                >
+                  {late ? <View style={s.prayerHalf} /> : null}
                   {done ? <Tick size={15} /> : null}
                 </View>
                 <Text
                   variant="label"
-                  color={done ? "verdigris" : "inkSoft"}
+                  color={done || late ? "verdigris" : "inkSoft"}
                   style={{ fontSize: 12, lineHeight: 15 }}
                 >
                   {pr.name}

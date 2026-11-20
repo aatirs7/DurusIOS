@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/clerk-expo";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Keyboard,
@@ -81,6 +81,13 @@ const HIFZ_CHOICES = [1, ...Array.from({ length: 37 }, (_, i) => 78 + i)];
 
 const useStyles = makeStyles((t) => ({
   safe: { flex: 1, backgroundColor: t.colors.paper },
+  exitPreview: { position: "absolute", top: 58, right: 16, zIndex: 10 },
+  exitPreviewPill: {
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    overflow: "hidden",
+  },
   pad: { flex: 1, paddingHorizontal: MARGIN },
   top: {
     flexDirection: "row",
@@ -491,11 +498,19 @@ export default function Onboarding() {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();
+  /*
+    Preview (Settings > Preview onboarding): the whole flow as a new learner
+    sees it, from a signed-in account, with nothing saved. No name, hifz,
+    reminders or completion is written, sign in is shown but skipped, and
+    the last button or "Exit preview" goes back to Settings.
+  */
+  const preview = useLocalSearchParams<{ preview?: string }>().preview === "1";
   const profileId = useSession((st) => st.activeProfileId);
   const completeOnboarding = useSession((st) => st.completeOnboarding);
   const setAdhkarReminder = usePrefs((st) => st.setAdhkarReminder);
   const savedName = usePrefs((st) => st.name);
-  const setName = usePrefs((st) => st.setName);
+  const storeName = usePrefs((st) => st.setName);
+  const setName = preview ? (_: string) => {} : storeName;
   const [name, setNameDraft] = useState(savedName);
   const markSurahs = useQuranStatus((st) => st.markSurahs);
   const { isSignedIn } = useAuth();
@@ -528,6 +543,10 @@ export default function Onboarding() {
       notifyNow?: boolean;
       from?: Step;
     }) => {
+      if (preview) {
+        setStep("map");
+        return;
+      }
       if (profileId !== null) {
         await saveOnboarding(
           {
@@ -563,6 +582,7 @@ export default function Onboarding() {
       setAdhkarReminder,
       markSurahs,
       completeOnboarding,
+      preview,
     ],
   );
 
@@ -574,13 +594,13 @@ export default function Onboarding() {
   const toSignin = useCallback(
     (from: Step, notifyNow?: boolean) => {
       setSigninFrom(from);
-      if (afterReminders(!!isSignedIn) === "finish") {
+      if (!preview && afterReminders(!!isSignedIn) === "finish") {
         void finish({ returning: true, notifyNow, from });
         return;
       }
       setStep("signin");
     },
-    [isSignedIn, finish],
+    [isSignedIn, finish, preview],
   );
 
   /* Permission is asked as this step is LEFT, next to the question that motivates it. */
@@ -592,9 +612,25 @@ export default function Onboarding() {
     toSignin("reminders", granted);
   }, [adhkar, review, toSignin]);
 
+  const exitPreview = preview ? (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.back()}
+      hitSlop={10}
+      style={s.exitPreview}
+    >
+      <Glass style={s.exitPreviewPill}>
+        <Text variant="label" color="lapis">
+          Exit preview
+        </Text>
+      </Glass>
+    </Pressable>
+  ) : null;
+
   if (step === "open") {
     return (
       <View style={s.safe}>
+        {exitPreview}
         <Open
           onBegin={() => setStep("story")}
           onAccount={() => toSignin("open")}
@@ -607,6 +643,7 @@ export default function Onboarding() {
     return (
       <View style={s.safe}>
         <Story onDone={() => setStep("name")} />
+        {exitPreview}
       </View>
     );
   }
@@ -740,7 +777,16 @@ export default function Onboarding() {
                     </Text>
                   </View>
                   <Glass style={s.signCard}>
-                    <SignInPanel onSignedIn={() => void finish()} />
+                    {preview ? (
+                      <View style={{ gap: space(2), alignItems: "center" }}>
+                        <Text color="inkSoft" style={{ textAlign: "center" }}>
+                          Sign in is skipped in the preview.
+                        </Text>
+                        <GlassButton label="Continue" primary onPress={() => void finish()} />
+                      </View>
+                    ) : (
+                      <SignInPanel onSignedIn={() => void finish()} />
+                    )}
                   </Glass>
                 </View>
               </TouchableWithoutFeedback>
@@ -798,11 +844,16 @@ export default function Onboarding() {
             <GlassButton
               label="Open Durus"
               primary
-              onPress={() => router.replace(chosen.size > 0 ? "/map" : "/home")}
+              onPress={() =>
+                preview
+                  ? router.back()
+                  : router.replace(chosen.size > 0 ? "/map" : "/home")
+              }
             />
           ) : null}
         </View>
       </View>
+      {exitPreview}
     </SafeAreaView>
   );
 }

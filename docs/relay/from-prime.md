@@ -13,6 +13,9 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah prayers: one tap marks a prayer late (dot half filled), two taps on time (full with tick), three clears. Late is stored as 0.5 and is not "done", so Fajr late does not tick Fajr on time (its ring segment shows half).
+- Settings > Preview onboarding: the new-learner flow from a signed-in account with nothing saved (no name, hifz, reminders or completion written; sign in shown but skipped; Exit preview top right).
+
 - Barakah: the two bottom pills are gone; This month and Choose practices are now two small glass icon buttons in the top bar's left slot (calendar, sliders). The prayers box is the page's last element. The bottom reserve is now a device-calibrated 144 pt (every computed version landed ~40 pt too low). Tile titles no longer shrink to tiny text (adjustsFontSizeToFit removed).
 
 - Barakah: a rounded box above the pills with the five daily prayers as dots; tap a dot to mark that prayer. Fajr's dot is the Fajr practice (stays in step with its tile); the other four are logged outside the tracked practices, so the ring and consistency figure are unchanged.

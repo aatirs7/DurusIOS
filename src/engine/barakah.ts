@@ -162,11 +162,19 @@ export function valueOn(values: DayValues, day: string, practiceId: string): num
 export function fill(practice: Practice, value: number): number {
   if (value <= 0) return 0;
   if (practice.input === "count" && practice.max) return Math.min(1, value / practice.max);
-  return 1;
+  /* A check below 1 is a prayer marked late (LATE): half a segment. */
+  return Math.min(1, value);
 }
 
+/*
+  A prayer prayed, but after its time. Stored as a half so it shows half
+  full, and it is not "done": Fajr late does not tick "Fajr on time". Every
+  other value is a whole number, so this never touches them.
+*/
+export const LATE = 0.5;
+
 export function isDone(value: number): boolean {
-  return value > 0;
+  return value >= 1;
 }
 
 export type DaySummary = { applicable: number; done: number };
