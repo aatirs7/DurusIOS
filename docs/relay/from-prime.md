@@ -13,6 +13,9 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Build 12 is in TestFlight (expo-audio); the owner confirmed audio plays.
+- Reader: tapping an ayah before its surah's full layers have downloaded (seconds for a long surah) now fetches that ayah's translation on its own (/quran/verses, kept on the phone) and shows it at once. The "Loading the translation" line is gone.
+
 - Reader audio (needs build 12): in the long-press zoom, a speaker in the corner recites the whole ayah (Quran Foundation, the chosen reciter); tapping a word says it, with "Listen again" on the word card. Streamed, never stored; stops when the zoom closes. Older builds show no speaker.
 
 - Barakah pills, third fix: the page now ends a fixed 104 pt above the screen's bottom edge (window height minus the top inset minus that reserve). The measured lift never took effect on the device and is removed.

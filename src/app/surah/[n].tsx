@@ -11,7 +11,7 @@ import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "
 import { Text } from "@/components/Text";
 import { WORDS_MAP_ATTRIBUTION, wordsMap } from "@/data/wordsMap";
 import { translationName, type QfChapter } from "@/quran/qf";
-import { loadChapter, prefetchChapters, quranApiConfigured } from "@/quran/remote";
+import { loadChapter, loadVerseTranslations, prefetchChapters, quranApiConfigured } from "@/quran/remote";
 import { foldStatus } from "@/quran/status";
 import { SURAHS } from "@/quran/tanzil";
 import { surahForDisplay } from "@/quran/text";
@@ -184,6 +184,23 @@ export default function SurahReader() {
       return next;
     });
   useEffect(() => setReveal({}), [n]);
+  /* A tapped ayah's translation on its own, fetched at once while the whole
+     surah (words, transliteration, audio) is still on its way. A long surah
+     takes seconds; one ayah takes a moment, and is kept on the phone. */
+  const [quick, setQuick] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (qf || !quranApiConfigured()) return;
+    const keys = Object.keys(reveal).map((a) => `${n}:${a}`).filter((k) => quick[k] === undefined);
+    if (keys.length === 0) return;
+    let alive = true;
+    loadVerseTranslations(keys, translationId).then((c) => {
+      if (alive) setQuick((q) => ({ ...q, ...Object.fromEntries(keys.filter((k) => c[k]).map((k) => [k, c[k]])) }));
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reveal, qf, n, translationId]);
   const needLayers = quranApiConfigured();
   useEffect(() => {
     if (!needLayers) return;
@@ -404,11 +421,17 @@ export default function SurahReader() {
         {shown >= 1 && view !== "translation" ? (
           layer ? (
             <TranslationLine ayah={layer} colors={colors} onFootnote={setFootnote} />
-          ) : (
+          ) : quick[`${n}:${ayah}`] ? (
+            <TranslationLine
+              ayah={{ key: `${n}:${ayah}`, words: [], translation: [{ text: quick[`${n}:${ayah}`] }], audio: null }}
+              colors={colors}
+              onFootnote={setFootnote}
+            />
+          ) : qfState === "error" || !quranApiConfigured() ? (
             <Text variant="label" style={{ color: colors.soft, paddingTop: space(1) }}>
-              {qfState === "error" || !quranApiConfigured() ? "Translation needs a connection the first time." : "Loading the translation"}
+              Translation needs a connection the first time.
             </Text>
-          )
+          ) : null
         ) : null}
         {shown >= 2 && view !== "transliteration" && layer ? <TransliterationLine ayah={layer} colors={colors} /> : null}
         {look.numbers || m || u || aw || bookmarks.includes(g) ? (
