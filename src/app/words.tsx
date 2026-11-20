@@ -10,6 +10,7 @@ import { Text } from "@/components/Text";
 import { bootOnce } from "@/data/boot";
 import { db } from "@/data/client";
 import { submitGrade } from "@/data/review";
+import { syncWordGlosses, useWordGlosses } from "@/data/wordGlosses";
 import {
   NEW_PER_DAY,
   buildWordsSession,
@@ -123,7 +124,48 @@ function anchorLabel(lemma: WordsLemma): string {
   return surah ? `${surah.en} ${s}:${a}` : lemma.anchor.ayah;
 }
 
+/*
+  The word meanings come from Quran Foundation after install (they may not ship
+  in the app). Normally they are already here from app open; on a first open
+  before they have arrived, this waits for them, and offline it says so.
+*/
 export default function WordsSession() {
+  const ready = useWordGlosses();
+  const [tried, setTried] = useState(false);
+  useEffect(() => {
+    if (ready) return;
+    let live = true;
+    void syncWordGlosses().finally(() => {
+      if (live) setTried(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+  if (ready) return <WordsSessionBody />;
+  return <WaitingForMeanings offline={tried} />;
+}
+
+function WaitingForMeanings({ offline }: { offline: boolean }) {
+  const s = useStyles();
+  return (
+    <Screen>
+      <BackBar fallback="/today" />
+      <View style={[s.body, { justifyContent: "center" }]}>
+        <Text variant="pageTitle" style={s.center}>
+          {offline ? "Connect once to begin" : "Getting the word meanings"}
+        </Text>
+        <Text color="inkSoft" style={[s.center, { marginTop: space(2) }]}>
+          {offline
+            ? "The meanings come from Quran Foundation. Open this again with an internet connection and they will be kept on your phone."
+            : "One moment."}
+        </Text>
+      </View>
+    </Screen>
+  );
+}
+
+function WordsSessionBody() {
   const s = useStyles();
   const theme = useTheme();
   const router = useRouter();

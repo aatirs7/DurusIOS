@@ -55,6 +55,8 @@ beforeAll(() => {
   const { profiles } = require("@/data/schema");
   seedContent(db);
   seedWords(db);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("./glossFixture").fakeWordGlosses();
   db.insert(profiles).values({ id: 1, name: "Learner" }).run();
   useSession.setState({ activeProfileId: 1 } as never);
 });

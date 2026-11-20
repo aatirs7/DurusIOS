@@ -4,8 +4,8 @@ import { WORDS, canShowGloss, canShowNote } from "../wordsContent";
 import { WORDS_MAP_ATTRIBUTION, coverageFor, surahCounts, wordsMap } from "../wordsMap";
 
 /*
-  The content file's own rules, checked rather than trusted. Every gloss is
-  verbatim Quran Foundation and unverified, no note has text, nothing carries
+  The content file's own rules, checked rather than trusted. No English ships
+  (Quran Foundation's rule), every gloss points at its Quran Foundation word, no note has text, nothing carries
   an em dash, and the ids sit in the ranges the server seed must reuse.
 */
 describe("the Quranic Words content", () => {
@@ -13,13 +13,21 @@ describe("the Quranic Words content", () => {
     expect(JSON.stringify(WORDS).includes(String.fromCharCode(0x2014))).toBe(false);
   });
 
-  it("takes every gloss and example verbatim from Quran Foundation, unverified", () => {
+  it("ships no Quran Foundation English, only where each meaning comes from", () => {
+    /* Quran Foundation does not allow its word meanings in the app package
+       (2026-11-20); the app fetches them after install (wordGlosses.ts). */
     for (const l of WORDS.lemmas) {
       expect(l.gloss?.source).toBe("qf-wbw");
       expect(l.gloss?.verified).toBe(false);
-      expect(canShowGloss(l.gloss)).toBe(true);
+      expect(l.gloss?.text).toBe("");
+      expect(l.gloss?.ref).toMatch(/^\d{1,3}:\d{1,3}:\d{1,3}$/);
+      expect(canShowGloss(l.gloss)).toBe(false);
     }
-    for (const s of WORDS.skills) for (const e of s.examples) expect(e.source).toBe("qf-wbw");
+    for (const s of WORDS.skills)
+      for (const e of s.examples) {
+        expect(e.source).toBe("qf-wbw");
+        expect(e.gloss).toBe("");
+      }
   });
 
   it("has no hand-written notes, so none can show", () => {

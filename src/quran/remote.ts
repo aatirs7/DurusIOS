@@ -173,6 +173,23 @@ export async function loadVerseTranslations(keys: string[], translationId: numbe
 }
 
 /*
+  English word-by-word meanings for up to 60 ayahs (the server's /quran/words),
+  each ayah's meanings in word order. Throws when offline or not connected, so
+  the caller keeps whatever it has stored.
+*/
+export async function fetchWordMeanings(keys: string[]): Promise<Record<string, (string | null)[]>> {
+  if (!quranApiConfigured()) throw new Error("Quran Foundation content is not connected yet");
+  const res = await fetch(`${API.replace(/\/$/, "")}/quran/words?keys=${keys.slice(0, 60).join(",")}`, {
+    headers: KEY ? { "x-durus-key": KEY } : {},
+  });
+  if (!res.ok) throw new Error(`words: ${res.status}`);
+  const j = (await res.json()) as { verses: { key: string; meanings: (string | null)[] }[] };
+  const out: Record<string, (string | null)[]> = {};
+  for (const v of j.verses ?? []) if (Array.isArray(v.meanings)) out[v.key] = v.meanings;
+  return out;
+}
+
+/*
   Ask: free AI picks for anything typed (the server's /quran/ask). The AI only
   names places; the server checks every ref before it leaves, and the app
   shows each place with its own Tanzil text. Kept in memory per query, so

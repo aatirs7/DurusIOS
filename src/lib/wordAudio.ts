@@ -16,6 +16,12 @@ import { requireOptionalNativeModule } from "expo";
     2. play wordAudioUrl(lemma.audio) from src/data/wordsContent.ts
        (Quran Foundation word-by-word audio, audio.qurancdn.com/wbw/...),
     3. set PLAYER_WIRED to true.
+  Quran Foundation's rule (2026-11-20): a downloaded recording, or a word
+  clipped from one, may stay on the phone for at most ONE WEEK, no exceptions,
+  even offline. So store each file with its download time, delete it after
+  seven days on app open, and download it again quietly in the background on
+  the next open (or stream it). Clipping a word's span from verse audio with
+  their timing segments is allowed.
   canPlayWordAudio() then turns drill 1 on by itself on phones with the build,
   and older binaries that take the same update stay text first.
 */

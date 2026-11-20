@@ -12,9 +12,11 @@ What is taken from each, and why that keeps the licences apart:
     (coverage per path position, followable ayah counts, per-surah counts).
     No corpus text is written out: no segment forms, no lemma headwords, no
     roots. A lemma is an integer id in the output.
-  - Every Arabic string and every English gloss in the output is copied
-    VERBATIM from the Quran Foundation word-by-word data (text_uthmani and the
-    word translation), recorded with source "qf-wbw" and the word it came from.
+  - Every Arabic string in the output is copied VERBATIM from the Quran
+    Foundation word-by-word data (text_uthmani), recorded with source "qf-wbw"
+    and the word it came from. English meanings are chosen here but only their
+    ref is written: Quran Foundation does not permit bundling them, so the app
+    fetches the text after install (src/data/wordGlosses.ts).
     No meaning is written by hand or by a model. Hand notes are empty
     placeholders with verified false.
   - Written here, as structure rather than content: the stage titles (the
@@ -364,8 +366,11 @@ def main():
                 gtext = next(g for g, c in top if c == best)
                 src_key, src_w = next((k, w) for k, w in toks if w["g"] == gtext)
                 face = u
+                # The English is chosen here but NOT written out: Quran
+                # Foundation does not permit bundling word meanings (email,
+                # 2026-11-20). Only the ref ships; the app fetches the text.
                 gloss = None if EM_DASH in gtext else {
-                    "text": gtext,
+                    "text": "",
                     "source": "qf-wbw",
                     "ref": "%d:%d:%d" % src_key,
                     "verified": False,
@@ -416,7 +421,7 @@ def main():
                 if not w or not w["g"] or w["u"] in seen or EM_DASH in w["g"] or '"' in w["g"] or " " in w["u"] or ("Allah" in w["g"] and any(l != ALLAH for l, _ in r["stems"])):
                     continue
                 seen.add(w["u"])
-                examples.append({"arabic": w["u"], "gloss": w["g"], "source": "qf-wbw", "ref": "%d:%d:%d" % key})
+                examples.append({"arabic": w["u"], "gloss": "", "source": "qf-wbw", "ref": "%d:%d:%d" % key})
             label = skill_name(name)
             skill_out.append({
                 "id": skill_ids[name],
@@ -450,10 +455,10 @@ def main():
         start = end
 
     out = {
-        "version": 1,
+        "version": 2,
         "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "attribution": "Quran data provided by Quran Foundation",
-        "method": "Lemma, frequency and clitic facts computed offline; every lemma form, gloss and skill example is verbatim Quran Foundation word-by-word (source qf-wbw). Stage titles and skill names are structural labels. Notes are empty until written and verified.",
+        "method": "Lemma, frequency and clitic facts computed offline; every lemma form and skill example is verbatim Quran Foundation word-by-word Arabic (source qf-wbw). English meanings are NOT bundled: Quran Foundation does not permit it, so each gloss keeps only its ref and the app fetches the text after install and refreshes it weekly. Stage titles and skill names are structural labels.",
         "totals": {"words": n, "ayahs": len(per_ayah), "followableShare": FOLLOWABLE},
         "audioBase": "https://audio.qurancdn.com/",
         "stages": stages_out,

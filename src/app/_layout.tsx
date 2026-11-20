@@ -33,6 +33,7 @@ import { bootOnce } from "@/data/boot";
 import { DB_NAME, db, sqlite } from "@/data/client";
 import { useDurusMigrations } from "@/data/migrate";
 import { syncReminders } from "@/data/reminders";
+import { syncWordGlosses } from "@/data/wordGlosses";
 import { refreshWordsKnown } from "@/data/words";
 import { useSession } from "@/state/session";
 import { useThemeChoice } from "@/state/theme";
@@ -184,8 +185,13 @@ export default function RootLayout() {
     } catch {
       /* Read and the Map simply stay plain; Learn refreshes it on focus. */
     }
+    /* Quran Foundation word meanings: fetched after install, refreshed weekly,
+       quietly, on every open (src/data/wordGlosses.ts). */
+    void syncWordGlosses();
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") void syncReminders(db, profileId);
+      if (state !== "active") return;
+      void syncReminders(db, profileId);
+      void syncWordGlosses();
     });
     return () => sub.remove();
   }, [boot]);

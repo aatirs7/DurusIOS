@@ -70,3 +70,9 @@ Built 2026-11-19 by scripts/coverage/build_words_map.py into assets/content/qura
 - Without the stem file, the fallback (surface compared with the lemma) scored 84.4% of all words and 74.5% of words with a clitic (31,616 of 42,423).
 - The word at which each word becomes known along the path agrees with the corpus for 99.84% of words; coverage per stage matches the content curve to 0.1 point, and the whole path reaches 80.01%.
 - QUL data issues found: the lemma table has three rows past the end of their ayah (13:5:26, 2:275:46, 4:176:51); they are ignored.
+
+## Quran Foundation's answer (2026-11-20)
+
+- Clipping a word's span from verse recitation with their segments: allowed (a Derived Material, same limits as the recording).
+- Downloaded recordings and clips: on the device for at most one week, no exceptions; re-download or stream after that.
+- Word-by-word meanings: may not be bundled in the app package. Fetched through Content Sync after install and synced at least every seven days when connectivity permits. The content file therefore keeps refs only; src/data/wordGlosses.ts fetches the text.

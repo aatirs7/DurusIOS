@@ -1,6 +1,6 @@
 # DurusIOS: relay from Prime
 
-Updated: 2026-11-19
+Updated: 2026-11-20
 
 ## Now
 
@@ -12,6 +12,12 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 - Rule: inside useAnimatedStyle, use plain numbers and shared values only. No function calls.
 
 ## Shipped
+
+- **Quran Foundation replied (20 Nov, to the 19 Nov email). Durus now follows it.**
+  - Word clips from verse recitation with their timing segments: allowed.
+  - Downloaded audio (verse files and word clips): kept on the phone for at most one week, no exceptions. Nothing is stored yet (no audio module until the next native build); src/lib/wordAudio.ts records the rule: delete after seven days, re-download quietly on the next open.
+  - Bundling their word-by-word English meanings: NOT allowed. Fixed: assets/content/quranic-words.json (version 2) keeps only each meaning's ref; the app downloads the text after install through a new server route (durus.space/api/v1/quran/words, durus-web 513de55) and refreshes it every seven days in the background on app open (src/data/wordGlosses.ts). Offline it keeps the stored copy. A first open of the Quranic Words track before the download finishes says "Getting the word meanings". Neon's 560 word cards had their English cleared (seed re-run once through a temporary route, then removed with its token). Existing phones lose the bundled English on update (seed version bump).
+  - Attribution confirmed correct. They also invite a Quran.com app directory listing if Durus adds Quran ID sign-in.
 
 - **Quranic Words learning loop**, per the owner ("structured repetition, different kinds of learning, like Study Lesson"). Reviews first, each asked as either "what does this mean" or "which is the Arabic for" (new reverse drill with Arabic options). New words: their cards, then three shuffled rounds across all of them: choose the meaning (graded, the day's one review), choose the Arabic (practice), choose the meaning again (practice). Wrong answers return at the end ungraded. Spaced repetition then brings each word back over the following days; a word counts as known after two correct days.
 - **Per-word Quranic Words, from QUL** (merged from a worktree; QUL credited where word data shows).
@@ -57,7 +63,6 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 
 - Native build: add expo-audio, which unlocks drill 1 (listen, choose the meaning); src/lib/wordAudio.ts has the switch.
-- Send the developers@quran.com draft (now also covers bundling the glosses) and approve posting the QUL licence issue.
 - Review the stage lists, interference groups and glosses.
 - **Issue #4, Quranic Words, step 1: coverage numbers. STOPPED for owner review.** Full write-up: docs/quranic-words/coverage.md. Computed offline from the Quranic Arabic Corpus (not in the repo, never shipped). A word counts as known only when its lemma and every clitic on it are taught.
   - Lemmas needed: 25% = 9, 50% = 54, 60% = 109, 70% = 220, 80% = 441, 90% = 1,061. The top 500 reach 81.6%, so "500 words, about 80%" holds.

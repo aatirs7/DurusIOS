@@ -18,6 +18,7 @@ import {
   PATH_CARD_IDS,
   PATH_WORD_WEIGHTS,
   WORDS,
+  canShowGloss,
   lemmaForCard,
   stageFor,
   type WordsLemma,
@@ -327,7 +328,7 @@ export function buildWordsSession(
     )
     .where(and(wordsDeck(), isNull(cardStates.cardId), notSuspended(profileId)))
     .all()
-    .filter((r) => lemmaForCard(r.cardId)?.gloss)
+    .filter((r) => canShowGloss(lemmaForCard(r.cardId)?.gloss ?? null))
     /* Path order, which is the content's pos, not the card id. */
     .sort((a, b) => lemmaForCard(a.cardId)!.pos - lemmaForCard(b.cardId)!.pos);
 
@@ -354,12 +355,12 @@ export function buildWordsSession(
   /* The distractor pool: every word of the track, with whether it is learned. */
   const learned = new Set(states.filter((s) => s.repetitions >= KNOWN_REPS).map((s) => s.cardId));
   const pool: MeaningOption[] = WORDS.lemmas
-    .filter((l) => l.gloss)
+    .filter((l) => canShowGloss(l.gloss))
     .map((l) => ({ cardId: l.cardId, english: l.gloss!.text, stage: l.stage, group: l.group, learned: learned.has(l.cardId) }));
 
   const toQuestion = (cardId: number, isNew: boolean): WordQuestion | null => {
     const lemma = lemmaForCard(cardId);
-    if (!lemma || !lemma.gloss) return null;
+    if (!lemma || !canShowGloss(lemma.gloss)) return null;
     const item = pool.find((p) => p.cardId === cardId)!;
     const wrong = pickMeaningDistractors(item, pool, 3, random);
     const options = shuffle(

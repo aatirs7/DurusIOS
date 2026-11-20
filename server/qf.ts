@@ -97,6 +97,27 @@ export class QfClient {
     );
   }
 
+  /*
+    English word-by-word meanings for specific ayahs, for the Quranic Words
+    track. Quran Foundation does not allow these to ship inside the app, so the
+    app fetches them through here after install and refreshes them weekly.
+    Twenty upstream calls at a time.
+  */
+  async wordMeanings(keys: string[]): Promise<{ key: string; meanings: (string | null)[] }[]> {
+    const out: { key: string; meanings: (string | null)[] }[] = [];
+    for (let i = 0; i < keys.length; i += 20) {
+      const part = await Promise.all(
+        keys.slice(i, i + 20).map(async (key) => {
+          const j = await this.get<{ verse: RawVerse }>(`verses/by_key/${key}?words=true&language=en&word_fields=text_uthmani`);
+          const meanings = (j.verse.words ?? []).filter((w) => w.char_type_name === "word").map((w) => w.translation?.text ?? null);
+          return { key, meanings };
+        }),
+      );
+      out.push(...part);
+    }
+    return out;
+  }
+
   /* Every ayah of a surah with words, one translation, recitation audio and footnotes. */
   async chapter(surah: number, opts: { translationId: number | null; reciterId: number | null; translationName?: string | null }): Promise<QfChapter> {
     const raw: RawVerse[] = [];

@@ -7,6 +7,7 @@
     GET /quran/resources          translations and reciters available
     GET /quran/chapter/:n?translation=20&reciter=7
     GET /quran/verses?keys=13:28,94:5&translation=20
+    GET /quran/words?keys=2:255,1:2   English word meanings, by ayah
     GET /quran/ask?q=i feel hopeless   free AI picks, refs checked (ask.ts)
 
   Access: if DURUS_APP_KEY is set, callers must send it as x-durus-key. Who may
@@ -54,6 +55,15 @@ export async function handle(req: Request, env: Record<string, string | undefine
       if (keys.length === 0) return json({ verses: [] });
       const verses = await qf(env).verses(keys, t && /^\d+$/.test(t) ? Number(t) : 20);
       return json({ verses });
+    }
+    if (route[0] === "words") {
+      /* Up to 60 ayah keys like 2:255: each ayah's English word meanings, in word order. */
+      const keys = (url.searchParams.get("keys") ?? "")
+        .split(",")
+        .filter((k) => /^\d{1,3}:\d{1,3}$/.test(k))
+        .slice(0, 60);
+      if (keys.length === 0) return json({ verses: [] });
+      return json({ verses: await qf(env).wordMeanings(keys) });
     }
     if (route[0] === "chapter" && /^\d{1,3}$/.test(route[1] ?? "")) {
       const n = Number(route[1]);

@@ -1,4 +1,8 @@
 import Database from "better-sqlite3";
+
+/* The meanings module stores to the phone; nothing here touches it. */
+jest.mock("expo-file-system", () => ({}));
+jest.mock("@/quran/remote", () => ({ quranApiConfigured: () => false, fetchWordMeanings: jest.fn() }));
 import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
@@ -15,6 +19,10 @@ import { seedWords } from "../seedWords";
 import { buildWordsSession, NEW_PER_DAY, wordsProgress } from "../words";
 import { PATH_CARD_IDS, WORDS, lemmaForCard } from "../wordsContent";
 import { coverageFor, surahCards } from "../wordsMap";
+
+import { fakeWordGlosses } from "./glossFixture";
+
+beforeAll(fakeWordGlosses);
 
 /*
   The populated-database rehearsal for the Quranic Words seed.

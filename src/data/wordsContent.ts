@@ -15,8 +15,12 @@ import raw from "../../assets/content/quranic-words.json";
 
   WHAT MAY BE SHOWN
 
-  Every lemma form, gloss and skill example here is verbatim Quran Foundation
-  word-by-word (source "qf-wbw"), shown with the attribution line. Stage
+  Every lemma form and skill example here is verbatim Quran Foundation
+  word-by-word Arabic (source "qf-wbw"), shown with the attribution line. The
+  English meanings are NOT in this file: Quran Foundation does not permit
+  bundling them (2026-11-20), so each gloss carries only its ref and empty
+  text, and src/data/wordGlosses.ts fills the text in after install, refreshed
+  weekly. Stage
   titles and skill names are structural labels. Notes are
   empty placeholders with verified false; a note is shown only once it has
   text AND verified true, which today is never. canShowGloss and canShowNote
@@ -112,7 +116,7 @@ export function skillsForStage(n: number): WordsSkill[] {
   return WORDS.skills.filter((s) => s.stage === n);
 }
 
-/* Glosses are shown only when verbatim from Quran Foundation. */
+/* Glosses are shown only when verbatim from Quran Foundation, and only once fetched. */
 export function canShowGloss(g: Gloss | null): g is Gloss {
   return g !== null && g.source === "qf-wbw" && g.text.trim().length > 0;
 }

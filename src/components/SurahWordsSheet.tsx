@@ -3,6 +3,7 @@ import { FlatList, Modal, Pressable, View } from "react-native";
 
 import { Glass, GlassButton } from "@/components/Glass";
 import { Text } from "@/components/Text";
+import { useWordGlosses } from "@/data/wordGlosses";
 import { WORDS_ATTRIBUTION, canShowGloss, lemmaForCard, type WordsLemma } from "@/data/wordsContent";
 import { WORDS_MAP_ATTRIBUTION, surahCards } from "@/data/wordsMap";
 import { SURAHS } from "@/quran/tanzil";
@@ -71,13 +72,15 @@ export function SurahWordsSheet({
   perSession: number;
   onStart: (surah: number) => void;
 }) {
+  /* Re-render once the Quran Foundation meanings arrive. */
+  const meanings = useWordGlosses();
   const s = useStyles();
   const [surah, setSurah] = useState<number | null>(null);
   const counts = useMemo(
     () => (visible ? SURAHS.map((m) => unknownInSurah(m.n, knownIds).length) : []),
-    [visible, knownIds],
+    [visible, knownIds, meanings],
   );
-  const words = useMemo(() => (surah === null ? [] : unknownInSurah(surah, knownIds)), [surah, knownIds]);
+  const words = useMemo(() => (surah === null ? [] : unknownInSurah(surah, knownIds)), [surah, knownIds, meanings]);
   const fresh = words.filter((l) => !introducedIds.has(l.cardId)).length;
   const meta = surah === null ? null : SURAHS[surah - 1];
 
