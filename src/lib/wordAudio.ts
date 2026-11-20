@@ -66,3 +66,15 @@ export function playWordAudio(url: string | null): boolean {
     return false;
   }
 }
+
+/* Any Quran Foundation recording (a word, or a whole ayah from the reader). */
+export const playAudio = playWordAudio;
+
+/* Stop whatever is playing, for example when the reader's zoom closes. */
+export function stopAudio() {
+  try {
+    player?.pause();
+  } catch {
+    /* Nothing playing. */
+  }
+}

@@ -6,6 +6,7 @@ import Svg, { Path } from "react-native-svg";
 
 import { Glass } from "@/components/Glass";
 import { Text } from "@/components/Text";
+import { canPlayWordAudio, playAudio, stopAudio } from "@/lib/wordAudio";
 import type { QfAyah, QfWord } from "@/quran/qf";
 import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
@@ -13,7 +14,8 @@ import { makeStyles, useTheme } from "@/theme/useTheme";
 /*
   Long press an ayah and it lifts off the page into a Liquid Glass zoom: the
   ayah large, every word over its meaning and reading, the transliteration and
-  translation, and the ayah's actions. Tap a word to zoom in on that word.
+  translation, and the ayah's actions. Tap a word to zoom in on that word and hear it; the speaker
+  in the corner recites the whole ayah (on builds with the audio module).
 
   The glass is the frame and the controls. The Quran text and its layers sit on
   a solid paper panel inside it, so they stay legible whatever is behind.
@@ -56,6 +58,9 @@ const useStyles = makeStyles((t) => ({
   tool: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: space(1), paddingHorizontal: space(1.5), borderRadius: RADIUS.pill },
 }));
 
+/* A play triangle with a speaker's sound waves. */
+const PLAY = "M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11";
+
 function Icon({ d, color, size = 18 }: { d: string; color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -71,12 +76,15 @@ export function AyahZoom(p: Props) {
   const { height } = useWindowDimensions();
   const still = useReducedMotion();
   const [focus, setFocus] = useState<QfWord | null>(null);
+  /* Sound needs the build with the audio module; older builds stay silent. */
+  const canHear = canPlayWordAudio();
 
   /* Scale only: a zoom, never a fade, so the glass is always drawn. */
   const scale = useSharedValue(still ? 1 : 0.88);
   useEffect(() => {
     if (!p.visible) {
       setFocus(null);
+      stopAudio();
       scale.value = still ? 1 : 0.88;
       return;
     }
@@ -100,9 +108,17 @@ export function AyahZoom(p: Props) {
                     <Text variant="eyebrow" color="inkSoft">
                       {p.title}
                     </Text>
-                    <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={p.onClose} hitSlop={10}>
-                      <Icon d="M6 6l12 12M18 6L6 18" color={theme.colors.inkSoft} size={16} />
-                    </Pressable>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: space(2.5) }}>
+                      {/* The whole ayah, recited (Quran Foundation, the chosen reciter). */}
+                      {canHear && p.layer?.audio ? (
+                        <Pressable accessibilityRole="button" accessibilityLabel="Play the ayah" onPress={() => playAudio(p.layer!.audio!.url)} hitSlop={10}>
+                          <Icon d={PLAY} color={theme.colors.lapis} size={18} />
+                        </Pressable>
+                      ) : null}
+                      <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={p.onClose} hitSlop={10}>
+                        <Icon d="M6 6l12 12M18 6L6 18" color={theme.colors.inkSoft} size={16} />
+                      </Pressable>
+                    </View>
                   </View>
 
                   <ScrollView style={{ maxHeight: height * 0.62 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: space(2) }}>
@@ -117,6 +133,14 @@ export function AyahZoom(p: Props) {
                           </Text>
                         ) : null}
                         {focus.meaning ? <Text style={{ fontSize: 18, textAlign: "center" }}>{focus.meaning}</Text> : null}
+                        {canHear && focus.audio ? (
+                          <Pressable accessibilityRole="button" accessibilityLabel="Listen" onPress={() => playAudio(focus.audio)} hitSlop={8} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingTop: space(1) }}>
+                            <Icon d={PLAY} color={theme.colors.lapis} size={16} />
+                            <Text variant="label" color="lapis">
+                              Listen again
+                            </Text>
+                          </Pressable>
+                        ) : null}
                         <Text variant="label" color="inkFaint" style={{ paddingTop: space(0.5) }}>
                           Tap to go back to the ayah
                         </Text>
@@ -125,7 +149,11 @@ export function AyahZoom(p: Props) {
                       /* Each word over its meaning and reading; tap one to zoom in. */
                       <View style={s.words}>
                         {p.layer.words.map((w) => (
-                          <Pressable key={w.position} accessibilityRole="button" accessibilityLabel={w.meaning ?? `Word ${w.position}`} onPress={() => setFocus(w)} style={s.word}>
+                          <Pressable key={w.position} accessibilityRole="button" accessibilityLabel={w.meaning ?? `Word ${w.position}`} onPress={() => {
+                              setFocus(w);
+                              /* Tapping a word says it. */
+                              if (canHear) playAudio(w.audio);
+                            }} style={s.word}>
                             <Text selectable={false} style={[big, { fontSize: 34, lineHeight: 64 }]}>
                               {w.text}
                             </Text>
