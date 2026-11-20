@@ -13,6 +13,10 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Onboarding motion is smooth: pages change at timed marks (useTimeline) and everything that grows runs on the UI thread with eased Reanimated timings: the press ring, the zoom (scale only; the dim fades on its own layer, never over the glass), the Overview ring (animated stroke), the Wall (Juz Amma revealed rising from the bottom), Juz cells and Week bars. The Search page now looks like the app while searching: bar at the top, Seeking, the AI caption with its sparkle, and results with reason, Arabic and reference separated by rules.
+
+- Onboarding Learn page redrawn to match the app in three beats: the Learn page (ring of words known, Begin, Arabic Course), the New word card (rabbi with reading, Listen, Lord, its other forms and its real count of 975 from the bundled content), then What does this mean? with Show the meanings and the right option turning green.
+
 - Barakah: This month and Practices moved out of the top bar into two labelled glass pills centred between the summary and the tiles (the top was cluttered).
 
 - Onboarding story redrawn to match the app, in tab order: Search first; Read shows a press and hold on 1:2 lifting into the zoom (words with reading and meaning, then one word brought forward with Listen again); Progress cycles its real views under its tab strip (Overview ring, Wall, Juz grid, Week); Barakah shows the real starting practices (Fajr on time, Morning and Evening adhkar, Daily Quran portion) and the five prayer dots filling late and on time. Pages can set their own length. PracticeIcon moved to src/components.

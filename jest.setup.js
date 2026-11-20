@@ -32,6 +32,7 @@ jest.mock('react-native-reanimated', () => {
       delay: () => chain,
       withInitialValues: () => chain,
       springify: () => chain,
+      easing: () => chain,
       build: () => () => ({ initialValues: {}, animations: {} }),
     };
     return chain;
@@ -68,6 +69,13 @@ jest.mock('react-native-reanimated', () => {
     },
     useDerivedValue: (fn) => ({ value: fn() }),
     useAnimatedRef: () => ({ current: null }),
+    useAnimatedProps: (fn) => {
+      try {
+        return fn();
+      } catch {
+        return {};
+      }
+    },
     // Overridable per test: set globalThis.__reducedMotion = true.
     useReducedMotion: () => globalThis.__reducedMotion === true,
 
