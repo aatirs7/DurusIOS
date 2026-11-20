@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Barakah pills, third fix: the page now ends a fixed 104 pt above the screen's bottom edge (window height minus the top inset minus that reserve). The measured lift never took effect on the device and is removed.
+
 - **Word audio (native build).** expo-audio added (no microphone permission, no background audio). The new-word card and the "What does this mean?" drill play Quran Foundation's word recording once as they appear, with a Listen pill to replay. Streamed, never stored, so the one-week limit on stored recordings never applies. Phones on the older build get the same update and simply show no Listen pill.
 - Search: while an AI question is out the list shows only the loader, then the AI's picks with the local results after them. No more local results appearing and then being replaced (owner). Offline, or after 6 s, the local results show alone.
 

@@ -410,8 +410,6 @@ export default function Barakah() {
      taller than the screen, which pushed the bottom pills under the tab bar. */
   const { height: winH } = useWindowDimensions();
   const tabTop = useTabTop();
-  const pillsRef = useRef<View>(null);
-  const [lift, setLift] = useState(0);
   const isToday = day === today;
 
   const values = useMemo(() => fold(events), [events]);
@@ -582,7 +580,10 @@ export default function Barakah() {
   return (
     <TabSafe style={s.safe}>
       <Breath />
-      <View style={[s.body, { flex: 0, height: winH - tabTop }]}>
+      {/* The page ends TAB_CLEAR above the screen's bottom edge, so the pills
+          always sit above the floating tab bar. A fixed reserve, because a
+          measured lift (measureInWindow) never took effect on the device. */}
+      <View style={[s.body, { flex: 0, height: winH - tabTop - TAB_CLEAR }]}>
         <TopBar title="Barakah" subtitle="Small daily practices" />
 
         <View style={s.dateRow}>
@@ -723,19 +724,7 @@ export default function Barakah() {
           )}
         </ScrollView>
 
-        <View
-          ref={pillsRef}
-          style={[s.pills, { marginBottom: lift }]}
-          onLayout={() =>
-            /* Where the pills really are on screen: if the tab bar would
-               cover them, lift them by exactly the overlap. Measured, because
-               the tab's own view does not end at the screen's edge. */
-            pillsRef.current?.measureInWindow((_x, y, _w, h) => {
-              const over = y + h - (winH - TAB_CLEAR);
-              if (Math.abs(over) > 1) setLift((l) => Math.max(0, l + over));
-            })
-          }
-        >
+        <View style={s.pills}>
           <Pressable
             accessibilityRole="button"
             onPress={() => setSheet("month")}
