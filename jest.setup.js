@@ -53,6 +53,7 @@ jest.mock('react-native-reanimated', () => {
     FadeOut: builder(),
     FadeInDown: builder(),
     FadeInUp: builder(),
+    ZoomIn: builder(),
     LinearTransition: builder(),
 
     // Shared values are read synchronously in tests, so a plain object with a

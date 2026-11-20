@@ -1,30 +1,35 @@
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
+  FadeIn,
   FadeInDown,
   FadeInUp,
-  FadeOut,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
+  ZoomIn,
 } from "react-native-reanimated";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 
 import { AyahField } from "@/components/AyahField";
-import { BarakahRing, DayCell } from "@/components/BarakahRing";
+import { adhkarFor } from "@/barakah/adhkar";
+import { BarakahRing } from "@/components/BarakahRing";
 import { Glass } from "@/components/Glass";
+import { PracticeIcon } from "@/components/PracticeIcon";
 import { Text } from "@/components/Text";
 import { arabicStyles } from "@/theme/typography";
 import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
+import { PRACTICES } from "@/engine/barakah";
+import { transliterateQuranWord } from "@/engine/quranTranslit";
 import { AYAHS, SURAHS } from "@/quran/tanzil";
 
 /*
-  The five story heroes. Full bleed, drawn on paper, no container card.
+  The five story heroes, one per tab, each drawn like its tab. Full bleed, drawn on paper, no container card.
 
   Quran text comes only from ./tanzil, verbatim (issue #3). It is split on
   spaces purely to highlight one word at a time; the words are rendered back
@@ -171,6 +176,72 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space(2),
     gap: space(0.5),
   },
+  press: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: t.colors.lapis,
+    backgroundColor: t.colors.lapisWash,
+    opacity: 0.85,
+  },
+  zoomFrame: { borderRadius: 30, padding: space(1.25), overflow: "hidden" },
+  zoomPanel: { borderRadius: 22, backgroundColor: t.colors.paper, padding: space(2), gap: space(1.25), alignItems: "center" },
+  zoomWords: { flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "center", gap: space(1) },
+  zoomWord: { alignItems: "center", borderRadius: 14, paddingHorizontal: space(0.75), paddingVertical: space(0.5) },
+  zoomFocus: {
+    alignItems: "center",
+    gap: 2,
+    alignSelf: "stretch",
+    borderRadius: 18,
+    backgroundColor: t.colors.surface,
+    borderWidth: 1,
+    borderColor: t.colors.rule,
+    paddingVertical: space(1.5),
+  },
+  seg: { flexDirection: "row", borderRadius: RADIUS.pill, padding: 4, overflow: "hidden" },
+  segItem: { paddingVertical: 6, paddingHorizontal: space(1.25), borderRadius: RADIUS.pill },
+  juzGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  juzCell: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: t.colors.surfaceSunk,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  juzFill: { position: "absolute", left: 0, right: 0, bottom: 0 },
+  bars: { flexDirection: "row", alignItems: "flex-end", gap: space(2), height: 150 },
+  barCol: { width: 18, borderRadius: 6 },
+  tile: { height: 112, borderRadius: 22, padding: space(1.25), justifyContent: "space-between", overflow: "hidden" },
+  mark: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: t.colors.inkFaint,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  prayers: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderRadius: 22,
+    paddingVertical: space(1.25),
+    paddingHorizontal: space(2),
+    overflow: "hidden",
+  },
+  prayerDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: t.colors.inkFaint,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  prayerHalf: { position: "absolute", left: 0, right: 0, bottom: 0, height: "50%" },
   refRow: { flexDirection: "row", alignItems: "center", gap: space(1) },
   ref: {
     borderRadius: RADIUS.pill,
@@ -180,163 +251,253 @@ const useStyles = makeStyles((t) => ({
   },
 }));
 
-/* ---------- 1. Read ---------- */
+/* ---------- 2. Read ---------- */
 
 const READ = ["1:1", "1:2", "1:3"] as const;
-/* The word that lifts into the card: the third word of 1:2, taken from the text, not typed. */
-const CARD_AYAH = 1;
-const CARD_WORD = 2;
+/*
+  Long press 1:2 and it lifts into the zoom, as in the reader: every word over
+  its reading and meaning, then one word brought forward. The readings come
+  from Durus's own transliterator; the four meanings are written here (Quran
+  Foundation's word meanings are fetched after install, never bundled).
+*/
+const HELD = 1;
+const MEANINGS = ["All praise", "for Allah", "Lord", "of the worlds"];
+const FOCUS_WORD = 2;
 
-export function ReadHero({ width, active, still, paused }: HeroProps) {
+export function ReadHero({ width, height, active, still, paused }: HeroProps) {
   const s = useStyles();
   const theme = useTheme();
   const lines = READ.map((k) => AYAHS[k].split(" "));
-  const count = lines.reduce((n, l) => n + l.length, 0);
-  /* One word per beat across all three ayahs, then the card holds for a few beats. */
-  const beat = useBeat(active, 480, still, 1000, paused);
-  const cycle = still ? count + 1 : beat % (count + 6);
-  const showCard = cycle >= count && cycle < count + 5;
-
-  let k = 0;
-  const cardWord = lines[CARD_AYAH][CARD_WORD];
+  /* 200 ms beats: press from 4, held (ayah tinted) from 8, zoom from 11, word focus from 24. */
+  const beat = useBeat(active, 200, still, 60, paused);
+  const b = still ? 60 : beat;
+  const pressing = b >= 4 && b < 11;
+  const zoomed = b >= 11;
+  const focus = b >= 24;
+  const words = lines[HELD];
 
   return (
     <View style={[s.center, { width, flex: 1, gap: space(1) }]}>
-      {lines.map((words, a) => (
-        <View key={READ[a]} style={s.ayahLine}>
+      {lines.map((ws, a) => (
+        <View
+          key={READ[a]}
+          style={[
+            s.ayahLine,
+            {
+              borderRadius: 16,
+              paddingHorizontal: space(1),
+              backgroundColor: a === HELD && b >= 8 && !zoomed ? theme.colors.lapisWash : "transparent",
+            },
+          ]}
+        >
           <Text selectable={false} style={s.ayah}>
-            {words.map((w, i) => {
-              const index = k++;
-              const lit = !still && index === cycle;
-              const lifted = showCard && a === CARD_AYAH && i === CARD_WORD;
-              return (
-                <Text
-                  key={i}
-                  selectable={false}
-                  /* Each span restates the ayah style: the app's Text stamps the
-                     body face on every node, which would override the parent's
-                     Amiri. */
-                  style={[
-                    s.ayah,
-                    lit
-                      ? {
-                          color: theme.colors.lapis,
-                          backgroundColor: theme.colors.lapisWash,
-                        }
-                      : lifted
-                        ? { color: theme.colors.lapis }
-                        : null,
-                  ]}
-                >
-                  {i > 0 ? ` ${w}` : w}
-                </Text>
-              );
-            })}
+            {ws.join(" ")}
           </Text>
           <View style={s.marker}>
             <Text variant="label" color="saffron">
               {toArabicDigits(a + 1)}
             </Text>
           </View>
+          {a === HELD && pressing ? (
+            /* The finger: a ring that tightens while the press is held. */
+            <View pointerEvents="none" style={[StyleSheet.absoluteFill, s.center]}>
+              <View style={[s.press, { transform: [{ scale: 1.25 - Math.min(1, (b - 4) / 6) * 0.35 }] }]} />
+            </View>
+          ) : null}
         </View>
       ))}
+      <Text variant="label" color="inkFaint" style={{ marginTop: space(1) }}>
+        {zoomed ? " " : "Press and hold an ayah"}
+      </Text>
 
-      {showCard ? (
-        <Animated.View
-          entering={FadeInUp.duration(260)}
-          exiting={FadeOut.duration(160)}
-          style={[s.card, { top: space(1) }]}
+      {zoomed ? (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            s.center,
+            { backgroundColor: theme.dark ? "rgba(8,10,16,0.55)" : "rgba(20,30,60,0.22)" },
+          ]}
         >
-          <Text
-            selectable={false}
-            style={[
-              s.ayah,
-              { fontSize: 34, lineHeight: 56, color: theme.colors.lapis },
-            ]}
-          >
-            {cardWord}
-          </Text>
-          <Text>Lord</Text>
-          {/* English and Arabic on separate nodes, never one, or bidi reorders them. */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: space(0.75),
-            }}
-          >
-            <Text variant="label" color="inkSoft">
-              Root
-            </Text>
-            <Text
-              selectable={false}
-              style={[
-                s.ayah,
-                { fontSize: 18, lineHeight: 30, color: theme.colors.inkSoft },
-              ]}
-            >
-              ر ب ب
-            </Text>
-          </View>
-        </Animated.View>
+          {/* Grows in by scale, never by fading: glass does not draw under an animated opacity. */}
+          <Animated.View entering={ZoomIn.duration(320)} style={{ width: width - space(3), maxHeight: height }}>
+            <Glass style={s.zoomFrame}>
+              <View style={s.zoomPanel}>
+                <Text variant="eyebrow" color="inkSoft">
+                  Al-Fatiha 1:2
+                </Text>
+                <View style={s.zoomWords}>
+                  {words.map((w, i) => (
+                    <View key={i} style={[s.zoomWord, focus && i === FOCUS_WORD && { backgroundColor: theme.colors.lapisWash }]}>
+                      <Text selectable={false} style={[s.ayah, { fontSize: 26, lineHeight: 48 }]}>
+                        {w}
+                      </Text>
+                      <Text variant="label" color="inkSoft" style={{ fontStyle: "italic" }}>
+                        {transliterateQuranWord(w)}
+                      </Text>
+                      <Text variant="label">{MEANINGS[i]}</Text>
+                    </View>
+                  ))}
+                </View>
+                {focus ? (
+                  <Animated.View entering={FadeInUp.duration(260)} style={s.zoomFocus}>
+                    <Text selectable={false} style={[s.ayah, { fontSize: 50, lineHeight: 90, color: theme.colors.lapis }]}>
+                      {words[FOCUS_WORD]}
+                    </Text>
+                    <Text color="inkSoft" style={{ fontStyle: "italic" }}>
+                      {transliterateQuranWord(words[FOCUS_WORD])}
+                    </Text>
+                    <Text>{MEANINGS[FOCUS_WORD]}</Text>
+                    <View style={[s.ref, { flexDirection: "row", alignItems: "center", gap: 4, marginTop: space(0.5) }]}>
+                      <Speaker color={theme.colors.lapis} />
+                      <Text variant="label" color="lapis">
+                        Listen again
+                      </Text>
+                    </View>
+                  </Animated.View>
+                ) : (
+                  <Text variant="label" color="inkFaint" style={{ textAlign: "center" }}>
+                    Tap a word to hear it
+                  </Text>
+                )}
+              </View>
+            </Glass>
+          </Animated.View>
+        </View>
       ) : null}
     </View>
   );
 }
 
-/* ---------- 2. Map ---------- */
+function Speaker({ color }: { color: string }) {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24">
+      <Path
+        d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+/* ---------- 3. Progress ---------- */
 
 const JUZ_AMMA_FIRST = 78;
+/* The Progress tab's own views, in its order. */
+const PROGRESS_VIEWS = ["Overview", "Wall", "Juz", "Stats", "Week"] as const;
+const SHOWN_VIEWS = ["Overview", "Wall", "Juz", "Week"] as const;
+const VIEW_BEATS = 22;
 
-export function MapHero({ width, height, active, still, paused }: HeroProps) {
+function PercentRing({ fraction, size, color, track }: { fraction: number; size: number; color: string; track: string }) {
+  const stroke = 10;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <Svg width={size} height={size}>
+      <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        stroke={color}
+        strokeWidth={stroke}
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray={`${c * fraction} ${c}`}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </Svg>
+  );
+}
+
+/*
+  The Progress tab's views, each shown in turn under its own tab strip:
+  Overview (the ring), Wall (every ayah a square, Juz Amma lighting up), Juz
+  (thirty cells), Week (ayahs read each day).
+*/
+export function ProgressHero({ width, height, active, still, paused }: HeroProps) {
   const s = useStyles();
+  const theme = useTheme();
   const amma = SURAHS.slice(JUZ_AMMA_FIRST - 1);
-  const ammaStart = amma[0].start;
   const ammaSize = amma.reduce((n, x) => n + x.ayahs, 0);
   const end = 6236;
 
-  /* Saffron rises through Juz Amma from the last ayah backwards, then teal
-     follows surah by surah from An-Nas. */
-  const beat = useBeat(active, 50, still, 90, paused);
-  const rise = Math.min(1, beat / 40);
-  const lit = Math.round(ammaSize * rise);
-  const understoodCount = still
-    ? 12
-    : Math.max(0, Math.min(12, Math.floor((beat - 40) / 4)));
-  const understood = new Set(
-    SURAHS.slice(114 - understoodCount).map((x) => x.n),
-  );
-  const isUnderstood = (i: number) => {
-    if (understoodCount === 0 || i < ammaStart) return false;
-    for (const x of SURAHS.slice(114 - understoodCount))
-      if (i >= x.start && i < x.start + x.ayahs) return true;
-    return false;
-  };
+  /* 100 ms beats; each view holds VIEW_BEATS. Under Reduce Motion, the Wall. */
+  const beat = useBeat(active, 100, still, VIEW_BEATS * SHOWN_VIEWS.length, paused);
+  const b = still ? VIEW_BEATS + VIEW_BEATS - 1 : beat;
+  const shown = Math.min(SHOWN_VIEWS.length - 1, Math.floor(b / VIEW_BEATS));
+  const view = SHOWN_VIEWS[shown];
+  const local = b - shown * VIEW_BEATS;
+  const grow = still ? 1 : Math.min(1, local / 14);
+  const lit = Math.round(ammaSize * (view === "Wall" ? grow : 1));
+  const pct = Math.round((ammaSize / end) * 100);
+  const inner = width - space(3);
+  const cellW = (inner - 4 * 8) / 5;
 
   return (
-    <View style={[s.center, { width, flex: 1 }]}>
-      <AyahField
-        width={width - space(3)}
-        height={height - 120}
-        memorized={(i) => i >= end - lit}
-        understood={isUnderstood}
-      />
-      <View style={s.counters}>
-        <View style={s.counter}>
-          <Text variant="numeral" style={s.numeral}>{`${lit}`}</Text>
-          <Text variant="label" color="inkSoft">
-            Ayahs memorized
-          </Text>
-        </View>
-        <View style={s.counter}>
-          <Text
-            variant="numeral"
-            style={s.numeral}
-          >{`${understood.size}`}</Text>
-          <Text variant="label" color="inkSoft">
-            Surahs understood
-          </Text>
-        </View>
+    <View style={{ width, flex: 1, alignItems: "center", gap: space(1.5) }}>
+      <Glass style={s.seg}>
+        {PROGRESS_VIEWS.map((label) => (
+          <View key={label} style={[s.segItem, label === view && { backgroundColor: theme.colors.lapisWash }]}>
+            <Text variant="label" color={label === view ? "lapis" : "inkSoft"}>
+              {label}
+            </Text>
+          </View>
+        ))}
+      </Glass>
+
+      <View key={view} style={[s.center, { flex: 1, width: inner }]}>
+        {view === "Overview" ? (
+          <Animated.View entering={FadeIn.duration(240)} style={[s.center, { gap: space(2) }]}>
+            <View style={s.center}>
+              <PercentRing fraction={(ammaSize / end) * grow} size={170} color={theme.colors.saffron} track={theme.colors.surfaceSunk} />
+              <View style={[s.center, { position: "absolute" }]}>
+                <Text variant="numeral" style={{ fontSize: 32, lineHeight: 38 }}>{`${Math.round(pct * grow)}%`}</Text>
+                <Text variant="label" color="inkSoft">
+                  memorized
+                </Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 18, lineHeight: 24 }}>{`${amma.length} surahs memorized`}</Text>
+          </Animated.View>
+        ) : null}
+
+        {view === "Wall" ? (
+          <AyahField width={inner} height={Math.max(120, height - 90)} memorized={(i) => i >= end - lit} understood={() => false} />
+        ) : null}
+
+        {view === "Juz" ? (
+          <Animated.View entering={FadeIn.duration(240)} style={s.juzGrid}>
+            {Array.from({ length: 30 }, (_, j) => {
+              const f = j === 29 ? grow : j === 0 ? grow * 0.15 : 0;
+              return (
+                <View key={j} style={[s.juzCell, { width: cellW }]}>
+                  <View style={[s.juzFill, { height: `${f * 100}%`, backgroundColor: theme.colors.saffron }]} />
+                  <Text variant="label" color={f >= 1 ? "paper" : "inkSoft"}>{`${j + 1}`}</Text>
+                </View>
+              );
+            })}
+          </Animated.View>
+        ) : null}
+
+        {view === "Week" ? (
+          <Animated.View entering={FadeIn.duration(240)} style={[s.center, { gap: space(2) }]}>
+            <View style={s.bars}>
+              {[12, 30, 8, 22, 40, 18, 26].map((n, i) => (
+                <View key={i} style={{ alignItems: "center", gap: 4 }}>
+                  <View style={[s.barCol, { height: 4 + n * 3 * grow, backgroundColor: theme.colors.verdigris }]} />
+                  <Text variant="label" color="inkFaint" style={{ fontSize: 11 }}>
+                    {"SMTWTFS"[i]}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={{ fontSize: 18, lineHeight: 24 }}>156 ayahs read this week</Text>
+          </Animated.View>
+        ) : null}
       </View>
     </View>
   );
@@ -429,51 +590,118 @@ export function LearnHero({ width, active, still, paused }: HeroProps) {
   );
 }
 
-/* ---------- 4. Barakah ---------- */
+/* ---------- 5. Barakah ---------- */
+
+/*
+  The Barakah tab as it is: the four practices every learner starts with,
+  under the ring, and the five prayers below. They fill in one by one.
+*/
+const START_PRACTICES = PRACTICES.filter((p) => p.byDefault);
+const TILE_LINE: Record<string, string> = {
+  fajr: "Within its time",
+  morningAdhkar: `${adhkarFor("morning").length} adhkar, guided`,
+  eveningAdhkar: `${adhkarFor("evening").length} adhkar, guided`,
+};
+const PRAYER_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+/* Beat at which each prayer is marked: late (half), then on time (full). */
+const PRAYER_AT: { late?: number; full?: number }[] = [{ full: 2 }, { late: 5 }, { full: 8 }, { late: 11, full: 13 }, {}];
+/* Beat at which each tile ticks; Fajr ticks with its prayer. */
+const TILE_AT: Record<string, number> = { fajr: 2, morningAdhkar: 4, quran: 10 };
 
 export function BarakahHero({ width, active, still, paused }: HeroProps) {
   const s = useStyles();
-  const beat = useBeat(active, 550, still, 1000, paused);
-  const done = still ? 4 : Math.min(beat % 9, 4);
-  const days = still ? 7 : Math.min(beat % 9, 7);
-  const RATIOS = [0.25, 0.5, 0.75, 0.5, 1, 0.75, 1];
+  const theme = useTheme();
+  const beat = useBeat(active, 400, still, 18, paused);
+  const b = still ? 18 : beat;
+  const done = START_PRACTICES.map((p) => TILE_AT[p.id] !== undefined && b >= TILE_AT[p.id]);
+  const count = done.filter(Boolean).length;
+  const read = Math.min(10, Math.max(0, b - 4) + 2);
+  const tileW = (width - space(3) - space(1.25)) / 2;
 
   return (
-    <View style={[s.center, { width, flex: 1 }]}>
-      <View style={s.center}>
-        <BarakahRing
-          fills={[0, 1, 2, 3].map((i) => (i < done ? 1 : 0))}
-          size={220}
-          stroke={14}
-        />
-        <View style={[s.center, { position: "absolute" }]}>
-          <Text
-            variant="numeral"
-            style={{ fontSize: 56, lineHeight: 62 }}
-          >{`${done}`}</Text>
+    <View style={{ width, flex: 1, justifyContent: "center", paddingHorizontal: space(1.5), gap: space(1.25) }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: space(2), paddingHorizontal: space(1) }}>
+        <View style={s.center}>
+          <BarakahRing fills={done.map((d) => (d ? 1 : 0))} size={92} stroke={9} />
+          <View style={[s.center, { position: "absolute" }]}>
+            <Text variant="numeral" style={{ fontSize: 26, lineHeight: 30 }}>{`${count}`}</Text>
+          </View>
+        </View>
+        <View style={{ gap: 2 }}>
+          <Text style={{ fontSize: 18, lineHeight: 24 }}>{`${count} of ${START_PRACTICES.length} done today`}</Text>
           <Text variant="label" color="inkSoft">
-            of 4 today
+            Small daily practices
           </Text>
         </View>
       </View>
-      <View style={s.week}>
-        {RATIOS.map((r, i) => (
-          <DayCell key={i} ratio={i < days ? r : 0} label={String(i + 1)} />
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space(1.25) }}>
+        {START_PRACTICES.map((p, i) => (
+          <Glass key={p.id} style={[s.tile, { width: tileW }]}>
+            <View style={[s.mark, done[i] && { backgroundColor: theme.colors.verdigris, borderColor: theme.colors.verdigris }]}>
+              {done[i] ? <Check color={theme.colors.paper} /> : null}
+            </View>
+            <View style={{ alignItems: "center", gap: 1 }}>
+              <PracticeIcon id={p.id} color={done[i] ? theme.colors.verdigris : theme.colors.lapis} />
+              <Text numberOfLines={1} color={done[i] ? "verdigris" : "ink"} style={{ fontSize: 15 }}>
+                {p.title}
+              </Text>
+              <Text variant="label" color="inkSoft" numberOfLines={1} style={{ fontSize: 12 }}>
+                {p.id === "quran" ? `${read} of 10 ayahs` : TILE_LINE[p.id]}
+              </Text>
+            </View>
+          </Glass>
         ))}
       </View>
+
+      <Glass style={s.prayers}>
+        {PRAYER_NAMES.map((name, i) => {
+          const at = PRAYER_AT[i];
+          const full = at.full !== undefined && b >= at.full;
+          const late = !full && at.late !== undefined && b >= at.late;
+          return (
+            <View key={name} style={{ alignItems: "center", gap: 4 }}>
+              <View
+                style={[
+                  s.prayerDot,
+                  (full || late) && { borderColor: theme.colors.verdigris },
+                  full && { backgroundColor: theme.colors.verdigris },
+                ]}
+              >
+                {late ? <View style={[s.prayerHalf, { backgroundColor: theme.colors.verdigris }]} /> : null}
+                {full ? <Check color={theme.colors.paper} /> : null}
+              </View>
+              <Text variant="label" color={full || late ? "verdigris" : "inkSoft"} style={{ fontSize: 11 }}>
+                {name}
+              </Text>
+            </View>
+          );
+        })}
+      </Glass>
+      <Text variant="label" color="inkFaint" style={{ textAlign: "center" }}>
+        One tap: prayed late. Two: on time.
+      </Text>
     </View>
   );
 }
 
-/* ---------- 5. Ask ---------- */
+function Check({ color }: { color: string }) {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 24 24">
+      <Path d="M5 12.5l4.5 4.5L19 7.5" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+  );
+}
 
-const QUESTION = "I feel anxious about work";
+/* ---------- 1. Search ---------- */
+
+const QUESTION = "I feel anxious";
 const RESULTS = [
   { ref: "13:28", surah: 13 },
   { ref: "94:5", surah: 94 },
 ] as const;
 
-export function AskHero({ width, active, still, paused }: HeroProps) {
+export function SearchHero({ width, active, still, paused }: HeroProps) {
   const s = useStyles();
   const theme = useTheme();
   const beat = useBeat(active, 70, still, 1000, paused);
@@ -527,7 +755,7 @@ export function AskHero({ width, active, still, paused }: HeroProps) {
         >
           {typed > 0
             ? QUESTION.slice(0, typed)
-            : "Ask about a surah, or how you are feeling"}
+            : "Search the Quran"}
         </Text>
         <View style={s.send}>
           <Svg width={16} height={16} viewBox="0 0 24 24">
@@ -546,35 +774,42 @@ export function AskHero({ width, active, still, paused }: HeroProps) {
   );
 }
 
+/* In the order of the tabs: Search, Read, Progress, Learn, Barakah. `ms` is
+   how long the page shows before moving on. */
 export const STORY = [
+  {
+    key: "search",
+    title: "Search",
+    line: "A surah, an ayah, a topic or how you feel. Durus finds the ayahs.",
+    Hero: SearchHero,
+    ms: 5000,
+  },
   {
     key: "read",
     title: "Read the Quran",
-    line: "Translation and footnotes under every ayah. Tap a word to hear it.",
+    line: "Press and hold any ayah to see every word, its reading and meaning, and hear it.",
     Hero: ReadHero,
+    ms: 9000,
   },
   {
-    key: "map",
+    key: "progress",
     title: "See what you carry",
-    line: "Every ayah is a dot. Light it as you memorize and understand.",
-    Hero: MapHero,
+    line: "Your memorization as a ring, a wall of every ayah, each juz and your week.",
+    Hero: ProgressHero,
+    ms: 9000,
   },
   {
     key: "learn",
     title: "Learn the Arabic",
     line: "The Quran's most common words, brought back just before you forget them.",
     Hero: LearnHero,
+    ms: 5000,
   },
   {
     key: "barakah",
     title: "Build barakah",
-    line: "Small daily practices, measured by consistency.",
+    line: "Fajr, the morning and evening adhkar, your daily portion and the five prayers.",
     Hero: BarakahHero,
-  },
-  {
-    key: "ask",
-    title: "Ask",
-    line: "Say how you feel. Durus points you to ayahs to read.",
-    Hero: AskHero,
+    ms: 7500,
   },
 ] as const;

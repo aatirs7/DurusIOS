@@ -13,12 +13,12 @@ import { makeStyles } from "@/theme/useTheme";
 import { STORY } from "./heroes";
 
 /*
-  The five page story, with Instagram story mechanics.
+  The five page story (one per tab, in tab order), with Instagram story mechanics.
 
   - A thin five segment bar at the very top fills over each page's time.
   - Tap the right half for next, the left half for back. Press and hold to
     pause. A horizontal swipe also moves.
-  - Each page advances after PAGE_MS. Under Reduce Motion nothing advances on
+  - Each page advances after its own time (STORY[].ms). Under Reduce Motion nothing advances on
     its own and every hero shows its final frame.
   - Continue and Skip both leave the story.
 
@@ -27,6 +27,7 @@ import { STORY } from "./heroes";
   the bar is thin and twenty updates a second is plenty for it.
 */
 
+/* The default page length; a page can set its own (STORY[].ms). */
 export const PAGE_MS = 5000;
 const TICK_MS = 50;
 
@@ -80,6 +81,7 @@ function StoryBar({
   onEnd?: () => void;
 }) {
   const s = useStyles();
+  const ms = STORY[page]?.ms ?? PAGE_MS;
   const [elapsed, setElapsed] = useState(0);
   const ended = useRef(false);
 
@@ -90,13 +92,13 @@ function StoryBar({
   }, [still, paused]);
 
   useEffect(() => {
-    if (elapsed >= PAGE_MS && !ended.current && onEnd) {
+    if (elapsed >= ms && !ended.current && onEnd) {
       ended.current = true;
       onEnd();
     }
-  }, [elapsed, onEnd]);
+  }, [elapsed, onEnd, ms]);
 
-  const fill = still ? 1 : Math.min(1, elapsed / PAGE_MS);
+  const fill = still ? 1 : Math.min(1, elapsed / ms);
   return (
     <View
       style={s.bar}

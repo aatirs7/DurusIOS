@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
+import { STORY } from "./heroes";
 import { PAGE_MS, Story } from "./Story";
 
 /*
@@ -35,14 +36,15 @@ describe("onboarding story", () => {
     const onDone = jest.fn();
     await render(<Story onDone={onDone} />);
     await fireEvent(screen.getByTestId("story-stage"), "layout", LAYOUT);
-    for (const title of ["Read the Quran", "See what you carry", "Learn the Arabic", "Build barakah", "Ask"]) {
-      expect(screen.getByText(title)).toBeTruthy();
+    expect(STORY.map((p) => p.title)).toEqual(["Search", "Read the Quran", "See what you carry", "Learn the Arabic", "Build barakah"]);
+    for (const page of STORY) {
+      expect(screen.getByText(page.title)).toBeTruthy();
       await act(async () => {
-        jest.advanceTimersByTime(PAGE_MS + 200);
+        jest.advanceTimersByTime(page.ms + 200);
       });
     }
     /* The last page waits for Continue rather than leaving on its own. */
-    expect(screen.getByText("Ask")).toBeTruthy();
+    expect(screen.getByText("Build barakah")).toBeTruthy();
     expect(onDone).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByLabelText("Continue"));
     expect(onDone).toHaveBeenCalledTimes(1);
@@ -55,7 +57,7 @@ describe("onboarding story", () => {
     await act(async () => {
       jest.advanceTimersByTime(PAGE_MS * 4);
     });
-    expect(screen.getByText("Read the Quran")).toBeTruthy();
+    expect(screen.getByText("Search")).toBeTruthy();
   });
 
   it("leaves from Skip", async () => {
