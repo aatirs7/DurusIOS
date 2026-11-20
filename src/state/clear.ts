@@ -11,5 +11,5 @@ import { useQuranStatus } from "./quranStatus";
 export function clearDeviceStores() {
   useBarakah.setState({ events: [], tracked: DEFAULT_TRACKED, since: null });
   useQuranStatus.setState({ events: [] });
-  usePrefs.setState({ adhkarReminder: false, lastRead: null, bookmarks: [], readLog: {}, recentSearches: [] });
+  usePrefs.setState({ adhkarReminder: false, lastRead: null, surahPos: {}, bookmarks: [], readLog: {}, recentSearches: [] });
 }

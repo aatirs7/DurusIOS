@@ -28,6 +28,7 @@ import {
   type WordsLemma,
   type WordsStage,
 } from "@/data/wordsContent";
+import { transliterateQuranWord } from "@/engine/quranTranslit";
 import { gradeWordChoice } from "@/engine/words";
 import { haptics } from "@/lib/haptics";
 import { SURAHS } from "@/quran/tanzil";
@@ -95,7 +96,10 @@ const useStyles = makeStyles((t) => ({
   body: { flexGrow: 1, alignItems: "center", gap: space(2), paddingVertical: space(2) },
   center: { textAlign: "center" },
   face: { fontFamily: FONTS.quran },
-  forms: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(2) },
+  forms: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space(3) },
+  form: { alignItems: "center", gap: space(0.5) },
+  word: { alignItems: "center", gap: space(1) },
+  middle: { justifyContent: "center" },
   skill: {
     width: "100%",
     borderTopWidth: 1,
@@ -286,7 +290,7 @@ function WordsSessionBody() {
     <Screen>
       <BackBar label="Leave" fallback="/today" />
 
-      <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[s.body, step.kind === "teach" && s.middle]} showsVerticalScrollIndicator={false}>
         {step.kind === "intro" ? <Intro stage={step.stage} /> : null}
         {step.kind === "teach" ? <Teach lemma={step.lemma} /> : null}
         {step.kind === "drill" ? (
@@ -428,9 +432,14 @@ function Teach({ lemma }: { lemma: WordsLemma }) {
       <Text variant="eyebrow" color="inkSoft">
         New word
       </Text>
-      <Arabic variant="card" style={s.face}>
-        {lemma.face}
-      </Arabic>
+      <View style={s.word}>
+        <Arabic variant="card" style={s.face}>
+          {lemma.face}
+        </Arabic>
+        <Text variant="label" color="inkSoft">
+          {transliterateQuranWord(lemma.face)}
+        </Text>
+      </View>
       {canShowGloss(lemma.gloss) ? (
         <Text variant="pageTitle" style={s.center}>
           {lemma.gloss.text.trim()}
@@ -443,9 +452,14 @@ function Teach({ lemma }: { lemma: WordsLemma }) {
           </Text>
           <View style={s.forms}>
             {others.map((f) => (
-              <Arabic key={f} variant="title" color="inkSoft" style={s.face}>
-                {f}
-              </Arabic>
+              <View key={f} style={s.form}>
+                <Arabic variant="title" color="inkSoft" style={s.face}>
+                  {f}
+                </Arabic>
+                <Text variant="label" color="inkFaint">
+                  {transliterateQuranWord(f)}
+                </Text>
+              </View>
             ))}
           </View>
         </>

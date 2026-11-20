@@ -307,15 +307,24 @@ export default function Home() {
   }
   const top = useSharedValue(idleTop);
   const p = useSharedValue(0);
+  /* The results' reveal: they rise and fade in while the bar glides up. */
+  const r = useSharedValue(0);
   useEffect(() => {
-    const cfg = { duration: still ? 0 : 280, easing: Easing.out(Easing.cubic) };
+    /* Typing starts a slow, eased glide to the top (the owner's ask: glide
+       as the results appear, not snap); the keyboard lift stays quick. */
+    const glide = typing ? 620 : 300;
+    const cfg = { duration: still ? 0 : glide, easing: Easing.inOut(Easing.cubic) };
     top.value = withTiming(target, cfg);
     p.value = withTiming(fold, cfg);
-  }, [target, fold, still, top, p]);
+  }, [target, fold, still, typing, top, p]);
+  useEffect(() => {
+    r.value = typing ? withTiming(1, { duration: still ? 0 : 700, easing: Easing.out(Easing.cubic) }) : 0;
+  }, [typing, still, r]);
   /* Shared values only inside a worklet: calling an ordinary function such
      as space() there runs on the UI thread and crashes a release build. */
   const spacer = useAnimatedStyle(() => ({ height: top.value }));
   const head = useAnimatedStyle(() => ({ height: HEAD * (1 - p.value), opacity: 1 - p.value }));
+  const reveal = useAnimatedStyle(() => ({ flex: 1, opacity: r.value, transform: [{ translateY: (1 - r.value) * 28 }] }));
 
   return (
     <TabSafe style={s.safe}>
@@ -359,7 +368,8 @@ export default function Home() {
         </Glass>
 
         {typing ? (
-          <FlatList
+          <Animated.View style={reveal}>
+            <FlatList
             style={{ flex: 1 }}
             data={items}
             keyExtractor={(it) => (it.kind === "ayah" ? `a${it.index}` : `s${it.n}`)}
@@ -389,7 +399,8 @@ export default function Home() {
                 ))}
               </View>
             }
-          />
+            />
+          </Animated.View>
         ) : (
           <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss} accessible={false}>
             {!active && lastRead ? (

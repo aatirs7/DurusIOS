@@ -19,6 +19,8 @@ type PrefsState = Hydratable & {
   /* Where reading stopped, for Resume. */
   lastRead: { surah: number; ayah: number } | null;
   setLastRead: (at: { surah: number; ayah: number }) => void;
+  /* Where each surah was left, so reopening one resumes it. */
+  surahPos: Record<number, number>;
   /* The reader's view and Arabic size. */
   readerView: ReaderView;
   setReaderView: (v: ReaderView) => void;
@@ -73,7 +75,8 @@ export const usePrefs = create<PrefsState>()(
       adhkarReminder: false,
       setAdhkarReminder: (adhkarReminder) => set({ adhkarReminder }),
       lastRead: null,
-      setLastRead: (lastRead) => set({ lastRead }),
+      setLastRead: (lastRead) => set((st) => ({ lastRead, surahPos: { ...st.surahPos, [lastRead.surah]: lastRead.ayah } })),
+      surahPos: {},
       readerView: "arabic",
       setReaderView: (readerView) => set({ readerView }),
       arabicSize: 28,

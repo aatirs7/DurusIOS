@@ -118,6 +118,13 @@ export default function SurahReader() {
   const params = useLocalSearchParams<{ n: string; ayah?: string }>();
   const n = Math.min(114, Math.max(1, Number(params.n) || 1));
   const targetAyah = params.ayah ? Number(params.ayah) : null;
+  /* Where to open: the ayah asked for, else where this surah was left, else
+     the top. Read once, on opening. */
+  const [startAyah] = useState<number | null>(() => {
+    if (targetAyah) return targetAyah;
+    const left = usePrefs.getState().surahPos?.[n];
+    return left && left > 1 ? left : null;
+  });
   const meta = SURAHS[n - 1];
 
   const { basmala, ayahs } = useMemo(() => surahForDisplay(n), [n]);
@@ -210,22 +217,26 @@ export default function SurahReader() {
   const list = useRef<FlatList<number | number[]>>(null);
   const [highlight, setHighlight] = useState<number | null>(targetAyah);
   const [selected, setSelected] = useState<number | null>(null);
-  const [visibleAyah, setVisibleAyah] = useState(targetAyah ?? 1);
+  const [visibleAyah, setVisibleAyah] = useState(startAyah ?? 1);
   const [navOpen, setNavOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
 
   /* Jump to the ayah search or the Map asked for. Heights vary, so this asks
      FlatList and retries once its estimate has laid out. */
   useEffect(() => {
-    if (!targetAyah || targetAyah < 1 || targetAyah > meta.ayahs) return;
-    const id = setTimeout(() => list.current?.scrollToIndex({ index: rowOf(targetAyah), viewPosition: 0.2, animated: false }), 60);
+    if (!startAyah || startAyah < 1 || startAyah > meta.ayahs) {
+      /* A surah not read before opens at its very top. */
+      const top0 = setTimeout(() => list.current?.scrollToOffset({ offset: 0, animated: false }), 60);
+      return () => clearTimeout(top0);
+    }
+    const id = setTimeout(() => list.current?.scrollToIndex({ index: rowOf(startAyah), viewPosition: 0.2, animated: false }), 60);
     const fade = setTimeout(() => setHighlight(null), 4000);
     return () => {
       clearTimeout(id);
       clearTimeout(fade);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetAyah, meta.ayahs]);
+  }, [startAyah, meta.ayahs]);
 
   const flowRef = useRef(flow);
   flowRef.current = flow;
@@ -494,7 +505,7 @@ export default function SurahReader() {
           list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
           setTimeout(() => list.current?.scrollToIndex({ index: info.index, viewPosition: 0.2, animated: false }), 120);
         }}
-        initialNumToRender={Math.max(12, (targetAyah ? rowOf(targetAyah) : 0) + 4)}
+        initialNumToRender={Math.max(12, (startAyah ? rowOf(startAyah) : 0) + 4)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: top + TOP_BAR + space(1), paddingHorizontal: MARGIN, paddingBottom: insets.bottom + space(14) }}
         extraData={[selected, highlight, maps, type, bookmarks, colors, qf, view, ayahWords]}

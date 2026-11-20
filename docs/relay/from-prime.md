@@ -13,6 +13,11 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- **Owner round, 20 Nov.**
+  - Search: typing no longer snaps the bar up. It glides to the top over about 0.6 s while the results rise and fade in beneath it.
+  - Quranic Words new-word card: centred on the screen; the word and each "also heard as" form show a transliteration, from our own Uthmani-aware rules (src/engine/quranTranslit.ts, tested on 30 words), so nothing licensed. Word audio still needs the native build with expo-audio.
+  - Reader: each surah remembers where it was left (prefs surahPos). Opening a surah from the list resumes there; a surah never read opens at the very top.
+
 - **Quran Foundation replied (20 Nov, to the 19 Nov email). Durus now follows it.**
   - Word clips from verse recitation with their timing segments: allowed.
   - Downloaded audio (verse files and word clips): kept on the phone for at most one week, no exceptions. Nothing is stored yet (no audio module until the next native build); src/lib/wordAudio.ts records the rule: delete after seven days, re-download quietly on the next open.
