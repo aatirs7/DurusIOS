@@ -375,7 +375,11 @@ def main():
                     "ref": "%d:%d:%d" % src_key,
                     "verified": False,
                 }
-                audio = src_w["a"]
+                # The recording is named by word position. Quran Foundation's
+                # audio_url field is offset in some ayahs (2:113 lists file
+                # 028 for word 26, and file 028 says word 28), so the path is
+                # built from the position, never copied (owner heard it, 20 Nov).
+                audio = "wbw/%03d_%03d_%03d.mp3" % src_key
                 break
             if face is None:
                 raise SystemExit(f"no face for the lemma at path position {idx + 1}")

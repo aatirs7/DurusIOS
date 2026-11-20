@@ -15,6 +15,18 @@
 export const WORD_AUDIO_BASE = "https://audio.qurancdn.com/";
 export const VERSE_AUDIO_BASE = "https://verses.quran.foundation/";
 
+/*
+  A word's recording, named by its position: wbw/002_113_026.mp3 is word 26
+  of 2:113. Built rather than taken from the API's audio_url, which is offset
+  by a word or two in some ayahs (it lists file 028 for word 26 of 2:113, and
+  file 028 says word 28).
+*/
+export function wordAudioFor(key: string, position: number): string {
+  const [s, a] = key.split(":").map(Number);
+  const pad = (x: number) => String(x).padStart(3, "0");
+  return `${WORD_AUDIO_BASE}wbw/${pad(s)}_${pad(a)}_${pad(position)}.mp3`;
+}
+
 export type QfWord = {
   position: number;
   text: string;

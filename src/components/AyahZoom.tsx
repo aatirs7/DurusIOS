@@ -9,7 +9,7 @@ import { Text } from "@/components/Text";
 import { canPlayWordAudio, playAudio, playClip, stopAudio } from "@/lib/wordAudio";
 import { localAudio } from "@/quran/offlineAudio";
 import { usePrefs } from "@/state/prefs";
-import type { QfAyah, QfWord } from "@/quran/qf";
+import { wordAudioFor, type QfAyah, type QfWord } from "@/quran/qf";
 import { RADIUS, space } from "@/theme/layout";
 import { makeStyles, useTheme } from "@/theme/useTheme";
 
@@ -91,7 +91,7 @@ export function AyahZoom(p: Props) {
   const hearWord = (w: QfWord) => {
     const seg = p.layer?.audio?.segments.find((x) => x[1] === w.position);
     if (local && seg) playClip(local, seg[2], seg[3]);
-    else playAudio(w.audio);
+    else if (p.layer) playAudio(wordAudioFor(p.layer.key, w.position));
   };
 
   /* Scale only: a zoom, never a fade, so the glass is always drawn. */

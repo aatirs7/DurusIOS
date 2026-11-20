@@ -30,6 +30,16 @@ describe("the Quranic Words content", () => {
       }
   });
 
+  it("plays each word's own recording, named by the word's position", () => {
+    /* Quran Foundation's audio_url is offset in some ayahs; the build names
+       the file from the position the meaning and Arabic come from. */
+    for (const l of WORDS.lemmas) {
+      const [s, a, w] = l.gloss!.ref.split(":").map(Number);
+      const pad = (x: number) => String(x).padStart(3, "0");
+      expect(l.audio).toBe(`wbw/${pad(s)}_${pad(a)}_${pad(w)}.mp3`);
+    }
+  });
+
   it("has no hand-written notes, so none can show", () => {
     for (const n of [...WORDS.lemmas.map((l) => l.note), ...WORDS.skills.map((s) => s.note)]) {
       expect(n).toEqual({ text: null, verified: false });
