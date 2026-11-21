@@ -16,14 +16,16 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  FadeInDown,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withDelay,
+  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Circle, Defs, Path, RadialGradient, Stop } from "react-native-svg";
 
 import { Arabic } from "@/components/Arabic";
 import { AyahField } from "@/components/AyahField";
@@ -112,11 +114,17 @@ const useStyles = makeStyles((t) => ({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: space(2),
+    gap: space(1),
   },
+  markWrap: { width: 240, height: 200, alignItems: "center", justifyContent: "center" },
+  markText: { fontSize: 76, lineHeight: Math.round(76 * 1.8) },
+  meaning: { fontSize: 15, fontStyle: "italic" },
+  promises: { alignSelf: "stretch", gap: space(1.75), paddingTop: space(3), paddingHorizontal: space(0.5) },
+  promise: { flexDirection: "row", alignItems: "center", gap: space(1.5) },
+  promiseWord: { width: 64, alignItems: "center" },
   openTitle: {
-    fontSize: 44,
-    lineHeight: 50,
+    fontSize: 40,
+    lineHeight: 46,
     letterSpacing: -0.6,
     textAlign: "center",
   },
@@ -253,6 +261,46 @@ function FlyingWord({
   );
 }
 
+/* Three things Durus does, each under the Quranic word for it. */
+const PROMISES = [
+  { word: "اقْرَأْ", line: "Read every surah, and press and hold any ayah to see each word." },
+  { word: "افْهَمْ", line: "Learn the Arabic, the most common words of the Quran first." },
+  { word: "احْفَظْ", line: "Keep what you have memorized, and watch it grow." },
+] as const;
+
+/* A soft light behind the mark that breathes slowly. Not glass, so it may fade. */
+function Halo({ still }: { still: boolean }) {
+  const theme = useTheme();
+  const breath = useSharedValue(0);
+  useEffect(() => {
+    if (still) return;
+    breath.value = withDelay(
+      OPEN_MS,
+      withRepeat(withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }), -1, true),
+    );
+  }, [still, breath]);
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.55 + 0.45 * breath.value,
+    transform: [{ scale: 0.94 + 0.1 * breath.value }],
+  }));
+  const c = theme.colors.lapis;
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", width: 240, height: 240 }, style]}>
+      <Svg width={240} height={240}>
+        <Defs>
+          <RadialGradient id="halo" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={c} stopOpacity={theme.dark ? 0.28 : 0.16} />
+            <Stop offset="0.6" stopColor={c} stopOpacity={theme.dark ? 0.08 : 0.05} />
+            <Stop offset="1" stopColor={c} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={120} cy={120} r={120} fill="url(#halo)" />
+        <Circle cx={120} cy={120} r={92} stroke={c} strokeOpacity={0.14} strokeWidth={1} fill="none" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 function Open({
   onBegin,
   onAccount,
@@ -307,24 +355,52 @@ function Open({
       </View>
       <SafeAreaView style={s.pad} edges={["top", "bottom"]}>
         <View style={s.openCenter}>
-          <Animated.View style={mark}>
-            <Arabic variant="card" color="lapis">
+          <Animated.View style={[mark, s.markWrap]}>
+            <Halo still={still} />
+            <Arabic variant="card" color="lapis" style={s.markText}>
               دُرُوس
             </Arabic>
           </Animated.View>
           <Animated.View
             entering={
-              still ? undefined : FadeIn.delay(OPEN_MS + 200).duration(500)
+              still ? undefined : FadeIn.delay(OPEN_MS + 150).duration(600)
             }
             style={{ alignItems: "center", gap: space(1) }}
           >
-            <Text variant="pageTitle" style={s.openTitle}>
-              Read. Memorize. Understand.
+            <Text variant="eyebrow" color="lapis">
+              As-salamu alaykum
             </Text>
-            <Text color="inkSoft" style={s.sub}>
-              The Quran, and the Arabic to understand it.
+            <Text variant="pageTitle" style={s.openTitle}>
+              Welcome to Durus
+            </Text>
+            <Text color="inkFaint" style={s.meaning}>
+              Durus means lessons.
             </Text>
           </Animated.View>
+          <View style={s.promises}>
+            {PROMISES.map((p, i) => (
+              <Animated.View
+                key={p.word}
+                entering={
+                  still
+                    ? undefined
+                    : FadeInDown.delay(OPEN_MS + 650 + i * 160)
+                        .duration(520)
+                        .easing(Easing.out(Easing.cubic))
+                }
+                style={s.promise}
+              >
+                <View style={s.promiseWord}>
+                  <Arabic variant="inline" color="lapis" style={{ fontSize: 22, lineHeight: 40 }}>
+                    {p.word}
+                  </Arabic>
+                </View>
+                <Text color="inkSoft" style={{ flex: 1, fontSize: 16, lineHeight: 22 }}>
+                  {p.line}
+                </Text>
+              </Animated.View>
+            ))}
+          </View>
         </View>
         {/*
           No fade on this block: Liquid Glass does not draw inside a view whose
@@ -642,8 +718,8 @@ export default function Onboarding() {
   if (step === "story") {
     return (
       <View style={s.safe}>
+        {/* No Exit preview pill here: it sat on the progress bars and Skip. */}
         <Story onDone={() => setStep("name")} />
-        {exitPreview}
       </View>
     );
   }

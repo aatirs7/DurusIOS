@@ -903,7 +903,7 @@ export function SearchHero({ width, active, still, paused }: HeroProps) {
   const results = step >= 2;
 
   return (
-    <View style={{ width, flex: 1, paddingHorizontal: space(2), gap: space(0.5) }}>
+    <View style={{ width, flex: 1, paddingHorizontal: space(2), paddingTop: space(6), gap: space(0.5) }}>
       <Glass style={s.inputBar}>
         <Svg width={20} height={20} viewBox="0 0 24 24">
           <Circle cx={11} cy={11} r={6.5} stroke={theme.colors.inkSoft} strokeWidth={1.8} fill="none" />

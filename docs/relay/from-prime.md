@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Onboarding welcome redone: As-salamu alaykum, Welcome to Durus, "Durus means lessons", a larger mark with a slowly breathing halo, and three lines each under its Quranic word (iqra, ifham, ihfaz) rising in one after another. The Search story page starts lower (it was jammed under the bars), and the Exit preview pill no longer sits on the story's progress bars and Skip.
+
 - First-visit tips (PageTip): a glass card the first time each tab and the reader is opened, saying what the page is for and the hidden gestures (press and hold an ayah, swipe Progress, prayers one tap late two on time). Got it puts it away for good (prefs.tipsSeen); Settings > Show tips again brings them all back. Tips and the offline recitation question take turns (src/lib/overlay.ts), since iOS shows one modal at a time.
 
 - Onboarding motion is smooth: pages change at timed marks (useTimeline) and everything that grows runs on the UI thread with eased Reanimated timings: the press ring, the zoom (scale only; the dim fades on its own layer, never over the glass), the Overview ring (animated stroke), the Wall (Juz Amma revealed rising from the bottom), Juz cells and Week bars. The Search page now looks like the app while searching: bar at the top, Seeking, the AI caption with its sparkle, and results with reason, Arabic and reference separated by rules.
