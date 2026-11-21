@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { View } from "react-native";
 import Animated, {
   Easing,
@@ -17,7 +17,7 @@ import { space } from "@/theme/layout";
 
 /*
   The wait while the AI looks for verses: Quranic words surface one at a
-  time, each swelling in softly and fading out as the next arrives, as if the
+  time, each fading in while the last fades out, on one smooth clock, as if the
   search were passing through them. Beneath, the line's words brighten in a
   slow wave. Lapis and ink only. Still under Reduce Motion.
 
@@ -26,42 +26,51 @@ import { space } from "@/theme/layout";
 */
 
 const WORDS = ["صبر", "رحمة", "نور", "هدى", "سكينة", "ذكر", "شكر", "توكل"];
-const WORD_MS = 1100;
+/* Each word's turn, and how long its fade spans (in turns): 1.7 means each
+   word is still fading out while the next fades in, so nothing ever pops. */
+const WORD_MS = 1700;
+const SPAN = 1.7;
 const WAVE_MS = 1800;
 
-function CyclingWord({ still }: { still: boolean }) {
-  const [i, setI] = useState(0);
-  const p = useSharedValue(still ? 0.5 : 0);
-
-  useEffect(() => {
-    if (still) return;
-    const id = setInterval(() => setI((n) => (n + 1) % WORDS.length), WORD_MS);
-    return () => clearInterval(id);
-  }, [still]);
-
-  /* Each new word runs one swell: in, hold, out. */
-  useEffect(() => {
-    if (still) return;
-    p.value = 0;
-    p.value = withTiming(1, { duration: WORD_MS, easing: Easing.linear });
-    return () => cancelAnimation(p);
-  }, [i, still, p]);
-
+/*
+  One clock drives every word, so there is no swap on the JS side: each word
+  sits in its own layer and its opacity is a smooth sine-squared bump of the
+  clock, overlapping the next word's. It drifts up a little as it passes.
+*/
+function DriftWord({ word, index, t, still }: { word: string; index: number; t: SharedValue<number>; still: boolean }) {
+  const n = WORDS.length;
   const style = useAnimatedStyle(() => {
-    const k = Math.sin(Math.PI * p.value);
+    if (still) return { opacity: index === 0 ? 1 : 0, transform: [{ translateY: 0 }, { scale: 1 }] };
+    const x = (((t.value * n - index) % n) + n) % n;
+    const on = x < SPAN ? x / SPAN : 1;
+    const s = Math.sin(Math.PI * on);
+    const k = x < SPAN ? s * s : 0;
     return {
-      opacity: Math.min(1, k * 1.4),
-      transform: [{ scale: 0.88 + 0.14 * k }, { translateY: 6 * (1 - p.value) - 3 }],
+      opacity: 0.9 * k,
+      transform: [{ translateY: 8 - 16 * on }, { scale: 0.96 + 0.04 * k }],
     };
   });
-
   return (
-    <View style={{ height: 72, alignItems: "center", justifyContent: "center" }}>
-      <Animated.View style={style}>
-        <Arabic variant="title" color="lapis" showHarakat={false} style={{ fontSize: 34, lineHeight: 66 }}>
-          {WORDS[i]}
-        </Arabic>
-      </Animated.View>
+    <Animated.View style={[{ position: "absolute" }, style]}>
+      <Arabic variant="title" color="lapis" showHarakat={false} style={{ fontSize: 34, lineHeight: 66 }}>
+        {word}
+      </Arabic>
+    </Animated.View>
+  );
+}
+
+function CyclingWord({ still }: { still: boolean }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    if (still) return;
+    t.value = withRepeat(withTiming(1, { duration: WORD_MS * WORDS.length, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(t);
+  }, [still, t]);
+  return (
+    <View style={{ height: 72, alignSelf: "stretch", alignItems: "center", justifyContent: "center" }}>
+      {WORDS.map((w, i) => (
+        <DriftWord key={w} word={w} index={i} t={t} still={still} />
+      ))}
     </View>
   );
 }
