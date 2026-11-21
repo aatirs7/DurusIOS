@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Search's loading indicator (Seeking) is now minimal: one thin lapis arc on a hairline track, turning while its length eases, with the line beneath breathing. The orb and gyroscope rings are gone.
+
 - Settings and the reader's Reading view sheet rebuilt as grouped cards (src/components/Group.tsx: heading, one rounded card, hairline between rows). Settings groups: You, Arabic course, Daily study, How you are asked, Speed drill, Reminders, Offline recitation, This phone (haptics, motion, tips, preview onboarding), Account, Your data, About and Run setup, Delete account on its own. Sections no longer collapse. Reading view: Show as a checked list, Text (script tiles showing each font, size stepper, spacing), Page (four colour tiles, layout, alignment, toggles), Translation as a checked list. The recitation credit in the reader is centred and lighter.
 
 - Onboarding Read page: the dim behind the zoom is now a wash of the page colour instead of grey; the words rise in one by one, a tap ring lands on rabbi, and the word card fades up into room kept for it from the start, so the panel no longer jumps. The Search sparkle twinkles. The Search tip now says "with a short note on what each one is about".
