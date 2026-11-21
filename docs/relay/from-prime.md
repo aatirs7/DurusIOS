@@ -16,7 +16,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 - Search, per the owner (21 Nov):
   - Press and hold any result: a card with the surah (Arabic, name, meaning, Meccan or Medinan, ayah count), why it came up (the AI's note, or the topic), the held ayah with its English, other ayahs from this search in that surah, and Open at this ayah / Read the surah (src/components/ResultPreview.tsx).
   - Fixed "im bored" showing Nothing found and then results on a retry: the AI answer came back after the app's 6.5 s wait and was thrown away. Late answers now fill the list in; the wait is 9 s; the server gives Gemini 6 s and Groq 9 s.
-  - The AI sparkle sits inline before the caption's first word.
+  - The AI sparkle is a character (U+2726) at the start of the caption, so the note stays centred.
   - Haptics on every press and hold (ayahs in the reader, Barakah tiles, search results, pausing the onboarding story): a new medium impact, haptics.hold().
 
 - App Store prep (owner, 21 Nov):

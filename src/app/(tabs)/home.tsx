@@ -91,15 +91,6 @@ function SearchIcon({ color }: { color: string }) {
   );
 }
 
-/* Marks a caption as the AI's suggestion, in place of a separate line saying so. */
-function Sparkle({ color }: { color: string }) {
-  return (
-    <Svg width={14} height={14} viewBox="0 0 24 24">
-      <Path d="M12 2.5l2.1 6.4 6.4 2.1-6.4 2.1L12 19.5l-2.1-6.4L3.5 11l6.4-2.1zM19 16l.9 2.1 2.1.9-2.1.9L19 22l-.9-2.1-2.1-.9 2.1-.9z" fill={color} />
-    </Svg>
-  );
-}
-
 /* Expand a topic reference: "2:155-157" to its ayahs (a few at most), "93" to the surah. */
 function expandRef(ref: string): Item[] {
   const [sn, range] = ref.split(":");
@@ -419,16 +410,9 @@ export default function Home() {
                 {waiting ? <Seeking /> : null}
                 {caption ? (
                   <View style={s.caption} accessible accessibilityLabel={picks && picks.results.length > 0 ? `Suggested by AI. ${caption}` : caption}>
-                    {/* The sparkle sits inline, just before the first word, on the first line. */}
+                    {/* The sparkle is a character in the text, so it sits before the first word and the note stays centred. */}
                     <Text variant="label" color="inkSoft" style={{ textAlign: "center", flexShrink: 1 }}>
-                      {picks && picks.results.length > 0 ? (
-                        <>
-                          <View style={{ width: 14, height: 14, transform: [{ translateY: 2 }] }}>
-                            <Sparkle color={theme.colors.lapis} />
-                          </View>
-                          {"  "}
-                        </>
-                      ) : null}
+                      {picks && picks.results.length > 0 ? <Text style={{ color: theme.colors.lapis }}>{"✦  "}</Text> : null}
                       {caption}
                     </Text>
                   </View>
