@@ -13,7 +13,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
-- Search's loading indicator (Seeking) is now minimal: one thin lapis arc on a hairline track, turning while its length eases, with the line beneath breathing. The orb and gyroscope rings are gone.
+- Search's loading indicator (Seeking) is now Quranic words (sabr, rahma, nur, huda, sakina, dhikr, shukr, tawakkul) surfacing one at a time, each swelling in and fading out, with the words of "Looking through the Quran" brightening in a slow wave beneath. The orb and gyroscope rings are gone (the plain arc tried first was too plain).
 
 - Settings and the reader's Reading view sheet rebuilt as grouped cards (src/components/Group.tsx: heading, one rounded card, hairline between rows). Settings groups: You, Arabic course, Daily study, How you are asked, Speed drill, Reminders, Offline recitation, This phone (haptics, motion, tips, preview onboarding), Account, Your data, About and Run setup, Delete account on its own. Sections no longer collapse. Reading view: Show as a checked list, Text (script tiles showing each font, size stepper, spacing), Page (four colour tiles, layout, alignment, toggles), Translation as a checked list. The recitation credit in the reader is centred and lighter.
 
