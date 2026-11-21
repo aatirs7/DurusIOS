@@ -35,19 +35,19 @@ const WAVE_MS = 1800;
 /*
   One clock drives every word, so there is no swap on the JS side: each word
   sits in its own layer and its opacity is a smooth sine-squared bump of the
-  clock, overlapping the next word's. It drifts up a little as it passes.
+  clock, overlapping the next word's. The words stay still; only their
+  opacity moves (owner: no floating).
 */
 function DriftWord({ word, index, t, still }: { word: string; index: number; t: SharedValue<number>; still: boolean }) {
   const n = WORDS.length;
   const style = useAnimatedStyle(() => {
-    if (still) return { opacity: index === 0 ? 1 : 0, transform: [{ translateY: 0 }, { scale: 1 }] };
+    if (still) return { opacity: index === 0 ? 1 : 0 };
     const x = (((t.value * n - index) % n) + n) % n;
     const on = x < SPAN ? x / SPAN : 1;
     const s = Math.sin(Math.PI * on);
     const k = x < SPAN ? s * s : 0;
     return {
       opacity: 0.9 * k,
-      transform: [{ translateY: 8 - 16 * on }, { scale: 0.96 + 0.04 * k }],
     };
   });
   return (

@@ -13,6 +13,8 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Search loader words no longer float or scale: they stay in place and only crossfade (owner).
+
 - Search, per the owner (21 Nov):
   - Press and hold any result: a card with the surah (Arabic, name, meaning, Meccan or Medinan, ayah count), why it came up (the AI's note, or the topic), the held ayah with its English, other ayahs from this search in that surah, and Open at this ayah / Read the surah (src/components/ResultPreview.tsx).
   - Fixed "im bored" showing Nothing found and then results on a retry: the AI answer came back after the app's 6.5 s wait and was thrown away. Late answers now fill the list in; the wait is 9 s; the server gives Gemini 6 s and Groq 9 s.
