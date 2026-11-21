@@ -3,7 +3,7 @@ import { deleteDatabaseSync } from "expo-sqlite";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, Share, Switch, TextInput } from "react-native";
+import { Alert, Linking, ScrollView, Share, Switch, TextInput } from "react-native";
 
 import { BackBar } from "@/components/BackBar";
 import { Field, Segmented, Stepper } from "@/components/Field";
@@ -195,7 +195,7 @@ export default function SettingsScreen() {
 
         {/* Where you are in the course. Only Book 1 has content, so the book is shown, not offered. */}
         <Group title="Arabic course">
-          <Field label="Book" hint="Books 2 and 3 are on the way">
+          <Field label="Book">
             <Text color="inkSoft">{`Book ${config.currentBook}`}</Text>
           </Field>
           <Field label="Current lesson">
@@ -415,6 +415,8 @@ export default function SettingsScreen() {
 
         <Group>
           <LinkRow label="About Durus" tone="ink" onPress={() => router.push("/about")} />
+          <LinkRow label="Privacy policy" tone="ink" onPress={() => void Linking.openURL("https://durus.space/privacy")} />
+          <LinkRow label="Support" tone="ink" onPress={() => void Linking.openURL("https://durus.space/support")} />
           {/* Setup again, keeping the account: forgets only that setup was done. */}
           <LinkRow
             label="Run setup again"

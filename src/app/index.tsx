@@ -1,7 +1,5 @@
 import { Redirect } from "expo-router";
 
-import { db } from "@/data/client";
-import { activeAccount } from "@/data/session";
 import { useSession } from "@/state/session";
 
 /*
@@ -18,15 +16,14 @@ import { useSession } from "@/state/session";
   in last week goes straight to Today, while a signed out app goes to the
   sign in screen without waiting to be told it is offline.
 
-  Onboarding writes nothing until its own sign in step succeeds, so an account
-  without onboardedAt means the flow was quit partway and is started again from
-  the top rather than resumed.
+  Guest mode (App Store 5.1.1(v)): an account is optional. Everything runs on
+  the local profile that boot creates, and signing in later binds that same
+  profile, so nothing is lost. So the gate only asks whether setup was done:
+  without onboardedAt the flow was never finished and starts from the top.
 */
 export default function Boot() {
   const onboardedAt = useSession((s) => s.onboardedAt);
-  const signedIn = activeAccount(db) !== null;
 
-  if (!signedIn) return <Redirect href={onboardedAt === null ? "/onboarding" : "/welcome"} />;
   if (onboardedAt === null) return <Redirect href="/onboarding" />;
   return <Redirect href="/home" />;
 }

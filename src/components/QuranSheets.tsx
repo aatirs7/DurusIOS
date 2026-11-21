@@ -308,7 +308,7 @@ export function ViewSheet({ visible, onClose }: { visible: boolean; onClose: () 
             <Pick
               key={v.key}
               label={v.label}
-              line={v.available ? v.line : `${v.line}. Comes with Quran.com.`}
+              line={v.available ? v.line : `${v.line}. Needs a connection.`}
               on={view === v.key}
               disabled={!v.available}
               onPress={() => setView(v.key)}

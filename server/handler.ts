@@ -26,6 +26,48 @@ function qf(env: Record<string, string | undefined>): QfClient {
 const json = (body: unknown, status = 200, cache = "public, max-age=3600") =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": cache } });
 
+/*
+  Abuse protection. The app key ships inside the app, so anyone can pull it
+  out; this caps how often one address may call. Per server instance and in
+  memory (Vercel runs a handful), which is enough to stop a script hammering
+  Ask or the Quran Foundation proxy without a database round trip. Answers
+  served from Vercel's edge cache never reach here and cost nothing.
+
+  Ask (the AI): 20 a minute, 300 a day per address. Everything else: 240 a
+  minute. Over the limit: 429, never cached, and the app falls back to its
+  own search.
+*/
+type Bucket = { minute: number; inMinute: number; day: string; inDay: number };
+const buckets = new Map<string, Bucket>();
+const LIMITS = { ask: { minute: 20, day: 300 }, other: { minute: 240, day: 20_000 } } as const;
+
+export function overLimit(ip: string, kind: keyof typeof LIMITS, now = Date.now()): boolean {
+  const key = `${kind}:${ip}`;
+  const minute = Math.floor(now / 60_000);
+  const day = new Date(now).toISOString().slice(0, 10);
+  let b = buckets.get(key);
+  if (!b) {
+    if (buckets.size > 50_000) buckets.clear();
+    b = { minute, inMinute: 0, day, inDay: 0 };
+    buckets.set(key, b);
+  }
+  if (b.minute !== minute) {
+    b.minute = minute;
+    b.inMinute = 0;
+  }
+  if (b.day !== day) {
+    b.day = day;
+    b.inDay = 0;
+  }
+  b.inMinute++;
+  b.inDay++;
+  return b.inMinute > LIMITS[kind].minute || b.inDay > LIMITS[kind].day;
+}
+
+function clientIp(req: Request): string {
+  return (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+}
+
 export async function handle(req: Request, env: Record<string, string | undefined> = process.env): Promise<Response> {
   if (req.method !== "GET") return json({ error: "method" }, 405, "no-store");
   if (env.DURUS_APP_KEY && req.headers.get("x-durus-key") !== env.DURUS_APP_KEY) return json({ error: "forbidden" }, 403, "no-store");
@@ -35,6 +77,7 @@ export async function handle(req: Request, env: Record<string, string | undefine
   /* Accept a mount prefix such as /api. */
   const i = parts.indexOf("quran");
   const route = i >= 0 ? parts.slice(i + 1) : [];
+  if (overLimit(clientIp(req), route[0] === "ask" ? "ask" : "other")) return json({ error: "slow_down" }, 429, "no-store");
 
   try {
     if (route[0] === "resources") {

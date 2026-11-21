@@ -100,7 +100,7 @@ export default function Stats() {
           <View style={s.pair}>
             <View style={s.stat}>
               <Text style={s.numeral}>
-                {stats.medianMs === null ? "—" : `${(stats.medianMs / 1000).toFixed(1)}s`}
+                {stats.medianMs === null ? "None yet" : `${(stats.medianMs / 1000).toFixed(1)}s`}
               </Text>
               <Text variant="eyebrow" color="inkSoft">
                 7 day median
@@ -108,7 +108,7 @@ export default function Stats() {
             </View>
             <View style={s.stat}>
               <Text style={s.numeral}>
-                {stats.bestMs === null ? "—" : `${(stats.bestMs / 1000).toFixed(1)}s`}
+                {stats.bestMs === null ? "None yet" : `${(stats.bestMs / 1000).toFixed(1)}s`}
               </Text>
               <Text variant="eyebrow" color="inkSoft">
                 best day

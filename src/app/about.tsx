@@ -128,11 +128,7 @@ export default function About() {
           </View>
         </View>
 
-        {/*
-          Tanzil's terms: credit the source clearly and link to tanzil.net so
-          users can track changes. Remove with src/quran/tanzil.ts when
-          Quran Foundation sync replaces it.
-        */}
+        {/* Tanzil's terms: credit the source clearly and link to tanzil.net so users can track changes. */}
         <View style={s.group}>
           <Text variant="eyebrow" color="inkSoft">
             Quran text
@@ -146,11 +142,30 @@ export default function About() {
               The Quran text in Durus is the Tanzil Uthmani text, copied
               verbatim, under the Creative Commons Attribution 3.0 licence.
               Surah names, ayah counts and juz are from Tanzil&apos;s metadata.
-              It will be replaced by Quran.com data once that connection is
-              set up.
             </Text>
             <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(TANZIL_CREDIT.url)}>
               <Text color="lapis">tanzil.net</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Translations, recitation and word meanings come from Quran Foundation's API (Quran.com). */}
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Translations and recitation
+          </Text>
+          <View style={s.credit}>
+            <Text>Quran Foundation</Text>
+            <Text variant="label" color="inkFaint" style={s.centred}>
+              Translations, word by word meanings and transliteration, and
+              recitation are provided by Quran Foundation through the Quran.com
+              API. Each translation is the work of its translator, named where
+              you choose it: Saheeh International, Abdel Haleem, Pickthall,
+              Yusuf Ali, Hilali and Khan, and Taqi Usmani. Recitation by Mishari
+              Rashid al-Afasy.
+            </Text>
+            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL("https://quran.com")}>
+              <Text color="lapis">quran.com</Text>
             </Pressable>
           </View>
         </View>
@@ -169,8 +184,9 @@ export default function About() {
               Copyright 2017-2021 Indian Type Foundry. All rights reserved.
             </Text>
             <Text variant="label" color="inkFaint" style={s.centred}>
-              Arabic is set in Amiri and numerals in IBM Plex Mono, both under
-              the SIL Open Font License.
+              The Quran is set in Amiri Quran, Scheherazade New, Noto Naskh
+              Arabic, Amiri or Lateef, your choice, and numerals in IBM Plex
+              Mono, all under the SIL Open Font License.
             </Text>
           </View>
         </View>
@@ -187,6 +203,18 @@ export default function About() {
               yet set in Amiri.
             </Text>
           ) : null}
+        </View>
+
+        <View style={s.group}>
+          <Text variant="eyebrow" color="inkSoft">
+            Help and privacy
+          </Text>
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL("https://durus.space/privacy")}>
+            <Text color="lapis">Privacy policy</Text>
+          </Pressable>
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL("https://durus.space/support")}>
+            <Text color="lapis">Support</Text>
+          </Pressable>
         </View>
 
         <Button

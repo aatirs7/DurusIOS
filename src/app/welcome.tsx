@@ -97,7 +97,7 @@ export default function Welcome() {
             being asked again.
           */}
           <Text color="inkSoft" style={s.blurb}>
-            Sign in to pick up where you left off.
+            Sign in to sync your lessons, or carry on without an account.
           </Text>
         </View>
 
@@ -120,6 +120,8 @@ export default function Welcome() {
           there is no route to the setup questions at all: every button here
           assumes an account already exists.
         */}
+        {/* Guest mode: the app works without an account. */}
+        <Button label="Continue without an account" variant="text" onPress={() => router.replace("/home")} />
         <Button
           label="New here? Set up Durus"
           variant="text"

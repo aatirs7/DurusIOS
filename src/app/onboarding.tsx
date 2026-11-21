@@ -848,8 +848,8 @@ export default function Onboarding() {
                       Keep your progress
                     </Text>
                     <Text color="inkSoft" style={s.sub}>
-                      Your map, lessons and practice, saved if you change
-                      phones.
+                      An account saves your lessons and reviews if you change
+                      phones. Durus works without one.
                     </Text>
                   </View>
                   <Glass style={s.signCard}>
@@ -864,6 +864,12 @@ export default function Onboarding() {
                       <SignInPanel onSignedIn={() => void finish()} />
                     )}
                   </Glass>
+                  {/* Guest mode: everything works on this phone; sign in any time from Settings. */}
+                  {preview ? null : (
+                    <Pressable accessibilityRole="button" onPress={() => void finish()} style={s.textButton}>
+                      <Text color="lapis">Continue without an account</Text>
+                    </Pressable>
+                  )}
                 </View>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>

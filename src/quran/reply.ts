@@ -53,7 +53,6 @@ export function reply(query: string, result: SearchResult, ctx: ReplyContext): R
   const first = result.hits[0];
 
   if (!first) {
-    if (result.pendingTopic) return { text: `"${result.pendingTopic}" is being reviewed and will appear soon.`, tone: "pending" };
     return { text: "Nothing yet for that. Try how you feel, a surah name, an ayah like 2:255, or Arabic words.", tone: "nothing" };
   }
 

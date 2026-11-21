@@ -201,7 +201,7 @@ export default function Home() {
     else if (result.label) cap = result.label;
     else if (result.hits.some((h) => h.kind === "text")) cap = `${result.total} ${result.total === 1 ? "place" : "places"} with "${query.trim()}"`;
     else if (typing && out.length === 0 && asking) cap = null;
-    else if (typing && out.length === 0) cap = result.pendingTopic ? `"${result.pendingTopic}" is coming soon` : "Nothing found";
+    else if (typing && out.length === 0) cap = "Nothing found";
     return { items: out, caption: cap };
   }, [result, query, typing, picks, asking, waiting]);
 

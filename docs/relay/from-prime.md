@@ -13,6 +13,13 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- App Store prep (owner, 21 Nov):
+  - Guest mode: an account is optional. The boot gate only checks onboarding; onboarding's sign in step and the welcome screen have Continue without an account. Everything runs on the local profile, and signing in later binds it, so nothing is lost.
+  - Credits: About credits Quran Foundation (translations by name, word meanings, recitation by Mishari al-Afasy) and all five Quran fonts; the stale Quran.com is coming lines are gone. Privacy policy and Support links in About and Settings. Leftover coming soon text removed (search caption, reader sheet, Book hint, reply.ts). Stats shows None yet instead of an em dash.
+  - durus.space/privacy and /support rewritten for the current app: guest use, what an account stores, search text sent to Google Gemini or Groq (no identity), Quran Foundation content, new Settings paths (durus-web 71e93f4).
+  - No AI consent screen (owner's call); the privacy policy discloses it.
+  - Abuse protection: per-address limits on the Quran routes, in memory per instance: Ask 20 a minute and 300 a day, other routes 240 a minute; 429 is never cached.
+
 - Search loader words now crossfade: one clock drives all eight words, each fades in over about 1.2 s while the last fades out, drifting up slightly. No more popping.
 
 - Search AI tuned against a test set (server/eval-ask.ts, 60 cases: battles, prophets' stories, rulings, feelings, 10 holdout stories not in the index, one off-topic). Gemini Flash-Lite with a vetted index of known places (server/ask-index.ts, from themes.ts plus the main stories, battles and rulings): 98% of cited places right, first result right 100%, about 1 to 2 s. Groq alone was 85%. Never gives rulings (owner, 21 Nov): the prompt forbids halal/haram/must/should, ruling questions get places plus "a qualified scholar can give a ruling", and a server filter blanks any note that reads as a ruling. Cost: the key is on Google's free tier (no billing, so no charge possible); Gemini rests a minute when it hits the per-minute limit; a per-instance daily cap (GEMINI_DAILY_CAP, default 1000); Groq answers whenever Gemini is resting, capped or slow (8 s). durus-web e8dba8f. The story index entries are for the teacher review alongside benefits.ts.
@@ -222,7 +229,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Blocked on the owner
 
-- App Store decisions (see docs/app-store-audit.md): whether to allow guest mode (Apple requires the Quran features to work without an account), moving Clerk to a production instance, and screenshots and metadata in App Store Connect.
+- App Store (see docs/app-store-audit.md): move Clerk to a production instance with Apple and Google sign in and the review@durus.space account; screenshots, App Privacy answers (search text to an AI service, not linked to identity), age rating and review notes in App Store Connect. Guest mode, credits, privacy pages and rate limits are done.
 - Rotate the Groq key later; it was shared in chat.
 
 - **Rotate the Quran Foundation secret** once things run, since it was shared in chat. Prime keeps it only in the git-ignored server/.env.local.
