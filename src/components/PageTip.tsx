@@ -30,7 +30,7 @@ const TIPS: Record<TipId, { title: string; lines: string[] }> = {
     title: "Search",
     lines: [
       "Type a surah, an ayah like 2:255, a topic, or how you feel.",
-      "Durus finds the ayahs and says why each one answers.",
+      "Durus finds the ayahs that fit, with a short note on what each one is about.",
     ],
   },
   read: {

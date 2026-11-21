@@ -4,12 +4,12 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInDown,
-  FadeInUp,
   ZoomIn,
   useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
@@ -180,6 +180,32 @@ function PressRing({ style }: { style: object }) {
   return <Animated.View style={[style, anim]} />;
 }
 
+/* Fades up from a little smaller and lower, eased: a card being brought forward. Never wraps glass. */
+function Rise({ style, children }: { style: object; children: React.ReactNode }) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) });
+  }, [p]);
+  const anim = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ translateY: 14 * (1 - p.value) }, { scale: 0.9 + 0.1 * p.value }],
+  }));
+  return <Animated.View style={[style, anim]}>{children}</Animated.View>;
+}
+
+/* The search sparkle, twinkling slowly. */
+function Twinkle({ children }: { children: React.ReactNode }) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }), -1, true);
+  }, [p]);
+  const anim = useAnimatedStyle(() => ({
+    opacity: 0.6 + 0.4 * p.value,
+    transform: [{ scale: 0.85 + 0.25 * p.value }, { rotate: `${p.value * 18}deg` }],
+  }));
+  return <Animated.View style={anim}>{children}</Animated.View>;
+}
+
 /* Grows in by scale from slightly small, eased: the reader's zoom. */
 const ZOOM_IN = ZoomIn.duration(420).easing(Easing.out(Easing.cubic));
 
@@ -338,6 +364,7 @@ const useStyles = makeStyles((t) => ({
   zoomPanel: { borderRadius: 22, backgroundColor: t.colors.paper, padding: space(2), gap: space(1.25), alignItems: "center" },
   zoomWords: { flexDirection: "row-reverse", flexWrap: "wrap", justifyContent: "center", gap: space(1) },
   zoomWord: { alignItems: "center", borderRadius: 14, paddingHorizontal: space(0.75), paddingVertical: space(0.5) },
+  focusRoom: { alignSelf: "stretch", height: 200, justifyContent: "center" },
   zoomFocus: {
     alignItems: "center",
     gap: 2,
@@ -412,8 +439,8 @@ const READ = ["1:1", "1:2", "1:3"] as const;
 const HELD = 1;
 const MEANINGS = ["All praise", "for Allah", "Lord", "of the worlds"];
 const FOCUS_WORD = 2;
-/* Finger down, ayah held, zoom, one word brought forward. */
-const READ_MARKS = [700, 1500, 2200, 5200] as const;
+/* Finger down, ayah held, zoom, a tap on one word, that word brought forward. */
+const READ_MARKS = [700, 1500, 2200, 4600, 5300] as const;
 
 export function ReadHero({ width, height, active, still, paused }: HeroProps) {
   const s = useStyles();
@@ -423,7 +450,8 @@ export function ReadHero({ width, height, active, still, paused }: HeroProps) {
   const pressing = step >= 1 && step < 3;
   const held = step === 2;
   const zoomed = step >= 3;
-  const focus = step >= 4;
+  const tapping = step === 4;
+  const focus = step >= 5;
   const words = lines[HELD];
 
   return (
@@ -462,11 +490,10 @@ export function ReadHero({ width, height, active, still, paused }: HeroProps) {
       {zoomed ? (
         <>
           {/* The dim fades on its own layer; the glass card beside it only scales. */}
-          <Animated.View
-            entering={FadeIn.duration(300)}
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFill, { backgroundColor: theme.dark ? "rgba(8,10,16,0.55)" : "rgba(20,30,60,0.22)" }]}
-          />
+          {/* A wash of the page colour, not grey: the ayahs behind soften instead of going dark. */}
+          <Animated.View entering={FadeIn.duration(420)} pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.paper, opacity: 0.86 }]} />
+          </Animated.View>
           <View pointerEvents="none" style={[StyleSheet.absoluteFill, s.center]}>
             <Animated.View entering={ZOOM_IN} style={{ width: width - space(3), maxHeight: height }}>
               <Glass style={s.zoomFrame}>
@@ -476,7 +503,23 @@ export function ReadHero({ width, height, active, still, paused }: HeroProps) {
                   </Text>
                   <View style={s.zoomWords}>
                     {words.map((w, i) => (
-                      <View key={i} style={[s.zoomWord, focus && i === FOCUS_WORD && { backgroundColor: theme.colors.lapisWash }]}>
+                      <Animated.View
+                        key={i}
+                        entering={still ? undefined : FadeInDown.delay(220 + i * 110).duration(420).easing(Easing.out(Easing.cubic))}
+                        style={s.zoomWord}
+                      >
+                        {(tapping || focus) && i === FOCUS_WORD ? (
+                          <Animated.View
+                            entering={FadeIn.duration(260)}
+                            pointerEvents="none"
+                            style={[StyleSheet.absoluteFill, { borderRadius: 14, backgroundColor: theme.colors.lapisWash }]}
+                          />
+                        ) : null}
+                        {tapping && i === FOCUS_WORD ? (
+                          <View pointerEvents="none" style={[StyleSheet.absoluteFill, s.center]}>
+                            <PressRing style={s.press} />
+                          </View>
+                        ) : null}
                         <Text selectable={false} style={[s.ayah, { fontSize: 26, lineHeight: 48 }]}>
                           {w}
                         </Text>
@@ -484,11 +527,13 @@ export function ReadHero({ width, height, active, still, paused }: HeroProps) {
                           {transliterateQuranWord(w)}
                         </Text>
                         <Text variant="label">{MEANINGS[i]}</Text>
-                      </View>
+                      </Animated.View>
                     ))}
                   </View>
+                  {/* Room for the word card is kept from the start, so the panel never jumps when it arrives. */}
+                  <View style={s.focusRoom}>
                   {focus ? (
-                    <Animated.View entering={FadeInUp.duration(320).easing(Easing.out(Easing.cubic))} style={s.zoomFocus}>
+                    <Rise style={s.zoomFocus}>
                       <Text selectable={false} style={[s.ayah, { fontSize: 50, lineHeight: 90, color: theme.colors.lapis }]}>
                         {words[FOCUS_WORD]}
                       </Text>
@@ -502,12 +547,15 @@ export function ReadHero({ width, height, active, still, paused }: HeroProps) {
                           Listen again
                         </Text>
                       </View>
-                    </Animated.View>
+                    </Rise>
                   ) : (
-                    <Text variant="label" color="inkFaint" style={{ textAlign: "center" }}>
-                      Tap a word to hear it
-                    </Text>
+                    <Animated.View entering={FadeIn.delay(700).duration(400)}>
+                      <Text variant="label" color="inkFaint" style={{ textAlign: "center" }}>
+                        Tap a word to hear it
+                      </Text>
+                    </Animated.View>
                   )}
+                  </View>
                 </View>
               </Glass>
             </Animated.View>
@@ -923,9 +971,11 @@ export function SearchHero({ width, active, still, paused }: HeroProps) {
       {results ? (
         <View style={{ flex: 1 }}>
           <Animated.View entering={FadeIn.duration(300)} style={s.searchCaption}>
+            <Twinkle>
             <Svg width={14} height={14} viewBox="0 0 24 24">
               <Path d="M12 2.5l2.1 6.4 6.4 2.1-6.4 2.1L12 19.5l-2.1-6.4L3.5 11l6.4-2.1zM19 16l.9 2.1 2.1.9-2.1.9L19 22l-.9-2.1-2.1-.9 2.1-.9z" fill={theme.colors.lapis} />
             </Svg>
+            </Twinkle>
             <Text variant="label" color="inkSoft">
               Ayahs for when you feel anxious
             </Text>
