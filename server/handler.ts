@@ -43,7 +43,9 @@ export async function handle(req: Request, env: Record<string, string | undefine
     }
     if (route[0] === "ask") {
       const q = url.searchParams.get("q") ?? "";
-      return json(await ask(q, env));
+      const answer = await ask(q, env);
+      /* An empty answer is not kept at the edge, so the next try asks again. */
+      return answer.results.length > 0 ? json(answer) : json(answer, 200, "no-store");
     }
     if (route[0] === "verses") {
       /* Up to 20 keys like 13:28, for search results. */

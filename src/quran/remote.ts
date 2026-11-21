@@ -274,7 +274,8 @@ export async function askQuran(q: string): Promise<AskAnswer | null> {
     if (!res.ok) return null;
     const a = (await res.json()) as AskAnswer;
     if (!a || !Array.isArray(a.results)) return null;
-    asked.set(k, a);
+    /* Only answers with places are kept; an empty one is asked again next time. */
+    if (a.results.length > 0) asked.set(k, a);
     return a;
   } catch {
     return null;

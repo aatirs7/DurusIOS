@@ -47,7 +47,9 @@ Reply with JSON only: {"line": string, "results": [{"ref": string, "reason": str
 - Give 3 to 6 results, the best first. Only cite places you are certain are correct and relevant. Prefer specific ayahs over whole surahs, unless the user asks for a surah.
 - "reason" is one short plain sentence (under 16 words) on why this place answers them. Never quote or paraphrase the Quran's wording in it; describe it.
 - "line" is one short, warm sentence (under 14 words) introducing the results, without religious rulings.
-- If the request is not about the Quran or cannot be answered with Quran places, return {"line": "", "results": []}.`;
+- People and events count: prophets, the companions of the Prophet (the Muhajirun and Ansar, the pledge under the tree, the cave, Badr, Uhud, the Trench, Hunayn, Tabuk, the slander), Maryam, Luqman, the people of the cave. Name the passages that speak about them, even when the names are not in the text.
+- Every "reason" must be true to what that place actually says. Never attach a meaning to a ref you are unsure of; leave the ref out instead.
+- Return no results only for requests that have nothing to do with the Quran, Islam, faith or life (for example code, sports scores, maths). Everything else gets results: {"line": "", "results": []}.`;
 
 function parse(text: string): AskAnswer {
   let body: unknown;
@@ -78,7 +80,7 @@ async function groq(q: string, key: string, model: string): Promise<AskAnswer> {
     body: JSON.stringify({
       model,
       temperature: 0.2,
-      max_completion_tokens: 900,
+      max_completion_tokens: 2500,
       reasoning_effort: "medium",
       messages: [
         { role: "system", content: SYSTEM },
@@ -126,9 +128,16 @@ export async function ask(raw: string, env: Record<string, string | undefined>):
   if (tries.length === 0) throw new Error("ask_not_configured");
 
   let last: unknown;
+  let empty: AskAnswer | null = null;
   for (const t of tries) {
     try {
       const answer = await t();
+      /* An empty answer is often the model being shy, not the question being
+         unanswerable: try the next model, and never keep an empty answer. */
+      if (answer.results.length === 0) {
+        empty = answer;
+        continue;
+      }
       if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value as string);
       cache.set(q, answer);
       return answer;
@@ -136,5 +145,6 @@ export async function ask(raw: string, env: Record<string, string | undefined>):
       last = e;
     }
   }
+  if (empty) return empty;
   throw last instanceof Error ? last : new Error("ask_failed");
 }
