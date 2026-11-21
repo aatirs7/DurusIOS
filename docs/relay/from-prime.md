@@ -14,7 +14,7 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 ## Shipped
 
 - Search AI: "story of the companions" showed only the built-in topic because the model returned nothing once (it ran out of tokens while reasoning) and that empty answer was cached for an hour. Fixed (durus-web bfd7da2, app OTA): empty answers are never cached on the server, the edge or the phone; an empty answer falls through to the next model; reasoning gets 2500 tokens; the prompt says people and events (companions, battles, the cave) count.
-- Open: the free model's picks are often wrong for history (Uhud given as Al-Anfal; it is Al Imran 3:121-175). Proposed fix in Questions.
+- Search AI now asks Google Gemini Flash-Lite first (durus-web 4a7d9be; GEMINI_API_KEY set in Vercel production, GEMINI_MODEL optional), Groq as the fallback. In tests it placed Uhud (3:121-154), the cave (18:9-26), the pledge under the tree (48:18), the three of Tabuk (9:118) correctly where Groq had them wrong, in about a second. The key is on the free tier: the owner must not attach billing to its Google project; over the daily limit Google refuses and Groq answers. The key was pasted in chat, so it should be restricted to the Generative Language API and rotated when convenient.
 
 - Search's loading indicator (Seeking) is now Quranic words (sabr, rahma, nur, huda, sakina, dhikr, shukr, tawakkul) surfacing one at a time, each swelling in and fading out, with the words of "Looking through the Quran" brightening in a slow wave beneath. The orb and gyroscope rings are gone (the plain arc tried first was too plain).
 

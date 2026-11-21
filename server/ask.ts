@@ -8,8 +8,8 @@
   checked against the real ayah counts and anything that is not a real place
   is dropped, so an invented ref cannot reach the screen.
 
-  Groq first (GROQ_API_KEY), Gemini as the fallback (GEMINI_API_KEY). Both
-  have free tiers. Answers are cached in memory per normalised query, and the
+  Gemini first (GEMINI_API_KEY, GEMINI_MODEL), Groq as the fallback
+  (GROQ_API_KEY). Both have free tiers. Answers are cached in memory per normalised query, and the
   response is edge cached for a day, so a popular question costs one call.
 */
 
@@ -94,10 +94,10 @@ async function groq(q: string, key: string, model: string): Promise<AskAnswer> {
   return parse(data.choices?.[0]?.message?.content ?? "");
 }
 
-async function gemini(q: string, key: string): Promise<AskAnswer> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`, {
+async function gemini(q: string, key: string, model: string): Promise<AskAnswer> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: q }] }],
@@ -119,12 +119,13 @@ export async function ask(raw: string, env: Record<string, string | undefined>):
   const hit = cache.get(q);
   if (hit) return hit;
 
+  /* Gemini first: it knows where things are in the Quran far better. Groq is the fallback. */
   const tries: (() => Promise<AskAnswer>)[] = [];
+  if (env.GEMINI_API_KEY) tries.push(() => gemini(q, env.GEMINI_API_KEY!, env.GEMINI_MODEL ?? "gemini-flash-lite-latest"));
   if (env.GROQ_API_KEY) {
     tries.push(() => groq(q, env.GROQ_API_KEY!, env.GROQ_MODEL ?? "openai/gpt-oss-120b"));
     tries.push(() => groq(q, env.GROQ_API_KEY!, "openai/gpt-oss-20b"));
   }
-  if (env.GEMINI_API_KEY) tries.push(() => gemini(q, env.GEMINI_API_KEY!));
   if (tries.length === 0) throw new Error("ask_not_configured");
 
   let last: unknown;
