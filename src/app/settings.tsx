@@ -3,13 +3,12 @@ import { deleteDatabaseSync } from "expo-sqlite";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, Share, Switch, TextInput } from "react-native";
+import { Alert, ScrollView, Share, Switch, TextInput } from "react-native";
 
 import { BackBar } from "@/components/BackBar";
-import { Button } from "@/components/Button";
 import { Field, Segmented, Stepper } from "@/components/Field";
 import { Screen } from "@/components/Screen";
-import { Section } from "@/components/Section";
+import { Group, LinkRow } from "@/components/Group";
 import { Text } from "@/components/Text";
 import { DB_NAME, db, sqlite } from "@/data/client";
 import { FONTS } from "@/theme/typography";
@@ -136,18 +135,36 @@ export default function SettingsScreen() {
     void syncReminders(db, profileId);
   };
 
+  const sw = { true: theme.colors.lapis, false: theme.colors.rule };
+
+  const reminderSwitch = (apply: (on: boolean) => void) => async (next: boolean) => {
+    /* Permission is asked here and nowhere else. iOS gives exactly one chance,
+       so it is spent on an explicit toggle. */
+    if (next) {
+      const granted = await requestPermission();
+      if (!granted) {
+        Alert.alert(
+          "Notifications are off",
+          "Durus cannot schedule reminders until notifications are allowed for it in iOS Settings.",
+        );
+        return;
+      }
+    }
+    apply(next);
+  };
+
   return (
     <Screen>
       <BackBar />
-      {/* The indicator is chrome about the length of a settings list, which is
-          not a thing anyone needs told. */}
       <ScrollView
-        contentContainerStyle={{ paddingBottom: space(5) }}
+        contentContainerStyle={{ paddingBottom: space(6), gap: space(3) }}
         showsVerticalScrollIndicator={false}
       >
-        <Text variant="pageTitle">Settings</Text>
+        <Text variant="pageTitle" style={{ textAlign: "center", fontSize: 30, lineHeight: 36 }}>
+          Settings
+        </Text>
 
-        <Section title="Appearance">
+        <Group title="You">
           <Field label="Your name" hint="For the greeting on Search">
             <TextInput
               value={nameDraft}
@@ -160,7 +177,7 @@ export default function SettingsScreen() {
               returnKeyType="done"
               maxLength={40}
               accessibilityLabel="Your name"
-              style={{ minWidth: 140, textAlign: "right", fontFamily: FONTS.uiRegular, fontSize: 17, color: theme.colors.ink }}
+              style={{ minWidth: 120, textAlign: "right", fontFamily: FONTS.uiRegular, fontSize: 17, color: theme.colors.ink }}
             />
           </Field>
           <Field label="Theme">
@@ -174,23 +191,14 @@ export default function SettingsScreen() {
               onChange={setThemeChoice}
             />
           </Field>
-        </Section>
+        </Group>
 
-        {/* The one group most people came for, so it is the one that is open. */}
-        <Section title="Study" defaultOpen>
-          {/* The app never unlocks a lesson on its own. Moving this restamps
-              currentLessonSince, which starts the 14 day interval cap. */}
-          {/*
-            Book and lesson moved here from onboarding (issue #2), which now
-            writes Book 1, Lesson 1 for everyone. Only Book 1 has content, so
-            the book is shown rather than offered: a picker whose other two
-            choices lead to an empty deck would be worse than none. It becomes
-            a picker when Book 2 is seeded.
-          */}
+        {/* Where you are in the course. Only Book 1 has content, so the book is shown, not offered. */}
+        <Group title="Arabic course">
           <Field label="Book" hint="Books 2 and 3 are on the way">
             <Text color="inkSoft">{`Book ${config.currentBook}`}</Text>
           </Field>
-          <Field label="Current lesson" hint="Where you are in the book">
+          <Field label="Current lesson">
             <Stepper
               value={config.currentLesson}
               min={1}
@@ -198,28 +206,20 @@ export default function SettingsScreen() {
               onChange={(currentLesson) => patch({ currentLesson })}
             />
           </Field>
+        </Group>
 
-          {/*
-            Skips the choice rung, so a card is typed or assembled from its
-            first sighting rather than after two correct taps.
-
-            Phrases stay on choice regardless - typing out a whole sentence is
-            a test of patience - which is why the hint says words.
-          */}
-          <Field label="Typing only" hint="Skip multiple choice; type or build every word">
-            <Switch
-              value={config.typingOnly}
-              onValueChange={(typingOnly) => patch({ typingOnly })}
-              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-            />
+        <Group title="Daily study">
+          <Field label="New words a day">
+            <Stepper value={config.newPerDay} min={0} max={60} step={2} onChange={(newPerDay) => patch({ newPerDay })} />
           </Field>
+          <Field label="Most reviews a day">
+            <Stepper value={config.maxReviews} min={10} max={400} step={10} onChange={(maxReviews) => patch({ maxReviews })} />
+          </Field>
+        </Group>
 
-          {/*
-            Filters what the queue draws, and changes nothing about what is
-            scheduled - so a week of production only leaves the recognition
-            side exactly where it was, still due.
-          */}
-          <Field label="Ask me" hint="Which direction to drill in">
+        {/* Ask me filters what the queue draws and changes nothing scheduled. Typing only skips the choice rung (phrases stay on choice). */}
+        <Group title="How you are asked">
+          <Field label="Ask me in">
             <Segmented<"both" | "recognition" | "production">
               value={config.drillDirection}
               options={[
@@ -230,28 +230,16 @@ export default function SettingsScreen() {
               onChange={(drillDirection) => patch({ drillDirection })}
             />
           </Field>
-
-          <Field label="New cards per day" hint="How fast new words arrive">
-            <Stepper
-              value={config.newPerDay}
-              min={0}
-              max={60}
-              step={2}
-              onChange={(newPerDay) => patch({ newPerDay })}
-            />
+          <Field label="Typing only" hint="Type or build every word, no multiple choice">
+            <Switch value={config.typingOnly} onValueChange={(typingOnly) => patch({ typingOnly })} trackColor={sw} />
           </Field>
-
-          <Field label="Max reviews per day" hint="The ceiling on one session">
-            <Stepper
-              value={config.maxReviews}
-              min={10}
-              max={400}
-              step={10}
-              onChange={(maxReviews) => patch({ maxReviews })}
-            />
+          <Field label="Show harakat" hint="The short vowels on every card">
+            <Switch value={config.showHarakat} onValueChange={(showHarakat) => patch({ showHarakat })} trackColor={sw} />
           </Field>
+        </Group>
 
-          <Field label="Speed window" hint="Time per word in the speed drill">
+        <Group title="Speed drill">
+          <Field label="Time per word">
             <Stepper
               value={config.speedWindowMs}
               min={700}
@@ -261,147 +249,67 @@ export default function SettingsScreen() {
               onChange={(speedWindowMs) => patch({ speedWindowMs })}
             />
           </Field>
+          <LinkRow
+            label="Find my speed"
+            hint="A short run with no clock, to set the time from how fast you read"
+            onPress={() => router.push("/speed?mode=diagnostic")}
+          />
+        </Group>
 
-          <Field label="Show harakat" hint="The short vowels, on every card face">
-            <Switch
-              value={config.showHarakat}
-              onValueChange={(showHarakat) => patch({ showHarakat })}
-              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-            />
-          </Field>
-        </Section>
-
-        <Section title="Reminders">
-
-          {/* Set in onboarding, so it needs a way off here. Lives in the prefs
-              store until the settings table next changes. */}
+        <Group title="Reminders">
           <Field label="Morning adhkar" hint="Every day at 6:00 AM">
             <Switch
               value={adhkarReminder}
               disabled={!remindersAvailable()}
-              onValueChange={async (on) => {
-                if (on) {
-                  const granted = await requestPermission();
-                  if (!granted) {
-                    Alert.alert(
-                      "Notifications are off",
-                      "Durus cannot schedule reminders until notifications are allowed for it in iOS Settings.",
-                    );
-                    return;
-                  }
-                }
+              onValueChange={reminderSwitch((on) => {
                 setAdhkarReminder(on);
                 if (profileId !== null) void syncReminders(db, profileId);
-              }}
-              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+              })}
+              trackColor={sw}
             />
           </Field>
-
-          <Field
-            label="Daily reminders"
-            hint="A time to sit down, once or twice a day"
-          >
+          <Field label="Study reminder" hint="A time to sit down, once or twice a day">
             <Switch
               value={config.remindersOn}
               disabled={!remindersAvailable()}
-              onValueChange={async (remindersOn) => {
-                /* Permission is asked here and nowhere else. iOS gives exactly
-                   one chance, so it is spent on an explicit toggle. */
-                if (remindersOn) {
-                  const granted = await requestPermission();
-                  if (!granted) {
-                    Alert.alert(
-                      "Notifications are off",
-                      "Durus cannot schedule reminders until notifications are allowed for it in iOS Settings.",
-                    );
-                    return;
-                  }
-                }
-                patch({ remindersOn });
-              }}
-              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+              onValueChange={reminderSwitch((remindersOn) => patch({ remindersOn }))}
+              trackColor={sw}
             />
           </Field>
-
           {config.remindersOn ? (
             <>
-              <Field label="First reminder">
-                <Stepper
-                  value={config.reminderHour}
-                  min={5}
-                  max={22}
-                  format={hourLabel}
-                  onChange={(reminderHour) => patch({ reminderHour })}
-                />
+              <Field label="At">
+                <Stepper value={config.reminderHour} min={5} max={22} format={hourLabel} onChange={(reminderHour) => patch({ reminderHour })} />
               </Field>
-
-              <Field label="Second reminder">
-                <Switch
-                  value={config.secondReminderOn}
-                  onValueChange={(secondReminderOn) => patch({ secondReminderOn })}
-                  trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-                />
+              <Field label="A second time">
+                <Switch value={config.secondReminderOn} onValueChange={(secondReminderOn) => patch({ secondReminderOn })} trackColor={sw} />
               </Field>
-
               {config.secondReminderOn ? (
-                <Field label="Second time">
-                  <Stepper
-                    value={config.reminderHour2}
-                    min={5}
-                    max={22}
-                    format={hourLabel}
-                    onChange={(reminderHour2) => patch({ reminderHour2 })}
-                  />
+                <Field label="Second at">
+                  <Stepper value={config.reminderHour2} min={5} max={22} format={hourLabel} onChange={(reminderHour2) => patch({ reminderHour2 })} />
                 </Field>
               ) : null}
-
-              <Field
-                label="Class day nudge"
-                hint="Wednesday, to add the words from class"
-              >
-                <Switch
-                  value={config.classDayReminder}
-                  onValueChange={(classDayReminder) => patch({ classDayReminder })}
-                  trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-                />
+              <Field label="Class day nudge" hint="Wednesday, to add the words from class">
+                <Switch value={config.classDayReminder} onValueChange={(classDayReminder) => patch({ classDayReminder })} trackColor={sw} />
               </Field>
             </>
           ) : null}
-
-          <Button
+          <LinkRow
             label="Send a test reminder"
-            variant="quiet"
+            chevron={false}
             onPress={async () => {
               const ok = await sendTestReminder();
               Alert.alert(
                 ok ? "On its way" : "Could not schedule",
-                ok
-                  ? "It will arrive in about five seconds."
-                  : "Notifications are not allowed for Durus. Turn them on in iOS Settings.",
+                ok ? "It will arrive in about five seconds." : "Notifications are not allowed for Durus. Turn them on in iOS Settings.",
               );
             }}
           />
-        </Section>
+        </Group>
 
-        <Section title="This device">
-          {/*
-            The diagnostic, reachable at any time.
+        <OfflineRecitation />
 
-            The window otherwise only moves by 100ms after a run above 85%,
-            which is fine for drift and useless for somebody whose pace has
-            changed - or who never had the right one to begin with.
-          */}
-          <Button
-            label="Find my speed"
-            variant="quiet"
-            onPress={() => router.push("/speed?mode=diagnostic")}
-          />
-          <Text variant="label" color="inkFaint">
-            A short run with no clock, to set the speed drill&apos;s window from
-            how fast you actually read.
-          </Text>
-
-
+        <Group title="This phone">
           <Field label="Haptics" hint="A tap when you choose an answer">
             <Switch
               value={config.hapticsEnabled}
@@ -409,85 +317,36 @@ export default function SettingsScreen() {
                 setHapticsEnabled(hapticsEnabled);
                 patch({ hapticsEnabled });
               }}
-              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
+              trackColor={sw}
             />
           </Field>
-
           <Field label="Reduce motion" hint="The card turn becomes a fade">
-            <Switch
-              value={config.reduceMotion}
-              onValueChange={(reduceMotion) => patch({ reduceMotion })}
-              trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }}
-            />
+            <Switch value={config.reduceMotion} onValueChange={(reduceMotion) => patch({ reduceMotion })} trackColor={sw} />
           </Field>
-        </Section>
-
-        <OfflineRecitation />
-
-        <Section title="Data">
-          <Button
-            label={busy ? "Preparing…" : "Export all data as JSON"}
-            variant="quiet"
-            disabled={busy}
-            onPress={async () => {
-              setBusy(true);
-              try {
-                const data = exportAll(db, profileId);
-                /*
-                  A real .json file rather than a string in a share sheet. An
-                  export of a few thousand reviews is far past what a share
-                  message body handles gracefully, and a file is what the user
-                  actually wants at the other end - it lands in Files, iCloud or
-                  a mail attachment intact.
-                */
-                const name = `durus-${new Date().toISOString().slice(0, 10)}.json`;
-                /* SDK 55's File API, not the legacy writeAsStringAsync helpers.
-                   Cache rather than documents: an export is a copy on its way
-                   somewhere else, and leaving them in documents accumulates
-                   files the user never asked to keep. */
-                const file = new File(Paths.cache, name);
-                if (file.exists) file.delete();
-                file.create();
-                file.write(JSON.stringify(data, null, 2));
-                const uri = file.uri;
-                /* iOS's share sheet takes a file:// url directly, so this needs
-                   no extra native module - the recipient gets a real .json
-                   attachment rather than pasted text. */
-                await Share.share({ url: uri, title: name });
-              } finally {
-                setBusy(false);
-              }
+          {/* Every first-visit tip again, each on its page's next visit. */}
+          <LinkRow
+            label="Show tips again"
+            chevron={false}
+            onPress={() => {
+              resetTips();
+              Alert.alert("Tips are back", "Each page shows its tip the next time you open it.");
             }}
           />
-          <Text variant="label" color="inkFaint">
-            Everything this profile has answered, as JSON.
-          </Text>
+          {/* The new-learner flow, seen from this account, with nothing saved. */}
+          <LinkRow label="Preview onboarding" onPress={() => router.push("/onboarding?preview=1")} />
+        </Group>
 
-          <Pressable onPress={() => router.push("/paste")} style={{ paddingVertical: space(1.5) }}>
-            <Text color="lapis">Add cards from a pasted block</Text>
-          </Pressable>
-        </Section>
-
-        <Section title="Account">
-
+        <Group title="Account" footer={isSignedIn ? syncLine(profileId, syncTick) : "Without an account your progress lives only on this phone."}>
           {isSignedIn ? (
             <>
-              <Text color="inkSoft">
-                {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
-              </Text>
-
-              {/*
-                The ONLY sync surface in the app. One static line, body text,
-                no colour, no icon, no badge - it states a fact and offers an
-                action, in the one place someone came looking for both.
-              */}
-              <Text variant="label" color="inkFaint">
-                {syncLine(profileId, syncTick)}
-              </Text>
-
-              <Button
+              <Field label="Signed in">
+                <Text variant="label" color="inkSoft" numberOfLines={1} style={{ flexShrink: 1 }}>
+                  {user?.primaryEmailAddress?.emailAddress ?? ""}
+                </Text>
+              </Field>
+              <LinkRow
                 label={syncing ? "Syncing…" : "Sync now"}
-                variant="quiet"
+                chevron={false}
                 disabled={syncing}
                 onPress={async () => {
                   setSyncing(true);
@@ -499,174 +358,117 @@ export default function SettingsScreen() {
                   }
                 }}
               />
-
               {/*
-                Deleting the account, from inside the app.
-
-                App Store guideline 5.1.1(v) requires this of anything that lets
-                you create an account, and it is the only honest counterpart to
-                the export above: one hands the data back, the other removes it.
-
-                Two confirmations, because it cannot be undone and the first tap
-                is one row below Sign out. The second one names what goes rather
-                than asking again in the same words - "are you sure" twice
-                teaches people to tap through both.
+                AWAIT the sign out before navigating: navigating while it was in
+                flight landed on a welcome screen that still saw a session and
+                bounced straight back into the app.
               */}
-              <Pressable
-                disabled={deleting}
+              <LinkRow
+                label="Sign out"
+                tone="clay"
+                chevron={false}
                 onPress={() =>
-                  Alert.alert(
-                    "Delete your account?",
-                    "Your account and every answer you have given are removed from the server and from this phone. This cannot be undone.",
-                    [
-                      { text: "Keep my account", style: "cancel" },
-                      {
-                        text: "Delete",
-                        style: "destructive",
-                        onPress: () =>
-                          Alert.alert(
-                            "Delete everything?",
-                            "There is no way to get this back. Export your data first if you want a copy.",
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              {
-                                text: "Delete for good",
-                                style: "destructive",
-                                onPress: () => void removeAccount(),
-                              },
-                            ],
-                          ),
+                  Alert.alert("Sign out?", "Your progress stays on this phone and syncs again when you sign back in.", [
+                    { text: "Stay", style: "cancel" },
+                    {
+                      text: "Sign out",
+                      style: "destructive",
+                      onPress: () => {
+                        void (async () => {
+                          await signOut();
+                          router.replace("/welcome");
+                        })();
                       },
-                    ],
-                  )
+                    },
+                  ])
                 }
-                style={{ paddingVertical: space(1.5), alignItems: "center" }}
-              >
-                <Text color="clay">
-                  {deleting ? "Deleting…" : "Delete account"}
-                </Text>
-              </Pressable>
+              />
             </>
           ) : (
-            <>
-              <Text variant="label" color="inkFaint">
-                Without an account your progress lives only on this phone.
-              </Text>
-              <Button label="Sign in" onPress={() => router.push("/sign-in")} />
-            </>
+            <LinkRow label="Sign in" onPress={() => router.push("/sign-in")} />
           )}
-        </Section>
+        </Group>
 
-        {/*
-          Sign out lives OUT here, not inside the Account section.
+        <Group title="Your data" footer="The export is everything this profile has answered, as a JSON file.">
+          <LinkRow
+            label={busy ? "Preparing…" : "Export all data"}
+            chevron={false}
+            disabled={busy}
+            onPress={async () => {
+              setBusy(true);
+              try {
+                const data = exportAll(db, profileId);
+                /* A real .json file in cache (a copy on its way somewhere else), shared by file:// url. */
+                const name = `durus-${new Date().toISOString().slice(0, 10)}.json`;
+                const file = new File(Paths.cache, name);
+                if (file.exists) file.delete();
+                file.create();
+                file.write(JSON.stringify(data, null, 2));
+                await Share.share({ url: file.uri, title: name });
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+          <LinkRow label="Add cards from a pasted block" onPress={() => router.push("/paste")} />
+        </Group>
 
-          Collapsing the sections tidied the screen and hid the one control
-          people come to Settings specifically to find. A drawer is fine for
-          things you configure once; it is not fine for the way out.
-        */}
-        {isSignedIn ? (
-          <Pressable
+        <Group>
+          <LinkRow label="About Durus" tone="ink" onPress={() => router.push("/about")} />
+          {/* Setup again, keeping the account: forgets only that setup was done. */}
+          <LinkRow
+            label="Run setup again"
             onPress={() =>
               Alert.alert(
-                "Sign out?",
-                "Your progress stays on this phone and syncs again when you sign back in.",
+                "Run setup again?",
+                "Durus will ask about your book, your lesson and your reminders again. Nothing you have answered is lost.",
                 [
-                  { text: "Stay", style: "cancel" },
+                  { text: "Cancel", style: "cancel" },
                   {
-                    text: "Sign out",
-                    style: "destructive",
-                    /*
-                      AWAIT the sign out before navigating, and do not fire and
-                      forget it.
-
-                      signOut() is asynchronous. Navigating while it was still
-                      in flight landed on a welcome screen that asks Clerk
-                      whether there is a session, got "yes" because the sign out
-                      had not finished, and bounced straight back into the app -
-                      so the button appeared to do nothing until the app was
-                      force quit and the gate was re-read from disk.
-
-                      The navigation is explicit rather than reactive because
-                      the gate on the index route reads the local account row at
-                      launch, so nothing here re-routes on its own.
-                    */
+                    text: "Run setup",
                     onPress: () => {
-                      void (async () => {
-                        await signOut();
-                        router.replace("/welcome");
-                      })();
+                      restartOnboarding();
+                      router.replace("/onboarding");
                     },
                   },
                 ],
               )
             }
-            style={{ paddingVertical: space(2), alignItems: "center" }}
-          >
-            <Text color="clay">Sign out</Text>
-          </Pressable>
-        ) : null}
+          />
+        </Group>
 
         {/*
-          Setup again, keeping the account.
-
-          Signing out goes to the sign in screen rather than back through the
-          questions, which is right for someone returning and leaves no way to
-          revisit them. This is that way: it forgets only that setup was done.
+          Deleting the account (App Store 5.1.1(v)). Two confirmations, the second
+          naming what goes, because it cannot be undone.
         */}
-        <Pressable
-          onPress={() =>
-            Alert.alert(
-              "Run setup again?",
-              "Durus will ask about your book, your lesson and your reminders again. Nothing you have answered is lost.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Run setup",
-                  onPress: () => {
-                    restartOnboarding();
-                    router.replace("/onboarding");
-                  },
-                },
-              ],
-            )
-          }
-          style={{ paddingVertical: space(2), alignItems: "center" }}
-        >
-          <Text color="lapis">Run setup again</Text>
-        </Pressable>
-
-        {/* The new-learner flow, seen from this account, with nothing saved. */}
-        <Pressable
-          onPress={() => router.push("/onboarding?preview=1")}
-          style={{ paddingVertical: space(2), alignItems: "center" }}
-        >
-          <Text color="lapis">Preview onboarding</Text>
-        </Pressable>
-
-        {/* Every first-visit tip again, each on its page's next visit. */}
-        <Pressable
-          onPress={() => {
-            resetTips();
-            Alert.alert("Tips are back", "Each page shows its tip the next time you open it.");
-          }}
-          style={{ paddingVertical: space(2), alignItems: "center" }}
-        >
-          <Text color="lapis">Show tips again</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/about")}
-          style={{ paddingVertical: space(2), alignItems: "center" }}
-        >
-          <Text>About Durus</Text>
-        </Pressable>
-
-        <Button
-          label="Back to today"
-          variant="quiet"
-          style={{ marginTop: space(2) }}
-          onPress={() => router.back()}
-        />
+        {isSignedIn ? (
+          <Group>
+            <LinkRow
+              label={deleting ? "Deleting…" : "Delete account"}
+              tone="clay"
+              chevron={false}
+              disabled={deleting}
+              onPress={() =>
+                Alert.alert(
+                  "Delete your account?",
+                  "Your account and every answer you have given are removed from the server and from this phone. This cannot be undone.",
+                  [
+                    { text: "Keep my account", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () =>
+                        Alert.alert("Delete everything?", "There is no way to get this back. Export your data first if you want a copy.", [
+                          { text: "Cancel", style: "cancel" },
+                          { text: "Delete for good", style: "destructive", onPress: () => void removeAccount() },
+                        ]),
+                    },
+                  ],
+                )
+              }
+            />
+          </Group>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -689,8 +491,8 @@ function OfflineRecitation() {
   const sum = downloadSummary(reciterId);
   const mb = Math.round(sum.bytes / 1_000_000);
   return (
-    <Section title="Offline recitation">
-      <Field label="Keep the recitation on this phone" hint="Downloads in the background and stays up to date">
+    <Group title="Offline recitation" footer={recitationCredit(reciterId)}>
+      <Field label="Keep it on this phone" hint="Downloads in the background, plays without a connection">
         <Switch
           value={on}
           onValueChange={(next) => {
@@ -715,15 +517,12 @@ function OfflineRecitation() {
         />
       </Field>
       {on ? (
-        <Text variant="label" color="inkSoft">
+        <Text variant="label" color="inkSoft" style={{ paddingVertical: space(1.5) }}>
           {sum.active
             ? `Downloading surah ${sum.active.surah}, ayah ${sum.active.done} of ${sum.active.total}. ${sum.surahs} of 114 started, ${mb} MB so far.`
             : `${sum.surahs} of 114 surahs on this phone, ${mb} MB.`}
         </Text>
       ) : null}
-      <Text variant="label" color="inkFaint">
-        {recitationCredit(reciterId)}
-      </Text>
-    </Section>
+    </Group>
   );
 }

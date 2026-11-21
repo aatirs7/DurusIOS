@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { FlatList, Modal, Pressable, ScrollView, Switch, View } from "react-native";
 
+import Svg, { Path } from "react-native-svg";
+
+import { BlockRow, Group } from "@/components/Group";
 import { Text } from "@/components/Text";
 import { JUZ_STARTS, SURAHS } from "@/quran/tanzil";
 import { TRANSLATIONS } from "@/quran/qf";
@@ -44,14 +47,15 @@ const useStyles = makeStyles((t) => ({
     paddingHorizontal: space(2),
   },
   optionOn: { borderColor: t.colors.lapis, backgroundColor: t.colors.lapisWash },
-  sizeRow: { flexDirection: "row", alignItems: "center", gap: space(3) },
-  group: { gap: space(1) },
-  choices: { flexDirection: "row", flexWrap: "wrap", gap: space(1) },
-  choice: { borderRadius: RADIUS.pill, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.surface, paddingVertical: space(1), paddingHorizontal: space(1.75) },
-  swatch: { borderRadius: RADIUS.field, borderWidth: 1, borderColor: t.colors.rule, paddingVertical: space(1.25), paddingHorizontal: space(2) },
+  sizeRow: { flexDirection: "row", alignItems: "center", gap: space(1.5) },
+  fullSeg: { flexDirection: "row", borderRadius: RADIUS.pill, backgroundColor: t.colors.paper, borderWidth: 1, borderColor: t.colors.rule, padding: 3 },
+  fullSegItem: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: RADIUS.pill },
+  pick: { flexDirection: "row", alignItems: "center", paddingVertical: space(1.5), gap: space(2) },
+  fontTile: { alignItems: "center", borderRadius: 14, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.paper, paddingHorizontal: space(1.5), paddingBottom: space(0.75), minWidth: 84 },
+  swatch: { flex: 1, alignItems: "center", borderRadius: 14, borderWidth: 1, borderColor: t.colors.rule, paddingBottom: space(0.75) },
   preview: { borderRadius: 20, borderWidth: 1, padding: space(2.5) },
-  toggleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: space(0.5) },
-  sizeBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: t.colors.rule, alignItems: "center", justifyContent: "center" },
+  toggleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: space(1.25) },
+  sizeBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: t.colors.rule, backgroundColor: t.colors.paper, alignItems: "center", justifyContent: "center" },
 }));
 
 function Sheet({
@@ -201,7 +205,8 @@ export function useQuranType(base?: number) {
   return { fontFamily: f.family, fontSize: px, lineHeight: Math.round(px * SPACING[look.spacing]), look };
 }
 
-function Choice<K extends string>({
+/* Equal segments across the full width: the cleanest way to pick one of a few. */
+function Seg<K extends string>({
   options,
   value,
   onChange,
@@ -212,16 +217,16 @@ function Choice<K extends string>({
 }) {
   const s = useStyles();
   return (
-    <View style={s.choices}>
+    <View style={s.fullSeg}>
       {options.map((o) => (
         <Pressable
           key={o.key}
           accessibilityRole="button"
           accessibilityState={{ selected: value === o.key }}
           onPress={() => onChange(o.key)}
-          style={[s.choice, value === o.key && s.optionOn]}
+          style={[s.fullSegItem, value === o.key && s.segOn]}
         >
-          <Text variant="label" color={value === o.key ? "lapis" : "inkSoft"}>
+          <Text variant="label" color={value === o.key ? "lapis" : "inkSoft"} numberOfLines={1}>
             {o.label}
           </Text>
         </Pressable>
@@ -230,15 +235,32 @@ function Choice<K extends string>({
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/* A radio row inside a group: label, optional line, a check when chosen. */
+function Pick({ label, line, on, disabled, onPress }: { label: string; line?: string; on: boolean; disabled?: boolean; onPress: () => void }) {
   const s = useStyles();
+  const theme = useTheme();
   return (
-    <View style={s.group}>
-      <Text variant="eyebrow" color="inkSoft">
-        {label}
-      </Text>
-      {children}
-    </View>
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected: on, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={s.pick}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text color={disabled ? "inkFaint" : "ink"}>{label}</Text>
+        {line ? (
+          <Text variant="label" color={disabled ? "inkFaint" : "inkSoft"}>
+            {line}
+          </Text>
+        ) : null}
+      </View>
+      {on ? (
+        <Svg width={18} height={18} viewBox="0 0 24 24">
+          <Path d="M5 12.5l4.5 4.5L19 7.5" stroke={theme.colors.lapis} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </Svg>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -255,10 +277,11 @@ export function ViewSheet({ visible, onClose }: { visible: boolean; onClose: () 
   const type = useQuranType();
   const look = type.look;
   const colors = useReaderColors();
+  const sw = { true: theme.colors.lapis, false: theme.colors.rule };
 
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space(6), gap: space(2.5) }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space(6), gap: space(3) }}>
         <Text variant="pageTitle" style={s.title}>
           Reading view
         </Text>
@@ -280,123 +303,127 @@ export function ViewSheet({ visible, onClose }: { visible: boolean; onClose: () 
           </Text>
         </View>
 
-        <Row label="Show">
-          <View style={{ gap: space(1) }}>
-            {VIEWS.map((base) => ({ ...base, available: base.available || quranApiConfigured() })).map((v) => (
-              <Pressable
-                key={v.key}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: view === v.key, disabled: !v.available }}
-                disabled={!v.available}
-                onPress={() => setView(v.key)}
-                style={[s.option, view === v.key && s.optionOn, !v.available && { borderStyle: "dashed" }]}
-              >
-                <View style={{ gap: 2, flex: 1 }}>
-                  <Text color={v.available ? "ink" : "inkFaint"}>{v.label}</Text>
-                  <Text variant="label" color={v.available ? "inkSoft" : "inkFaint"}>
-                    {v.available ? v.line : `${v.line}. Comes with Quran.com.`}
-                  </Text>
-                </View>
-                {view === v.key ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: theme.colors.lapis }} /> : null}
-              </Pressable>
-            ))}
-          </View>
-        </Row>
-
-        {quranApiConfigured() ? (
-          <Row label="Translation">
-            <Choice
-              options={TRANSLATIONS.map((t) => ({ key: String(t.id), label: t.name }))}
-              value={String(translationId)}
-              onChange={(k) => setTranslationId(Number(k))}
+        <Group title="Show">
+          {VIEWS.map((base) => ({ ...base, available: base.available || quranApiConfigured() })).map((v) => (
+            <Pick
+              key={v.key}
+              label={v.label}
+              line={v.available ? v.line : `${v.line}. Comes with Quran.com.`}
+              on={view === v.key}
+              disabled={!v.available}
+              onPress={() => setView(v.key)}
             />
-          </Row>
-        ) : null}
+          ))}
+        </Group>
 
-        <Row label="Script">
-          <Choice
-            options={(Object.keys(QURAN_FONTS) as (keyof typeof QURAN_FONTS)[]).map((k) => ({ key: k, label: QURAN_FONTS[k].label }))}
-            value={look.font}
-            onChange={(font) => setReader({ font })}
-          />
-        </Row>
-
-        <Row label="Size">
-          <View style={s.sizeRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Smaller" onPress={() => setSize(size - 2)} style={s.sizeBtn}>
-              <Text>A</Text>
-            </Pressable>
-            <Text variant="numeral" style={{ fontSize: 26, lineHeight: 32 }}>{`${size}`}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Larger" onPress={() => setSize(size + 2)} style={s.sizeBtn}>
-              <Text style={{ fontSize: 22 }}>A</Text>
-            </Pressable>
-          </View>
-        </Row>
-
-        <Row label="Line spacing">
-          <Choice
-            options={[
-              { key: "compact", label: "Compact" },
-              { key: "normal", label: "Normal" },
-              { key: "airy", label: "Airy" },
-            ]}
-            value={look.spacing}
-            onChange={(spacing) => setReader({ spacing })}
-          />
-        </Row>
-
-        <Row label="Page">
-          <View style={s.choices}>
-            {(["app", "paper", "sepia", "night"] as const).map((k) => {
-              const c = k === "app" ? { page: theme.colors.paper, ink: theme.colors.ink } : READER_TONES[k];
-              return (
+        <Group title="Text">
+          <BlockRow label="Script">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space(1) }}>
+              {(Object.keys(QURAN_FONTS) as (keyof typeof QURAN_FONTS)[]).map((k) => (
                 <Pressable
                   key={k}
                   accessibilityRole="button"
-                  accessibilityLabel={k === "app" ? "Match the app" : k}
-                  accessibilityState={{ selected: look.tone === k }}
-                  onPress={() => setReader({ tone: k })}
-                  style={[s.swatch, { backgroundColor: c.page }, look.tone === k && { borderColor: theme.colors.lapis, borderWidth: 2 }]}
+                  accessibilityState={{ selected: look.font === k }}
+                  onPress={() => setReader({ font: k })}
+                  style={[s.fontTile, look.font === k && s.optionOn]}
                 >
-                  <Text variant="label" style={{ color: c.ink }}>
-                    {k === "app" ? "Auto" : k[0].toUpperCase() + k.slice(1)}
+                  <Text selectable={false} style={{ fontFamily: QURAN_FONTS[k].family, fontSize: 24, lineHeight: 44, color: theme.colors.ink }}>
+                    بِسْمِ
+                  </Text>
+                  <Text variant="label" color={look.font === k ? "lapis" : "inkSoft"}>
+                    {QURAN_FONTS[k].label}
                   </Text>
                 </Pressable>
-              );
-            })}
+              ))}
+            </ScrollView>
+          </BlockRow>
+          <View style={s.toggleRow}>
+            <Text>Size</Text>
+            <View style={s.sizeRow}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Smaller" onPress={() => setSize(size - 2)} style={s.sizeBtn}>
+                <Text style={{ fontSize: 14 }}>A</Text>
+              </Pressable>
+              <Text variant="numeral" style={{ fontSize: 20, lineHeight: 26, minWidth: 32, textAlign: "center" }}>{`${size}`}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Larger" onPress={() => setSize(size + 2)} style={s.sizeBtn}>
+                <Text style={{ fontSize: 20 }}>A</Text>
+              </Pressable>
+            </View>
           </View>
-        </Row>
+          <BlockRow label="Line spacing">
+            <Seg
+              options={[
+                { key: "compact", label: "Compact" },
+                { key: "normal", label: "Normal" },
+                { key: "airy", label: "Airy" },
+              ]}
+              value={look.spacing}
+              onChange={(spacing) => setReader({ spacing })}
+            />
+          </BlockRow>
+        </Group>
 
-        <Row label="Layout">
-          <Choice
-            options={[
-              { key: "ayah", label: "Ayah by ayah" },
-              { key: "flow", label: "Flowing page" },
-            ]}
-            value={look.layout}
-            onChange={(layout) => setReader({ layout })}
-          />
-        </Row>
+        <Group title="Page">
+          <BlockRow>
+            <View style={{ flexDirection: "row", gap: space(1) }}>
+              {(["app", "paper", "sepia", "night"] as const).map((k) => {
+                const c = k === "app" ? { page: theme.colors.paper, ink: theme.colors.ink } : READER_TONES[k];
+                return (
+                  <Pressable
+                    key={k}
+                    accessibilityRole="button"
+                    accessibilityLabel={k === "app" ? "Match the app" : k}
+                    accessibilityState={{ selected: look.tone === k }}
+                    onPress={() => setReader({ tone: k })}
+                    style={[s.swatch, { backgroundColor: c.page }, look.tone === k && { borderColor: theme.colors.lapis, borderWidth: 2 }]}
+                  >
+                    <Text selectable={false} style={{ fontFamily: type.fontFamily, fontSize: 20, lineHeight: 36, color: c.ink }}>
+                      ب
+                    </Text>
+                    <Text variant="label" style={{ color: c.ink }}>
+                      {k === "app" ? "Auto" : k[0].toUpperCase() + k.slice(1)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BlockRow>
+          <BlockRow label="Layout">
+            <Seg
+              options={[
+                { key: "ayah", label: "Ayah by ayah" },
+                { key: "flow", label: "Flowing page" },
+              ]}
+              value={look.layout}
+              onChange={(layout) => setReader({ layout })}
+            />
+          </BlockRow>
+          <BlockRow label="Alignment">
+            <Seg
+              options={[
+                { key: "right", label: "Right" },
+                { key: "center", label: "Centre" },
+              ]}
+              value={look.align}
+              onChange={(align) => setReader({ align })}
+            />
+          </BlockRow>
+          <View style={s.toggleRow}>
+            <Text>Ayah numbers</Text>
+            <Switch value={look.numbers} onValueChange={(numbers) => setReader({ numbers })} trackColor={sw} />
+          </View>
+          <View style={s.toggleRow}>
+            <Text>Show my marks</Text>
+            <Switch value={look.marks} onValueChange={(marks) => setReader({ marks })} trackColor={sw} />
+          </View>
+        </Group>
 
-        <Row label="Alignment">
-          <Choice
-            options={[
-              { key: "right", label: "Right" },
-              { key: "center", label: "Centre" },
-            ]}
-            value={look.align}
-            onChange={(align) => setReader({ align })}
-          />
-        </Row>
-
-        <View style={s.toggleRow}>
-          <Text>Ayah numbers</Text>
-          <Switch value={look.numbers} onValueChange={(numbers) => setReader({ numbers })} trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }} />
-        </View>
-        <View style={s.toggleRow}>
-          <Text>Show my marks</Text>
-          <Switch value={look.marks} onValueChange={(marks) => setReader({ marks })} trackColor={{ true: theme.colors.lapis, false: theme.colors.rule }} />
-        </View>
+        {quranApiConfigured() ? (
+          <Group title="Translation">
+            {TRANSLATIONS.map((t) => (
+              <Pick key={t.id} label={t.name} on={translationId === t.id} onPress={() => setTranslationId(t.id)} />
+            ))}
+          </Group>
+        ) : null}
       </ScrollView>
     </Sheet>
   );

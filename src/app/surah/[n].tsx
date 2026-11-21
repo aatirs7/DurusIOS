@@ -349,7 +349,7 @@ export default function SurahReader() {
         </Text>
       </Pressable>
       {dl.state === "done" ? (
-        <Text variant="label" style={{ color: colors.soft, paddingTop: space(0.5) }}>
+        <Text variant="label" style={{ color: colors.soft, opacity: 0.6, textAlign: "center", alignSelf: "stretch", paddingTop: space(0.75), paddingHorizontal: space(2) }}>
           {recitationCredit(reciterId)}
         </Text>
       ) : null}
