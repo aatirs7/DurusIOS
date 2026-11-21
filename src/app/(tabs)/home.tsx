@@ -9,6 +9,7 @@ import { Arabic } from "@/components/Arabic";
 import { Breath } from "@/components/Breath";
 import { Glyphs } from "@/components/Glyphs";
 import { Glass } from "@/components/Glass";
+import { ResultPreview, type Preview } from "@/components/ResultPreview";
 import { Seeking } from "@/components/Seeking";
 import { TabSafe, useTabTop } from "@/components/TabSafe";
 import { Text } from "@/components/Text";
@@ -19,6 +20,7 @@ import { askKey, askQuran, loadVerseTranslations, quranApiConfigured, type AskAn
 import { search } from "@/quran/search";
 import { SURAHS } from "@/quran/tanzil";
 import { ayahForDisplay, refOf, searchKeys } from "@/quran/text";
+import { haptics } from "@/lib/haptics";
 import { hijriDate } from "@/lib/time";
 import { usePrefs } from "@/state/prefs";
 import { FONTS } from "@/theme/typography";
@@ -160,12 +162,14 @@ export default function Home() {
     };
     const id = setTimeout(() => {
       askQuran(k).then((a) => {
-        if (!alive || done) return;
+        if (!alive) return;
+        /* An answer that arrives after the wait gave up still lands: the list
+           fills in rather than staying on "Nothing found". */
         if (a) setAi({ q: k, a });
-        settle();
+        if (!done) settle();
       });
     }, 650);
-    const giveUp = setTimeout(() => alive && !done && settle(), 6500);
+    const giveUp = setTimeout(() => alive && !done && settle(), 9000);
     return () => {
       alive = false;
       clearTimeout(id);
@@ -225,6 +229,19 @@ export default function Home() {
 
   const completions = useMemo(() => (items.length === 0 && !waiting ? complete(query, 4) : []), [query, items.length, waiting]);
 
+  /* Press and hold a result: what it is, why it came up, and its neighbours from this search. */
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const hold = (item: Item) => {
+    haptics.hold();
+    Keyboard.dismiss();
+    const surah = item.kind === "surah" ? item.n : refOf(item.index).surah;
+    const related = items
+      .filter((it): it is Item & { kind: "ayah"; index: number } => it.kind === "ayah" && refOf(it.index).surah === surah && !(item.kind === "ayah" && it.index === item.index))
+      .map((it) => it.index)
+      .slice(0, 5);
+    setPreview({ surah, index: item.kind === "ayah" ? item.index : undefined, why: item.reason ?? caption, related });
+  };
+
   const openTo = (surah: number, ayah?: number) => {
     Keyboard.dismiss();
     router.push(ayah ? `/surah/${surah}?ayah=${ayah}` : `/surah/${surah}`);
@@ -238,7 +255,7 @@ export default function Home() {
     if (item.kind === "surah") {
       const x = SURAHS[item.n - 1];
       return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`Surah ${x.en}`} onPress={() => open(x.n)} style={[s.item, { flexDirection: "row", alignItems: "center", gap: space(1.5) }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Surah ${x.en}`} accessibilityHint="Press and hold for why it came up" onPress={() => open(x.n)} onLongPress={() => hold(item)} delayLongPress={350} style={[s.item, { flexDirection: "row", alignItems: "center", gap: space(1.5) }]}>
           <View style={{ flex: 1, gap: 2 }}>
             {item.reason ? (
               <Text variant="label" color="lapis">
@@ -258,7 +275,7 @@ export default function Home() {
     const key = `${r.surah}:${r.ayah}`;
     const x = SURAHS[r.surah - 1];
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel={`${x.en} ${key}`} onPress={() => open(r.surah, r.ayah)} style={s.item}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${x.en} ${key}`} accessibilityHint="Press and hold for why it came up" onPress={() => open(r.surah, r.ayah)} onLongPress={() => hold(item)} delayLongPress={350} style={s.item}>
         {item.reason ? (
           <Text variant="label" color="lapis">
             {item.reason}
@@ -402,8 +419,16 @@ export default function Home() {
                 {waiting ? <Seeking /> : null}
                 {caption ? (
                   <View style={s.caption} accessible accessibilityLabel={picks && picks.results.length > 0 ? `Suggested by AI. ${caption}` : caption}>
-                    {picks && picks.results.length > 0 ? <Sparkle color={theme.colors.lapis} /> : null}
+                    {/* The sparkle sits inline, just before the first word, on the first line. */}
                     <Text variant="label" color="inkSoft" style={{ textAlign: "center", flexShrink: 1 }}>
+                      {picks && picks.results.length > 0 ? (
+                        <>
+                          <View style={{ width: 14, height: 14, transform: [{ translateY: 2 }] }}>
+                            <Sparkle color={theme.colors.lapis} />
+                          </View>
+                          {"  "}
+                        </>
+                      ) : null}
                       {caption}
                     </Text>
                   </View>
@@ -439,6 +464,15 @@ export default function Home() {
           </Pressable>
         )}
       </View>
+      <ResultPreview
+        preview={preview}
+        english={english}
+        onClose={() => setPreview(null)}
+        onOpen={(surah, ayah) => {
+          setPreview(null);
+          open(surah, ayah);
+        }}
+      />
     </TabSafe>
   );
 }

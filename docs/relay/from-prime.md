@@ -13,6 +13,12 @@ INCIDENT, 2026-11-18. The app crashed on launch with tonight's updates.
 
 ## Shipped
 
+- Search, per the owner (21 Nov):
+  - Press and hold any result: a card with the surah (Arabic, name, meaning, Meccan or Medinan, ayah count), why it came up (the AI's note, or the topic), the held ayah with its English, other ayahs from this search in that surah, and Open at this ayah / Read the surah (src/components/ResultPreview.tsx).
+  - Fixed "im bored" showing Nothing found and then results on a retry: the AI answer came back after the app's 6.5 s wait and was thrown away. Late answers now fill the list in; the wait is 9 s; the server gives Gemini 6 s and Groq 9 s.
+  - The AI sparkle sits inline before the caption's first word.
+  - Haptics on every press and hold (ayahs in the reader, Barakah tiles, search results, pausing the onboarding story): a new medium impact, haptics.hold().
+
 - App Store prep (owner, 21 Nov):
   - Guest mode: an account is optional. The boot gate only checks onboarding; onboarding's sign in step and the welcome screen have Continue without an account. Everything runs on the local profile, and signing in later binds it, so nothing is lost.
   - Credits: About credits Quran Foundation (translations by name, word meanings, recitation by Mishari al-Afasy) and all five Quran fonts; the stale Quran.com is coming lines are gone. Privacy policy and Support links in About and Settings. Leftover coming soon text removed (search caption, reader sheet, Book hint, reply.ts). Stats shows None yet instead of an em dash.

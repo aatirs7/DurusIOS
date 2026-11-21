@@ -158,7 +158,10 @@ export function Story({ onDone }: { onDone: () => void }) {
   const hold = Gesture.LongPress()
     .runOnJS(true)
     .minDuration(220)
-    .onStart(() => setPaused(true))
+    .onStart(() => {
+      haptics.hold();
+      setPaused(true);
+    })
     .onFinalize(() => setPaused(false));
   const swipe = Gesture.Pan()
     .runOnJS(true)

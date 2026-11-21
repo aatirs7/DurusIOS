@@ -113,7 +113,7 @@ async function groq(q: string, key: string, model: string): Promise<AskAnswer> {
         { role: "user", content: q },
       ],
     }),
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(9000),
   });
   if (!res.ok) throw new Error(`groq ${res.status} ${(await res.text()).slice(0, 160)}`);
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
@@ -129,7 +129,7 @@ async function gemini(q: string, key: string, model: string): Promise<AskAnswer>
       contents: [{ role: "user", parts: [{ text: q }] }],
       generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
     }),
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(6000),
   });
   /* Over the free tier's per minute limit: rest Gemini for a minute and let Groq answer. */
   if (res.status === 429) geminiRestUntil = Date.now() + 60_000;

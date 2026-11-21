@@ -9,6 +9,7 @@ import { PageTip } from "@/components/PageTip";
 import { Glass } from "@/components/Glass";
 import { FootnoteCard, TranslationLine, TransliterationLine, WordGrid } from "@/components/QuranLayers";
 import { NavigateSheet, ViewSheet, juzOf, useQuranType, useReaderColors } from "@/components/QuranSheets";
+import { haptics } from "@/lib/haptics";
 import { Text } from "@/components/Text";
 import { WORDS_MAP_ATTRIBUTION, wordsMap } from "@/data/wordsMap";
 import { translationName, type QfChapter } from "@/quran/qf";
@@ -398,6 +399,7 @@ export default function SurahReader() {
       <Pressable
         onPress={() => cycle(ayah)}
         onLongPress={() => {
+          haptics.hold();
           setSelected(null);
           setZoom(ayah);
         }}
@@ -497,6 +499,7 @@ export default function SurahReader() {
               selectable={false}
               onPress={() => setSelected(selected === ayah ? null : ayah)}
               onLongPress={() => {
+                haptics.hold();
                 setSelected(null);
                 setZoom(ayah);
               }}

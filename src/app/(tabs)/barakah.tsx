@@ -22,6 +22,7 @@ import { Breath } from "@/components/Breath";
 import { Glass } from "@/components/Glass";
 import { PracticeIcon } from "@/components/PracticeIcon";
 import { TabSafe } from "@/components/TabSafe";
+import { haptics } from "@/lib/haptics";
 import { Text } from "@/components/Text";
 import { TopBar } from "@/components/TopBar";
 import {
@@ -507,7 +508,10 @@ export default function Barakah() {
         accessibilityLabel={label}
         accessibilityHint="Long press for what this is"
         onPress={onPress}
-        onLongPress={() => setInfo(p)}
+        onLongPress={() => {
+          haptics.hold();
+          setInfo(p);
+        }}
         delayLongPress={350}
         style={{ flex: 1 }}
       >

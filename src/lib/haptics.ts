@@ -3,9 +3,11 @@ import * as Haptics from "expo-haptics";
 /*
   The only module allowed to import expo-haptics; there is an eslint rule.
 
-  Spec section 7.5 enumerates the complete list, and it is two entries long:
+  Spec section 7.5 enumerated two entries; the owner added the third
+  (21 Nov 2026):
 
     Light impact       tapping an answer option or a letter tile
+    Medium impact      a press and hold landing (every long press)
     Success            end of a session, once, never per card
 
   Warning and Error are deliberately absent. A wrong answer must not buzz.
@@ -31,6 +33,12 @@ export const haptics = {
   select() {
     if (!enabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  },
+
+  /** A press and hold has landed: every long press in the app. */
+  hold() {
+    if (!enabled) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
   },
 
   /** Fires once, when a session ends. Never per card. */
